@@ -110,7 +110,6 @@ defmodule AshBackpex.Adapter do
   def load(_, _, _), do: []
 
   def create_changeset(item, _params, assigns) do
-    # dbg({assigns})
     live_resource = Keyword.get(assigns, :assigns).live_resource
     config = live_resource.config(:adapter_config)
 
@@ -134,7 +133,6 @@ defmodule AshBackpex.Adapter do
   end
 
   def update_changeset(item, params, assigns) do
-    # dbg({assigns})
     live_resource = Keyword.get(assigns, :assigns).live_resource
     config = live_resource.config(:adapter_config)
 
@@ -184,8 +182,6 @@ defmodule AshBackpex.Adapter do
   """
   @impl Backpex.Adapter
   def list(criteria, assigns, live_resource) do
-    # {criteria, assigns, live_resource} |> dbg
-    criteria |> dbg
     config = live_resource.config(:adapter_config)
     load_fn = Keyword.get(config, :load)
 
@@ -205,10 +201,8 @@ defmodule AshBackpex.Adapter do
         filters ->
           filters
           |> Enum.reduce(query, fn filter, acc ->
-            filter |> dbg
-
             cond do
-              filter.field == :empty_filter |> dbg ->
+              filter.field == :empty_filter ->
                 acc
 
               is_list(filter.value) ->
@@ -229,7 +223,7 @@ defmodule AshBackpex.Adapter do
         offset: (page_num - 1) * page_size
       )
 
-    with {:ok, results} = query |> dbg |> Ash.read(load: load, actor: assigns.current_user) do
+    with {:ok, results} <- query |> Ash.read(load: load, actor: assigns.current_user) do
       {:ok, results.results}
     end
   end
@@ -254,7 +248,6 @@ defmodule AshBackpex.Adapter do
     primary_key = live_resource.config(:primary_key)
 
     ids = Enum.map(items, &Map.fetch!(&1, primary_key))
-    dbg({items, live_resource})
 
     result =
       config[:resource]
@@ -269,13 +262,7 @@ defmodule AshBackpex.Adapter do
   """
   @impl Backpex.Adapter
   def insert(changeset, live_resource) do
-    # config = live_resource.config(:adapter_config)
-    dbg({changeset, live_resource})
-    # raise "hahaha"
     changeset |> Ash.create(authorize?: false)
-
-    # item
-    # |> config[:repo].insert()
   end
 
   @doc """
@@ -283,7 +270,6 @@ defmodule AshBackpex.Adapter do
   """
   @impl Backpex.Adapter
   def update(changeset, live_resource) do
-    {changeset, live_resource} |> dbg
     changeset |> Ash.update(authorize?: false)
   end
 

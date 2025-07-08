@@ -42,8 +42,7 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
           atom
           |> Atom.to_string()
           |> String.split("_")
-          |> Enum.map(&String.capitalize/1)
-          |> Enum.join(" ")
+          |> Enum.map_join(" ", &String.capitalize/1)
         end
 
         try_derive_module = fn attribute_name ->
@@ -217,7 +216,7 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
 
               curr_user ->
                 # assigns
-                if (Ash.Resource.Info.action(@resource, action)) do
+                if Ash.Resource.Info.action(@resource, action) do
                   Ash.can?({@resource, action}, curr_user)
                 else
                   false
