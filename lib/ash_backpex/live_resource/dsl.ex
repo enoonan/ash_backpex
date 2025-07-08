@@ -11,8 +11,8 @@ defmodule AshBackpex.LiveResource.Dsl do
         field :author, Backpex.Fields.BelongsTo
         field :comments, Backpex.Fields.HasMany, only: [:show]
       end
-      singular_label "Post"
-      plural_label "Posts"
+      singular_name "Post"
+      plural_name "Posts"
     end
   end
   """
@@ -96,6 +96,11 @@ defmodule AshBackpex.LiveResource.Dsl do
           doc:
             "Sets the field to readonly. Also see the [panels](/guides/fields/readonly.md) guide.",
           type: {:or, [:boolean, {:fun, 1}]}
+        ],
+        panel: [
+          doc:
+            "The panel key this field belongs to. Must match a key defined in the panels configuration.",
+          type: :atom
         ],
         # TEXT FIELDS
         placeholder: [
@@ -234,10 +239,12 @@ defmodule AshBackpex.LiveResource.Dsl do
     schema: [
       resource: [
         type: :atom,
+        required: true,
         doc: "The Ash resource that the Backpex Live resource should be connect to."
       ],
       layout: [
         type: {:tuple, [:module, :atom]},
+        required: true,
         doc: "The liveview layout, e.g.: {MyAppWeb.Layouts, :admin}"
       ],
       load: [
@@ -280,17 +287,18 @@ defmodule AshBackpex.LiveResource.Dsl do
         """,
         type: {:fun, 3}
       ],
-      singular_label: [
+      singular_name: [
         type: :string,
-        doc: "The singular label for the resource that will appear in the admin. E.g., \"Post\""
+        doc: "The singular name for the resource that will appear in the admin. E.g., \"Post\""
       ],
-      plural_label: [
+      plural_name: [
         type: :string,
-        doc: "The plural label for the resource taht will appear i nthe admin. E.g., \"Posts\""
+        doc: "The plural name for the resource taht will appear i nthe admin. E.g., \"Posts\""
       ],
       panels: [
-        type: {:list, :string},
-        doc: "Any panels to be displayed in the admin create/edit forms."
+        type: :keyword_list,
+        doc:
+          "Panels to be displayed in the admin create/edit forms. Format: [panel_key: \"Panel Title\"]"
       ]
     ],
     sections: [@fields, @filters, @item_actions]

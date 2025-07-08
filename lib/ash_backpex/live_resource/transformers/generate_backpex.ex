@@ -10,7 +10,7 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                                 |> String.to_existing_atom()
         @repo @resource |> @data_layer_info_module.repo()
 
-        @panels Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :singular_name) || []
+        @panels Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :panels) || []
 
         @singular_name Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :singular_name) ||
                          @resource |> Atom.to_string() |> String.split(".") |> List.last()
@@ -106,6 +106,7 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                       options: field.options,
                       display_field: field.display_field,
                       live_resource: field.live_resource,
+                      panel: field.panel,
                       link_assocs:
                         case {module, Map.get(field, :link_assocs)} do
                           {Backpex.Fields.HasMany, nil} -> true
@@ -217,7 +218,7 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
 
               curr_user ->
                 # assigns
-                if (Ash.Resource.Info.action(@resource, action)) do
+                if Ash.Resource.Info.action(@resource, action) do
                   Ash.can?({@resource, action}, curr_user)
                 else
                   false
