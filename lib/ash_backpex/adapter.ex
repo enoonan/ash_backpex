@@ -261,7 +261,7 @@ defmodule AshBackpex.Adapter do
   Inserts given item.
   """
   @impl Backpex.Adapter
-  def insert(changeset, live_resource) do
+  def insert(changeset, _live_resource) do
     changeset |> Ash.create(authorize?: false)
   end
 
@@ -269,7 +269,7 @@ defmodule AshBackpex.Adapter do
   Updates given item.
   """
   @impl Backpex.Adapter
-  def update(changeset, live_resource) do
+  def update(changeset, _live_resource) do
     changeset |> Ash.update(authorize?: false)
   end
 
