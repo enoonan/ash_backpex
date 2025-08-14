@@ -35,6 +35,8 @@ defmodule AshBackpex.MixProject do
 
   defp deps do
     [
+      {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:ash, "~> 3.0"},
       {:backpex, "~> 0.8"},
