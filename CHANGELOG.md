@@ -2,6 +2,12 @@
 
 <!-- changelog -->
 
+## [v0.0.5]
+
+### Updates
+
+Update to Backpex 0.14.0
+
 ## [v0.0.4]
 
 ### Improvements

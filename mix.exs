@@ -1,7 +1,7 @@
 defmodule AshBackpex.MixProject do
   use Mix.Project
 
-  @version "0.0.4"
+  @version "0.0.5"
   @source_url "https://github.com/enoonan/ash_backpex"
 
   def project do
@@ -36,13 +36,13 @@ defmodule AshBackpex.MixProject do
 
   defp deps do
     [
-      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:ash, "~> 3.0"},
-      {:backpex, "~> 0.8"},
+      {:backpex, "~> 0.14.0"},
       {:spark, "~> 2.0"},
       {:phoenix_html, "~> 3.0 or ~> 4.0"},
 
       # Dev/Test dependencies
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:ex_check, "~> 0.14", only: [:dev, :test]},
       {:credo, ">= 0.0.0", only: [:dev, :test], runtime: false},

@@ -19,8 +19,6 @@
     --text-xs--line-height: calc(1 / 0.75);
     --text-sm: 0.875rem;
     --text-sm--line-height: calc(1.25 / 0.875);
-    --text-base: 1rem;
-    --text-base--line-height: calc(1.5 / 1);
     --text-lg: 1.125rem;
     --text-lg--line-height: calc(1.75 / 1.125);
     --text-xl: 1.25rem;
@@ -1889,9 +1887,6 @@
   .mb-8 {
     margin-bottom: calc(var(--spacing) * 8);
   }
-  .ml-2 {
-    margin-left: calc(var(--spacing) * 2);
-  }
   .ml-4 {
     margin-left: calc(var(--spacing) * 4);
   }
@@ -2551,10 +2546,10 @@
     --tw-translate-x: calc(calc(1/2 * 100%) * -1);
     translate: var(--tw-translate-x) var(--tw-translate-y);
   }
-  .scale-110 {
-    --tw-scale-x: 110%;
-    --tw-scale-y: 110%;
-    --tw-scale-z: 110%;
+  .scale-105 {
+    --tw-scale-x: 105%;
+    --tw-scale-y: 105%;
+    --tw-scale-z: 105%;
     scale: var(--tw-scale-x) var(--tw-scale-y);
   }
   .link {
@@ -2905,10 +2900,6 @@
     font-size: var(--text-3xl);
     line-height: var(--tw-leading, var(--text-3xl--line-height));
   }
-  .text-base {
-    font-size: var(--text-base);
-    line-height: var(--tw-leading, var(--text-base--line-height));
-  }
   .text-lg {
     font-size: var(--text-lg);
     line-height: var(--tw-leading, var(--text-lg--line-height));
@@ -2965,8 +2956,8 @@
   .whitespace-pre-wrap {
     white-space: pre-wrap;
   }
-  .checkbox-error {
-    color: var(--color-error-content);
+  .\!checkbox-error {
+    color: var(--color-error-content) !important;
     --input-color: var(--color-error);
   }
   .checkbox-primary {
@@ -3005,14 +2996,14 @@
   .text-error {
     color: var(--color-error);
   }
+  .text-error-content {
+    color: var(--color-error-content);
+  }
   .text-neutral-content {
     color: var(--color-neutral-content);
   }
   .text-primary {
     color: var(--color-primary);
-  }
-  .text-primary-content {
-    color: var(--color-primary-content);
   }
   .text-primary\/75 {
     color: color-mix(in oklab, var(--color-primary) 75%, transparent);
@@ -3168,6 +3159,11 @@
       --size: calc(var(--size-selector, 0.25rem) * 5);
     }
   }
+  .\!toggle-error {
+    &:checked, &[aria-checked="true"] {
+      --input-color: var(--color-error);
+    }
+  }
   .\[scrollbar-gutter\:stable\] {
     scrollbar-gutter: stable;
   }
@@ -3194,11 +3190,6 @@
   .toggle-primary {
     &:checked, &[aria-checked="true"] {
       --input-color: var(--color-primary);
-    }
-  }
-  .toggle-success {
-    &:checked, &[aria-checked="true"] {
-      --input-color: var(--color-success);
     }
   }
   .not-hover\:select-ghost {
@@ -3620,109 +3611,6 @@
   .lg\:flex {
     @media (width >= 64rem) {
       display: flex;
-    }
-  }
-  .\[\&\>\*\]\:select {
-    &>* {
-      border: var(--border) solid #0000;
-      position: relative;
-      display: inline-flex;
-      flex-shrink: 1;
-      appearance: none;
-      align-items: center;
-      gap: calc(0.25rem * 1.5);
-      background-color: var(--color-base-100);
-      padding-inline-start: calc(0.25rem * 4);
-      padding-inline-end: calc(0.25rem * 7);
-      vertical-align: middle;
-      width: clamp(3rem, 20rem, 100%);
-      height: var(--size);
-      font-size: 0.875rem;
-      border-start-start-radius: var(--join-ss, var(--radius-field));
-      border-start-end-radius: var(--join-se, var(--radius-field));
-      border-end-start-radius: var(--join-es, var(--radius-field));
-      border-end-end-radius: var(--join-ee, var(--radius-field));
-      background-image: linear-gradient(45deg, #0000 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, #0000 50%);
-      background-position: calc(100% - 20px) calc(1px + 50%), calc(100% - 16.1px) calc(1px + 50%);
-      background-size: 4px 4px, 4px 4px;
-      background-repeat: no-repeat;
-      text-overflow: ellipsis;
-      box-shadow: 0 1px color-mix(in oklab, var(--input-color) calc(var(--depth) * 10%), #0000) inset, 0 -1px oklch(100% 0 0 / calc(var(--depth) * 0.1)) inset;
-      border-color: var(--input-color);
-      --input-color: color-mix(in oklab, var(--color-base-content) 20%, #0000);
-      --size: calc(var(--size-field, 0.25rem) * 10);
-      [dir="rtl"] & {
-        background-position: calc(0% + 12px) calc(1px + 50%), calc(0% + 16px) calc(1px + 50%);
-      }
-      select {
-        margin-inline-start: calc(0.25rem * -4);
-        margin-inline-end: calc(0.25rem * -7);
-        width: calc(100% + 2.75rem);
-        appearance: none;
-        padding-inline-start: calc(0.25rem * 4);
-        padding-inline-end: calc(0.25rem * 7);
-        height: calc(100% - 2px);
-        background: inherit;
-        border-radius: inherit;
-        border-style: none;
-        &:focus, &:focus-within {
-          --tw-outline-style: none;
-          outline-style: none;
-          @media (forced-colors: active) {
-            outline: 2px solid transparent;
-            outline-offset: 2px;
-          }
-        }
-        &:not(:last-child) {
-          margin-inline-end: calc(0.25rem * -5.5);
-          background-image: none;
-        }
-      }
-      &:focus, &:focus-within {
-        --input-color: var(--color-base-content);
-        box-shadow: 0 1px color-mix(in oklab, var(--input-color) calc(var(--depth) * 10%), #0000);
-        outline: 2px solid var(--input-color);
-        outline-offset: 2px;
-      }
-      &:has(> select[disabled]), &:is(:disabled, [disabled]) {
-        cursor: not-allowed;
-        border-color: var(--color-base-200);
-        background-color: var(--color-base-200);
-        color: color-mix(in oklab, var(--color-base-content) 40%, transparent);
-        &::placeholder {
-          color: color-mix(in oklab, var(--color-base-content) 20%, transparent);
-        }
-      }
-      &:has(> select[disabled]) > select[disabled] {
-        cursor: not-allowed;
-      }
-    }
-  }
-  .\[\&\>\*\]\:w-full {
-    &>* {
-      width: 100%;
-    }
-  }
-  .\[\&\>\*\]\:bg-error\/10 {
-    &>* {
-      background-color: color-mix(in oklab, var(--color-error) 10%, transparent);
-    }
-  }
-  .\[\&\>\*\]\:text-base-content {
-    &>* {
-      color: var(--color-base-content);
-    }
-  }
-  .\[\&\>\*\]\:text-error-content {
-    &>* {
-      color: var(--color-error-content);
-    }
-  }
-  .\[\&\>\*\]\:select-error {
-    &>* {
-      &, &:focus, &:focus-within {
-        --input-color: var(--color-error);
-      }
     }
   }
   .\[\&\[stuck\]\]\:after\:block {
