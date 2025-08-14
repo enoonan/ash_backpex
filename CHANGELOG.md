@@ -2,6 +2,13 @@
 
 <!-- changelog -->
 
+## [v0.0.4]
+
+### Improvements
+
+Add `demo` app
+Add `credo`, `ex_check`, `dialyxir`, `sobelow`, with various code-quality refactors.
+
 ## [v0.0.3]
 
 ### Improvements
