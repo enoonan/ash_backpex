@@ -1,5 +1,3 @@
 defmodule AshBackpex do
-  @moduledoc """
-
-  """
+  @moduledoc false
 end

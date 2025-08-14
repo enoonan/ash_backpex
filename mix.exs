@@ -15,7 +15,8 @@ defmodule AshBackpex.MixProject do
       package: package(),
       description: description(),
       source_url: @source_url,
-      docs: &docs/0
+      docs: &docs/0,
+      aliases: aliases()
     ]
   end
 
@@ -39,7 +40,12 @@ defmodule AshBackpex.MixProject do
       {:ash, "~> 3.0"},
       {:backpex, "~> 0.8"},
       {:spark, "~> 2.0"},
-      {:phoenix_html, "~> 3.0 or ~> 4.0"}
+      {:phoenix_html, "~> 3.0 or ~> 4.0"},
+
+      # Dev/Test dependencies
+      {:ex_check, "~> 0.14", only: [:dev, :test]},
+      {:credo, ">= 0.0.0", only: [:dev, :test], runtime: false},
+      {:dialyxir, ">= 0.0.0", only: [:dev, :test], runtime: false}
     ]
   end
 
@@ -62,5 +68,11 @@ defmodule AshBackpex.MixProject do
     Integration library between Ash Framework and Backpex admin interface (early development).
     Provides a DSL for creating admin interfaces for Ash resources.
     """
+  end
+
+  defp aliases do
+    [
+      credo: "credo --strict"
+    ]
   end
 end
