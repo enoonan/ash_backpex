@@ -1,23 +1,12 @@
 defmodule AshBackpex.LiveResource.Dsl do
   @moduledoc """
-  defmodule MyAppWeb.Live.PostLive do
-    use AshBackpex.Live
-
-    backpex do
-      resource MyApp.Blog.Post
-      load [:author, :comments]
-      fields do
-        field :title, Backpex.Fields.Text
-        field :author, Backpex.Fields.BelongsTo
-        field :comments, Backpex.Fields.HasMany, only: [:show]
-      end
-      singular_label "Post"
-      plural_label "Posts"
-    end
-  end
+  Defines the DSL for using AshBackpex
   """
 
   defmodule Field do
+    @moduledoc """
+    Configuration options for `Backpex.Field.{}`
+    """
     defstruct [
       :attribute,
       :default,
@@ -169,6 +158,9 @@ defmodule AshBackpex.LiveResource.Dsl do
   }
 
   defmodule Filter do
+    @moduledoc """
+    Configuration options for `Backpex.Filters.{}`
+    """
     defstruct [:attribute, :module, :label]
   end
 
@@ -199,6 +191,9 @@ defmodule AshBackpex.LiveResource.Dsl do
   }
 
   defmodule ItemAction do
+    @moduledoc """
+    Configuration options for `Backpex.ItemAction`
+    """
     defstruct [:name, :module]
   end
 

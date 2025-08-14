@@ -43,6 +43,7 @@ defmodule AshBackpex.MixProject do
       {:phoenix_html, "~> 3.0 or ~> 4.0"},
 
       # Dev/Test dependencies
+      {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:ex_check, "~> 0.14", only: [:dev, :test]},
       {:credo, ">= 0.0.0", only: [:dev, :test], runtime: false},
       {:dialyxir, ">= 0.0.0", only: [:dev, :test], runtime: false}
