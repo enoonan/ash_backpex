@@ -11,6 +11,7 @@ defmodule AshBackpex.MixProject do
       version: @version,
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
+      elixirc_paths: elixirc_paths(Mix.env()),
       deps: deps(),
       package: package(),
       description: description(),
@@ -19,6 +20,9 @@ defmodule AshBackpex.MixProject do
       aliases: aliases()
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 
   defp docs do
     [
@@ -42,6 +46,7 @@ defmodule AshBackpex.MixProject do
       {:phoenix_html, "~> 3.0 or ~> 4.0"},
 
       # Dev/Test dependencies
+      {:ash_sqlite, "~> 0.1", only: :test},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:ex_check, "~> 0.14", only: [:dev, :test]},
