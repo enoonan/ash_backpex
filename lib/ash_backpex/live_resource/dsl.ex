@@ -18,6 +18,9 @@ defmodule AshBackpex.LiveResource.Dsl do
   """
 
   defmodule Field do
+    @moduledoc """
+    Configuration options for `Backpex.Field.{}`
+    """
     defstruct [
       :attribute,
       :default,
@@ -174,6 +177,9 @@ defmodule AshBackpex.LiveResource.Dsl do
   }
 
   defmodule Filter do
+    @moduledoc """
+    Configuration options for `Backpex.Filters.{}`
+    """
     defstruct [:attribute, :module, :label]
   end
 
@@ -204,6 +210,9 @@ defmodule AshBackpex.LiveResource.Dsl do
   }
 
   defmodule ItemAction do
+    @moduledoc """
+    Configuration options for `Backpex.ItemAction`
+    """
     defstruct [:name, :module]
   end
 

@@ -325,38 +325,12 @@ if Code.ensure_loaded?(Phoenix.HTML) do
     defp to_changeset(%Ash.Changeset{} = changeset, parent_action, _module, _cast, _index),
       do: apply_action(changeset, parent_action)
 
-    defp to_changeset(%{} = data, parent_action, _module, cast, _index) when is_function(cast, 2),
-      do: apply_action(cast!(cast, data), parent_action)
-
-    defp to_changeset(%{} = data, parent_action, _module, cast, index) when is_function(cast, 3),
-      do: apply_action(cast!(cast, data, index), parent_action)
-
     # defp to_changeset(%{} = data, parent_action, _module, {module, func, arguments} = mfa, _index)
     #      when is_atom(module) and is_atom(func) and is_list(arguments),
     #      do: apply_action(apply!(mfa, data), parent_action)
 
     defp to_changeset(%{} = _data, parent_action, module, nil, _index),
       do: apply_action(Ash.Changeset.new(module), parent_action)
-
-    defp cast!(cast, data) do
-      case cast.(data, %{}) do
-        %Ash.Changeset{} = changeset ->
-          changeset
-
-        other ->
-          raise "expected cast function to return an Ash.Changeset, got: #{inspect(other)}"
-      end
-    end
-
-    defp cast!(cast, data, index) do
-      case cast.(data, %{}, index) do
-        %Ash.Changeset{} = changeset ->
-          changeset
-
-        other ->
-          raise "expected cast function to return an Ash.Changeset, got: #{inspect(other)}"
-      end
-    end
 
     # defp apply!({module, func, arguments}, data) do
     #   case apply(module, func, [data, %{} | arguments]) do
