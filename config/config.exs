@@ -1,4 +1,6 @@
 import Config
 
 # Import environment specific config
-import_config "#{config_env()}.exs"
+if config_env() == :test do
+  import_config "#{config_env()}.exs"
+end
