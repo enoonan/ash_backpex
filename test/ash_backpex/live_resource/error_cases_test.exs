@@ -27,8 +27,7 @@ defmodule AshBackpex.LiveResource.ErrorCasesTest do
     end
 
     test "raises error for invalid field configuration" do
-      # TODO: We might want to improve the error message here
-      assert_raise RuntimeError, ~r/Unable to derive the field type for/, fn ->
+      assert_raise RuntimeError, ~r/Unable to derive the `Backpex.Field` module/, fn ->
         defmodule InvalidFieldLive do
           use AshBackpex.LiveResource
 

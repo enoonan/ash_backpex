@@ -1,5 +1,7 @@
 # Test LiveResource modules that will be used in tests
 defmodule TestPostLive do
+  @moduledoc false
+
   use AshBackpex.LiveResource
 
   backpex do
@@ -34,6 +36,7 @@ end
 
 # Minimal LiveResource for basic tests
 defmodule TestMinimalLive do
+  @moduledoc false
   use AshBackpex.LiveResource
 
   backpex do
@@ -44,6 +47,7 @@ end
 
 # LiveResource with custom names
 defmodule TestCustomNamesLive do
+  @moduledoc false
   use AshBackpex.LiveResource
 
   backpex do
@@ -56,6 +60,7 @@ end
 
 # Test modules for layout and actions
 defmodule TestLayout do
+  @moduledoc false
   import Phoenix.Component
 
   def admin(assigns) do

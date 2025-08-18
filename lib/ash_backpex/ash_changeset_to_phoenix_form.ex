@@ -385,16 +385,14 @@ if Code.ensure_loaded?(Phoenix.HTML) do
     end
 
     defp form_for_hidden(%{__struct__: module} = data) do
-      try do
-        if function_exported?(module, :__ash_primary_key__, 0) do
-          keys = module.__ash_primary_key__()
-          for k <- keys, v = Map.get(data, k), do: {k, v}
-        else
-          []
-        end
-      rescue
-        _ -> []
+      if function_exported?(module, :__ash_primary_key__, 0) do
+        keys = module.__ash_primary_key__()
+        for k <- keys, v = Map.get(data, k), do: {k, v}
+      else
+        []
       end
+    rescue
+      _ -> []
     end
 
     defp form_for_hidden(_), do: []
@@ -415,17 +413,15 @@ if Code.ensure_loaded?(Phoenix.HTML) do
     # Ash resources don't have the same concept of :loaded state like Ecto
     # We'll determine the method based on whether there's an ID present
     defp form_for_method(%{__struct__: module} = data) do
-      try do
-        if function_exported?(module, :__ash_primary_key__, 0) do
-          primary_keys = module.__ash_primary_key__()
-          has_id = Enum.any?(primary_keys, &Map.get(data, &1))
-          if has_id, do: "put", else: "post"
-        else
-          "post"
-        end
-      rescue
-        _ -> "post"
+      if function_exported?(module, :__ash_primary_key__, 0) do
+        primary_keys = module.__ash_primary_key__()
+        has_id = Enum.any?(primary_keys, &Map.get(data, &1))
+        if has_id, do: "put", else: "post"
+      else
+        "post"
       end
+    rescue
+      _ -> "post"
     end
 
     defp form_for_method(_), do: "post"

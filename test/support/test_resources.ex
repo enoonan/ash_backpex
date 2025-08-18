@@ -1,4 +1,6 @@
 defmodule TestDomain.Post do
+  @moduledoc false
+
   use Ash.Resource,
     domain: TestDomain,
     data_layer: AshSqlite.DataLayer
@@ -47,6 +49,8 @@ defmodule TestDomain.Post do
 end
 
 defmodule TestDomain.User do
+  @moduledoc false
+
   use Ash.Resource,
     domain: TestDomain,
     data_layer: AshSqlite.DataLayer
@@ -75,6 +79,8 @@ defmodule TestDomain.User do
 end
 
 defmodule TestDomain.Comment do
+  @moduledoc false
+
   use Ash.Resource,
     domain: TestDomain,
     data_layer: AshSqlite.DataLayer

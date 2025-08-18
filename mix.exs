@@ -78,7 +78,8 @@ defmodule AshBackpex.MixProject do
 
   defp aliases do
     [
-      credo: "credo --strict"
+      credo: "credo --strict",
+      ci: ["credo --strict", "sobelow"]
     ]
   end
 end

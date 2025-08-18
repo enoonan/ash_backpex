@@ -1,4 +1,5 @@
 defmodule TestDomain do
+  @moduledoc false
   use Ash.Domain
 
   resources do

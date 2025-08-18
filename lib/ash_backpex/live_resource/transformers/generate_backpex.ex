@@ -94,7 +94,28 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                 Ash.Resource.Info.aggregate(@resource, attribute_name).kind
 
               true ->
-                raise "Unable to derive the field type for #{inspect(attribute_name)} field in #{__MODULE__}. Please specify a field type."
+                att = inspect(attribute_name)
+
+                module_shortname =
+                  __MODULE__ |> Atom.to_string() |> String.split(".") |> List.last()
+
+                raise """
+
+                Unable to derive the `Backpex.Field` module for the #{att} field in #{module_shortname}.
+
+                To debug:
+
+                  * Ensure #{att} is spelled correctly, and is a valid attribute, relation,
+                    calculation, aggregate or other loadable entity on the #{module_shortname} resource.
+
+                  * If a default field module still cannot be derived, specify it manually by using the `module` macro. E.g.:
+
+                    fields do
+                      field #{att} do
+                        module Backpex.Fields.Text
+                      end
+                    end
+                """
             end
 
           case type do
@@ -261,10 +282,10 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
           ]
 
         @impl Backpex.LiveResource
-        def fields(), do: @fields
+        def fields, do: @fields
 
         @impl Backpex.LiveResource
-        def filters(), do: @filters
+        def filters, do: @filters
 
         @impl Backpex.LiveResource
         def item_actions(defaults) do
