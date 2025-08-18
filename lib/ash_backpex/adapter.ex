@@ -181,6 +181,7 @@ defmodule AshBackpex.Adapter do
   Returns a list of items by given criteria.
   """
   @impl Backpex.Adapter
+  @spec list(keyword(), map(), module()) :: {:ok, list(map())} | {:error, term()}
   def list(criteria, assigns, live_resource) do
     config = live_resource.config(:adapter_config)
     load_fn = Keyword.get(config, :load)
@@ -191,40 +192,16 @@ defmodule AshBackpex.Adapter do
         _ -> []
       end
 
-    query = config[:resource] |> Ash.Query.new()
+    %{size: page_size, page: page_num} = Keyword.get(criteria, :pagination, %{size: 15, page: 1})
 
     query =
-      case Keyword.get(criteria, :filters) do
-        nil ->
-          query
+      config[:resource]
+      |> Ash.Query.new()
+      |> apply_filters(Keyword.get(criteria, :filters))
+      |> Ash.Query.page(limit: page_size, offset: (page_num - 1) * page_size)
 
-        filters ->
-          filters
-          |> Enum.reduce(query, fn filter, acc ->
-            cond do
-              filter.field == :empty_filter ->
-                acc
-
-              is_list(filter.value) ->
-                acc |> Ash.Query.filter(^Ash.Expr.ref(filter[:field]) in ^filter[:value])
-
-              true ->
-                acc |> Ash.Query.filter(^Ash.Expr.ref(filter[:field]) == ^filter[:value])
-            end
-          end)
-      end
-
-    %{size: page_size, page: page_num} = Keyword.get(criteria, :pagination)
-
-    query =
-      query
-      |> Ash.Query.page(
-        limit: page_size,
-        offset: (page_num - 1) * page_size
-      )
-
-    with {:ok, results} <- query |> Ash.read(load: load, actor: assigns.current_user) do
-      {:ok, results.results}
+    with {:ok, %{results: results}} <- query |> Ash.read(load: load, actor: assigns.current_user) do
+      {:ok, results}
     end
   end
 
@@ -232,10 +209,12 @@ defmodule AshBackpex.Adapter do
   Returns the number of items matching the given criteria.
   """
   @impl Backpex.Adapter
-  def count(_criteria, assigns, live_resource) do
+  def count(criteria, assigns, live_resource) do
     config = live_resource.config(:adapter_config)
 
     config[:resource]
+    |> Ash.Query.new()
+    |> apply_filters(Keyword.get(criteria, :filters))
     |> Ash.count(actor: assigns.current_user)
   end
 
@@ -295,5 +274,28 @@ defmodule AshBackpex.Adapter do
       :update ->
         Ash.Changeset.for_update(item, action, attrs)
     end
+  end
+
+  defp apply_filters(query, nil), do: query
+
+  defp apply_filters(query, filters) do
+    Enum.reduce(filters, query, fn filter, query ->
+      case filter do
+        {k, v} ->
+          Ash.Query.filter(query, ^Ash.Expr.ref(k) == ^v)
+
+        %{field: :empty_filter} ->
+          query
+
+        %{field: f, value: v} when is_list(v) ->
+          Ash.Query.filter(query, ^Ash.Expr.ref(f) in ^v)
+
+        %{field: f, value: v} ->
+          Ash.Query.filter(query, ^Ash.Expr.ref(f) == ^v)
+
+        filter ->
+          if Ash.Expr.expr?(filter), do: Ash.Query.filter(query, ^filter), else: query
+      end
+    end)
   end
 end

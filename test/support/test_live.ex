@@ -1,11 +1,10 @@
-# Test LiveResource modules that will be used in tests
 defmodule TestPostLive do
   @moduledoc false
 
   use AshBackpex.LiveResource
 
   backpex do
-    resource(TestDomain.Post)
+    resource(AshBackpex.TestDomain.Post)
     layout({TestLayout, :admin})
 
     fields do
@@ -19,7 +18,7 @@ defmodule TestPostLive do
       field(:published_at)
       field(:view_count)
       field(:rating)
-      # field(:tags)
+      field(:tags)
       # field(:metadata)
       field(:status)
       field(:author)
@@ -40,7 +39,7 @@ defmodule TestMinimalLive do
   use AshBackpex.LiveResource
 
   backpex do
-    resource(TestDomain.User)
+    resource(AshBackpex.TestDomain.User)
     layout({TestLayout, :admin})
   end
 end
@@ -51,7 +50,7 @@ defmodule TestCustomNamesLive do
   use AshBackpex.LiveResource
 
   backpex do
-    resource(TestDomain.Post)
+    resource(AshBackpex.TestDomain.Post)
     layout({TestLayout, :admin})
     singular_name("Article")
     plural_name("Articles")

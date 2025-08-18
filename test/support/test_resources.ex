@@ -1,13 +1,14 @@
-defmodule TestDomain.Post do
+defmodule AshBackpex.TestDomain.Post do
   @moduledoc false
 
   use Ash.Resource,
-    domain: TestDomain,
-    data_layer: AshSqlite.DataLayer
+    domain: AshBackpex.TestDomain,
+    data_layer: AshSqlite.DataLayer,
+    authorizers: [Ash.Policy.Authorizer]
 
   sqlite do
     table("posts")
-    repo(TestRepo)
+    repo(AshBackpex.TestRepo)
   end
 
   attributes do
@@ -18,7 +19,12 @@ defmodule TestDomain.Post do
     attribute(:published_at, :datetime)
     attribute(:view_count, :integer, default: 0)
     attribute(:rating, :float)
-    attribute(:tags, {:array, :string}, default: [])
+
+    attribute(:tags, {:array, :string},
+      default: [],
+      constraints: [one_of: [:food, :entertainment, :politics]]
+    )
+
     attribute(:metadata, :map, default: %{})
     attribute(:status, :atom, constraints: [one_of: [:draft, :published, :archived]])
     create_timestamp(:inserted_at)
@@ -26,8 +32,18 @@ defmodule TestDomain.Post do
   end
 
   relationships do
-    belongs_to(:author, TestDomain.User)
-    has_many(:comments, TestDomain.Comment)
+    belongs_to(:author, AshBackpex.TestDomain.User)
+    has_many(:comments, AshBackpex.TestDomain.Comment)
+  end
+
+  policies do
+    policy action_type([:update, :destroy, :read]) do
+      authorize_if relates_to_actor_via([:author])
+    end
+
+    policy action_type([:create, :read]) do
+      authorize_if actor_attribute_equals(:active, true)
+    end
   end
 
   calculations do
@@ -44,20 +60,37 @@ defmodule TestDomain.Post do
   end
 
   actions do
-    defaults([:create, :read, :update, :destroy])
+    defaults([:read, :update, :destroy])
+
+    create :create do
+      primary? true
+
+      accept([
+        :title,
+        :content,
+        :published,
+        :published_at,
+        :view_count,
+        :rating,
+        :tags,
+        :metadata,
+        :status,
+        :author_id
+      ])
+    end
   end
 end
 
-defmodule TestDomain.User do
+defmodule AshBackpex.TestDomain.User do
   @moduledoc false
 
   use Ash.Resource,
-    domain: TestDomain,
+    domain: AshBackpex.TestDomain,
     data_layer: AshSqlite.DataLayer
 
   sqlite do
     table("users")
-    repo(TestRepo)
+    repo(AshBackpex.TestRepo)
   end
 
   attributes do
@@ -70,24 +103,29 @@ defmodule TestDomain.User do
   end
 
   relationships do
-    has_many(:posts, TestDomain.Post, destination_attribute: :author_id)
+    has_many(:posts, AshBackpex.TestDomain.Post, destination_attribute: :author_id)
   end
 
   actions do
-    defaults([:create, :read, :update, :destroy])
+    defaults([:read, :update, :destroy])
+
+    create :create do
+      primary? true
+      accept([:name, :email, :active])
+    end
   end
 end
 
-defmodule TestDomain.Comment do
+defmodule AshBackpex.TestDomain.Comment do
   @moduledoc false
 
   use Ash.Resource,
-    domain: TestDomain,
+    domain: AshBackpex.TestDomain,
     data_layer: AshSqlite.DataLayer
 
   sqlite do
     table("comments")
-    repo(TestRepo)
+    repo(AshBackpex.TestRepo)
   end
 
   attributes do
@@ -98,11 +136,16 @@ defmodule TestDomain.Comment do
   end
 
   relationships do
-    belongs_to(:post, TestDomain.Post)
-    belongs_to(:author, TestDomain.User)
+    belongs_to(:post, AshBackpex.TestDomain.Post)
+    belongs_to(:author, AshBackpex.TestDomain.User)
   end
 
   actions do
-    defaults([:create, :read, :update, :destroy])
+    defaults([:read, :update, :destroy])
+
+    create :create do
+      primary? true
+      accept([:body, :post_id, :author_id])
+    end
   end
 end

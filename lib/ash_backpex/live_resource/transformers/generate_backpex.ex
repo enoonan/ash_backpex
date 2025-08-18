@@ -9,6 +9,9 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
     backpex =
       quote do
         @resource Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :resource)
+
+        @domain Ash.Resource.Info.domain(@resource)
+
         @data_layer_info_module ((@resource |> Ash.Resource.Info.data_layer() |> Atom.to_string()) <>
                                    ".Info")
                                 |> String.to_existing_atom()
@@ -53,7 +56,6 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
           case Ash.Resource.Info.attribute(@resource, attribute_name) do
             %{} = field ->
               field.constraints
-              |> Access.get(:items)
               |> Access.get(:one_of)
               |> is_list
 
@@ -309,37 +311,25 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
         def load(_, _, _), do: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :load)
 
         @impl Backpex.LiveResource
-        def can?(assigns, action, item) when action in [:index, :show, :edit, :delete, :new] do
-          deny_if_no_user_present_for_action? = fn resource, assigns, action_type, deny ->
-            action =
-              case action_type do
-                :create -> @create_action
-                :update -> @update_action
-                :read -> @read_action
-                :destroy -> @destroy_action
-              end
+        def can?(assigns, action, item \\ %{})
 
-            case Map.get(assigns, :current_user) do
-              nil ->
-                !deny
+        def can?(assigns, :new, _item) do
+          Ash.can?({@resource, @create_action}, Map.get(assigns, :current_user))
+        end
 
-              curr_user ->
-                # assigns
-                if Ash.Resource.Info.action(@resource, action) do
-                  Ash.can?({@resource, action}, curr_user)
-                else
-                  false
-                end
+        def can?(assigns, :index, _item) do
+          Ash.can?({@resource, @read_action}, Map.get(assigns, :current_user))
+        end
+
+        def can?(assigns, action, item) when action in [:show, :edit, :delete] do
+          action =
+            case action do
+              :show -> @read_action
+              :edit -> @update_action
+              :delete -> @destroy_action
             end
-          end
 
-          case action do
-            :index -> deny_if_no_user_present_for_action?.(@resource, assigns, :read, false)
-            :show -> deny_if_no_user_present_for_action?.(@resource, assigns, :read, false)
-            :edit -> deny_if_no_user_present_for_action?.(@resource, assigns, :update, true)
-            :delete -> deny_if_no_user_present_for_action?.(@resource, assigns, :destroy, true)
-            :new -> deny_if_no_user_present_for_action?.(@resource, assigns, :create, true)
-          end
+          Ash.can?({item, action}, Map.get(assigns, :current_user))
         end
 
         Backpex.LiveResource.__before_compile__(__ENV__)

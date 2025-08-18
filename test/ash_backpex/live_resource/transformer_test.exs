@@ -1,8 +1,8 @@
 defmodule AshBackpex.LiveResource.TransformerTest do
   use ExUnit.Case, async: true
 
-  describe "generated module callbacks" do
-    test "implements all required Backpex.LiveResource callbacks" do
+  describe "generated module callbacks :: it can" do
+    test "implement all required Backpex.LiveResource callbacks" do
       # Test required callbacks exist
       assert function_exported?(TestPostLive, :singular_name, 0)
       assert function_exported?(TestPostLive, :plural_name, 0)
@@ -17,17 +17,17 @@ defmodule AshBackpex.LiveResource.TransformerTest do
       assert function_exported?(TestPostLive, :metrics, 0)
     end
 
-    test "singular_name and plural_name are derived from resource name" do
+    test "derive singular_name and plural_name are from resource name" do
       assert TestMinimalLive.singular_name() == "User"
       assert TestMinimalLive.plural_name() == "Users"
     end
 
-    test "custom singular_name and plural_name from DSL" do
+    test "use custom singular_name and plural_name from DSL" do
       assert TestCustomNamesLive.singular_name() == "Article"
       assert TestCustomNamesLive.plural_name() == "Articles"
     end
 
-    test "fields callback returns correct field definitions" do
+    test "return correct field definitions from fields/0" do
       fields = TestPostLive.fields()
 
       # Check it returns a keyword list
@@ -48,7 +48,7 @@ defmodule AshBackpex.LiveResource.TransformerTest do
       assert content_field.module == Backpex.Fields.Textarea
     end
 
-    test "filters callback returns filter definitions" do
+    test "return correct filter definitions from filters/0" do
       filters = TestPostLive.filters()
 
       assert is_list(filters)
@@ -61,21 +61,21 @@ defmodule AshBackpex.LiveResource.TransformerTest do
       assert published_filter.label == "Published"
     end
 
-    test "panels callback returns empty list by default" do
+    test "return empty list by default from panels/0" do
       assert TestPostLive.panels() == []
     end
 
-    test "resource_actions callback returns empty list by default" do
+    test "return empty list by default from resource_actions/0" do
       assert TestPostLive.resource_actions() == []
     end
 
-    test "metrics callback returns empty list by default" do
+    test "return empty list by default from metrics/0" do
       assert TestPostLive.metrics() == []
     end
   end
 
-  describe "field type derivation" do
-    test "derives correct Backpex field types from Ash attributes" do
+  describe "field type derivation :: it can" do
+    test "derive correct Backpex field types from Ash attributes" do
       fields = TestPostLive.fields()
 
       # String -> Text
@@ -93,14 +93,17 @@ defmodule AshBackpex.LiveResource.TransformerTest do
       # Float -> Number
       assert Keyword.get(fields, :rating).module == Backpex.Fields.Number
 
-      # Array -> MultiSelect (should be derived correctly)
-      # assert Keyword.get(fields, :tags).module == Backpex.Fields.MultiSelect
+      # Atom with constraints -> Select
+      assert Keyword.get(fields, :status).module == Backpex.Fields.Select
+
+      # Array with constraints -> MultiSelect
+      assert Keyword.get(fields, :tags).module == Backpex.Fields.MultiSelect
 
       # Belongs to -> BelongsTo
       assert Keyword.get(fields, :author).module == Backpex.Fields.BelongsTo
     end
 
-    test "includes calculations as fields" do
+    test "include calculations as fields" do
       fields = TestPostLive.fields()
 
       # Calculation
@@ -110,25 +113,10 @@ defmodule AshBackpex.LiveResource.TransformerTest do
     end
   end
 
-  describe "authorization integration" do
-    test "can? callback exists and has correct arity" do
+  describe "authorization integration :: it can" do
+    test "export can?/3 callback" do
       Code.ensure_loaded!(TestPostLive)
       assert function_exported?(TestPostLive, :can?, 3)
-    end
-
-    test "can? defaults to true for index, show if no user is present" do
-      # Without user - should allow index
-      assigns = %{}
-      assert TestPostLive.can?(assigns, :index, nil) == true
-      assert TestPostLive.can?(assigns, :show, nil) == true
-    end
-
-    test "can? defaults to false for edit, delete if no user is present" do
-      # Without user - should deny edit, delete
-      assigns = %{}
-      assert TestPostLive.can?(assigns, :edit, nil) == false
-      assert TestPostLive.can?(assigns, :delete, nil) == false
-      assert TestPostLive.can?(assigns, :new, nil) == false
     end
   end
 end
