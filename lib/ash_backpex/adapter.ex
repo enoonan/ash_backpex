@@ -231,7 +231,11 @@ defmodule AshBackpex.Adapter do
     result =
       config[:resource]
       |> Ash.Query.filter(^Ash.Expr.ref(primary_key) in ^ids)
-      |> Ash.bulk_destroy(:destroy, %{}, return_records?: true, authorize?: false)
+      |> Ash.bulk_destroy(:destroy, %{},
+        strategy: :stream,
+        return_records?: true,
+        authorize?: false
+      )
 
     {:ok, result.records}
   end
