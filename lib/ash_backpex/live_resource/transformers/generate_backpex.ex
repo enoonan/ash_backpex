@@ -52,16 +52,19 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
           |> Enum.map_join(" ", &String.capitalize/1)
         end
 
-        has_one_of_constraint = fn attribute_name ->
+        get_one_of_constraint = fn attribute_name ->
           case Ash.Resource.Info.attribute(@resource, attribute_name) do
             %{} = field ->
               field.constraints
               |> Access.get(:one_of)
-              |> is_list
 
             _ ->
               false
           end
+        end
+
+        has_one_of_constraint = fn attribute_name ->
+          get_one_of_constraint.(attribute_name) |> is_list
         end
 
         select_or = fn attribute_name, default ->
@@ -198,6 +201,20 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
           end
         end
 
+        maybe_derive_options = fn attribute_name, module ->
+          case module do
+            m when m in [Backpex.Fields.Select, Backpex.Fields.Multiselect] ->
+              if attribute_name |> has_one_of_constraint.() do
+                attribute_name |> get_one_of_constraint.()
+              else
+                []
+              end
+
+            _ ->
+              nil
+          end
+        end
+
         @fields Spark.Dsl.Extension.get_entities(__MODULE__, [:backpex, :fields])
                 |> Enum.reverse()
                 |> Enum.reduce([], fn field, acc ->
@@ -212,7 +229,7 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                       only: field.only,
                       except: field.except,
                       default: field.default,
-                      options: field.options,
+                      options: field.options || field.attribute |> maybe_derive_options.(module),
                       display_field: field.display_field,
                       live_resource: field.live_resource,
                       panel: field.panel,
