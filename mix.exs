@@ -41,7 +41,8 @@ defmodule AshBackpex.MixProject do
   defp deps do
     [
       {:ash, "~> 3.0"},
-      {:backpex, "~> 0.14.0"},
+      {:ash_phoenix, "~> 2.3.14"},
+      {:backpex, git: "https://github.com/enoonan/backpex.git"},
       {:spark, "~> 2.0"},
       {:phoenix_html, "~> 3.0 or ~> 4.0"},
 
