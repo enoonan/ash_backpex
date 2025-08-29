@@ -2,6 +2,12 @@
 
 <!-- changelog -->
 
+## [v0.0.7]
+
+### Updates
+
+Just use main Backpex Hex repo. Still learning about Hex!
+
 ## [v0.0.6]
 
 ### Updates
