@@ -302,28 +302,31 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                                     ) || []
 
         use Backpex.LiveResource,
-          adapter: AshBackpex.Adapter,
-          layout: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :layout),
-          adapter_config:
             [
-              resource: @resource,
-              schema: @resource,
-              repo: @repo,
-              create_action: @create_action,
-              read_action: @read_action,
-              update_action: @update_action,
-              destroy_action: @destroy_action,
-              create_changeset:
-                Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :create_changeset) ||
-                  (&AshBackpex.Adapter.create_changeset/3),
-              update_changeset:
-                Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :update_changeset) ||
-                  (&AshBackpex.Adapter.update_changeset/3),
-              load:
-                case Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :load) do
-                  nil -> &AshBackpex.Adapter.load/3
-                  some_loads -> &__MODULE__.load/3
-                end,
+              adapter: AshBackpex.Adapter,
+              layout: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :layout),
+              adapter_config:
+                [
+                  resource: @resource,
+                  schema: @resource,
+                  repo: @repo,
+                  create_action: @create_action,
+                  read_action: @read_action,
+                  update_action: @update_action,
+                  destroy_action: @destroy_action,
+                  create_changeset:
+                    Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :create_changeset) ||
+                      (&AshBackpex.Adapter.create_changeset/3),
+                  update_changeset:
+                    Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :update_changeset) ||
+                      (&AshBackpex.Adapter.update_changeset/3),
+                  load:
+                    case Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :load) do
+                      nil -> &AshBackpex.Adapter.load/3
+                      some_loads -> &__MODULE__.load/3
+                    end
+                ]
+                |> Keyword.reject(&(&1 |> elem(1) |> is_nil)),
               pubsub: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :pubsub),
               per_page_options:
                 Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :per_page_options),
