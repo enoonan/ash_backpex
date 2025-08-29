@@ -308,6 +308,80 @@ defmodule AshBackpex.LiveResource.Dsl do
         type: :keyword_list,
         doc:
           "Panels to be displayed in the admin create/edit forms. Format: [panel_key: \"Panel Title\"]"
+      ],
+      pubsub: [
+        doc: "PubSub configuration.",
+        type: :keyword_list,
+        required: false,
+        keys: [
+          server: [
+            doc: "PubSub server of the project.",
+            required: false,
+            type: :atom
+          ],
+          topic: [
+            doc: """
+            The topic for PubSub.
+
+            By default a stringified version of the live resource module name is used.
+            """,
+            required: false,
+            type: :string
+          ]
+        ]
+      ],
+      per_page_options: [
+        doc: "The page size numbers you can choose from.",
+        type: {:list, :integer},
+        default: [15, 50, 100]
+      ],
+      per_page_default: [
+        doc: "The default page size number.",
+        type: :integer,
+        default: 15
+      ],
+      init_order: [
+        doc: "Order that will be used when no other order options are given.",
+        default: %{by: :id, direction: :asc},
+        type: {
+          :or,
+          [
+            {:fun, 1},
+            map: [
+              by: [
+                doc: "The column used for ordering.",
+                type: :atom
+              ],
+              direction: [
+                doc: "The order direction",
+                type: :atom
+              ]
+            ]
+          ]
+        }
+      ],
+      fluid?: [
+        doc: "If the layout fills out the entire width.",
+        type: :boolean,
+        default: false
+      ],
+      full_text_search: [
+        doc: "The name of the generated column used for full text search.",
+        type: :atom,
+        default: nil
+      ],
+      save_and_continue_button?: [
+        doc: "If the \"Save & Continue editing\" button is shown on form views.",
+        type: :boolean,
+        default: false
+      ],
+      on_mount: [
+        doc: """
+        An optional list of hooks to attach to the mount lifecycle. Passing a single value is also accepted.
+        See https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.html#on_mount/1
+        """,
+        type: {:or, [:mod_arg, :atom, {:list, {:or, [:mod_arg, :atom]}}]},
+        required: false
       ]
     ],
     sections: [@fields, @filters, @item_actions]
