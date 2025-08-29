@@ -27,3 +27,4 @@ ash_backpex-*.tar
 /tmp/
 
 .elixir_ls
+.expert

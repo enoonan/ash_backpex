@@ -4,7 +4,7 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
   """
 
   use Spark.Dsl.Transformer
-
+  # credo:disable-for-this-file Credo.Check.Refactor.CyclomaticComplexity
   def transform(dsl_state) do
     backpex =
       quote do
@@ -363,32 +363,33 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
         end
 
         def maybe_default_options(assigns) do
-          # TODO: This seems to be throwing a warning...
-          with %{field: {attribute_name, _field_cfg}} <- assigns do
-            options =
-              case Ash.Resource.Info.attribute(@resource, attribute_name) do
-                %{constraints: constraints} ->
-                  case Keyword.get(constraints, :items) do
-                    items when is_list(items) -> Keyword.get(items, :one_of, nil)
-                    _ -> Keyword.get(constraints, :one_of, nil)
-                  end
+          case assigns do
+            %{field: {attribute_name, _field_cfg}} ->
+              options =
+                case Ash.Resource.Info.attribute(@resource, attribute_name) do
+                  %{constraints: constraints} ->
+                    case Keyword.get(constraints, :items) do
+                      items when is_list(items) -> Keyword.get(items, :one_of, nil)
+                      _ -> Keyword.get(constraints, :one_of, nil)
+                    end
 
-                _ ->
-                  []
-              end
+                  _ ->
+                    []
+                end
 
-            options
-            |> Enum.map(fn atom_opt ->
-              {
-                atom_opt
-                |> Atom.to_string()
-                |> String.split("_")
-                |> Enum.map_join(" ", &String.capitalize/1),
-                atom_opt
-              }
-            end)
-          else
-            _ -> []
+              options
+              |> Enum.map(fn atom_opt ->
+                {
+                  atom_opt
+                  |> Atom.to_string()
+                  |> String.split("_")
+                  |> Enum.map_join(" ", &String.capitalize/1),
+                  atom_opt
+                }
+              end)
+
+            _ ->
+              []
           end
         end
 

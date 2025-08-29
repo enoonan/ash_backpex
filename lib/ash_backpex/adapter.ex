@@ -72,37 +72,30 @@ defmodule AshBackpex.Adapter do
   use Backpex.Adapter, config_schema: @config_schema
 
   @moduledoc """
-    ```
-    use Backpex.LiveResource,
-      adapter: InsiWeb.BackpexAshAdapter,
-      adapter_config: [
-        resource: User,
-        schema: User,
-        repo: Insi.Repo,
-        create_action: :create_with_plaintext_pwd,
-        create_changeset: &InsiWeb.BackpexAshAdapter.create_changeset/3,
-        update_changeset: &InsiWeb.BackpexAshAdapter.update_changeset/3,
-        load: &InsiWeb.BackpexAshAdapter.load/3
-      ],
-      layout: {InsiWeb.Layouts, :admin}
-    ```
-
-    You can specify a default create_action or update_action, which must refer to an action on the resource.
-
-    You must specify the create_changeset, update_changeset, and load functions because for some reason Backpex is not respecting the provided default Nimble values.
-    Override them in your resource if necessary.
-
-
     The `Backpex.Adapter` to connect your `Backpex.LiveResource` to an `Ash.Resource`.
+
+    Typically, you should not need to reference this Adapter directly. Sensible defaults will be provided when using AshBackpex.LiveResource
+  ```elixir
+  defmodule MyAppWeb.Live.PostLive do
+    use AshBackpex.Live
+
+    backpex do
+      resource MyApp.Blog.Post
+      load [:author, :comments]
+      fields do
+        field :title, Backpex.Fields.Text
+        field :author, Backpex.Fields.BelongsTo
+        field :comments, Backpex.Fields.HasMany, only: [:show]
+      end
+      singular_label "Post"
+      plural_label "Posts"
+    end
+  end
+  ```
 
     ## `adapter_config`
 
     #{NimbleOptions.docs(@config_schema)}
-
-    > ### Work in progress {: .error}
-    >
-    > The `Backpex.Adapters.Ash` is currently not usable! It can barely list and show items. We will work on this as we continue to implement  the `Backpex.Adapter` pattern throughout the codebase.
-
   """
 
   require Ash.Query
@@ -219,13 +212,13 @@ defmodule AshBackpex.Adapter do
   """
   @impl Backpex.Adapter
   def insert(changeset, _live_resource) do
-    if !changeset.valid? do
-      {:error, changeset}
-    else
+    if changeset.valid? do
       case changeset |> Ash.create(authorize?: false) do
         {:ok, item} -> {:ok, item}
         {:error, error} -> {:error, changeset |> Ash.Changeset.add_error(error)}
       end
+    else
+      {:error, changeset}
     end
   end
 
@@ -234,7 +227,14 @@ defmodule AshBackpex.Adapter do
   """
   @impl Backpex.Adapter
   def update(changeset, _live_resource) do
-    changeset |> Ash.update(authorize?: false)
+    if changeset.valid? do
+      case changeset |> Ash.update(authorize?: false) do
+        {:ok, item} -> {:ok, item}
+        {:error, error} -> {:error, changeset |> Ash.Changeset.add_error(error)}
+      end
+    else
+      {:error, changeset}
+    end
   end
 
   @doc """

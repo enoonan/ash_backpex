@@ -21,6 +21,12 @@ defmodule Demo.Blog.Post do
       public? true
     end
 
+    attribute :rating, :integer do
+      default 5
+      public? true
+      constraints [min: 1, max: 5]
+    end
+
     attribute :published, :boolean do
       default false
       allow_nil? false
@@ -47,8 +53,7 @@ defmodule Demo.Blog.Post do
   end
 
   actions do
-    default_accept [:title, :content, :published]
-
+    default_accept [:title, :content, :published, :rating]
     defaults [:create, :read, :update, :destroy]
   end
 end

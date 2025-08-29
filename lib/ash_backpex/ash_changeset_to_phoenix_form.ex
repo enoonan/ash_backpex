@@ -1,469 +1,211 @@
-if Code.ensure_loaded?(Phoenix.HTML) do
-  defimpl Phoenix.HTML.FormData, for: Ash.Changeset do
-    def to_form(changeset, opts) do
-      %{data: data, action: action, action_type: action_type} = changeset
-      errors = form_for_errors(changeset, action) |> dbg
-      # dbg(changeset)
-      as =
-        case Keyword.get(opts, :as) do
-          v when is_binary(v) -> v
-          v when is_atom(v) -> Atom.to_string(v)
-          _ -> "form"
-        end
+defimpl Phoenix.HTML.FormData, for: Ash.Changeset do
+  @moduledoc """
+  Implementation of Phoenix.HTML.FormData protocol for Ash.Changeset.
 
-      opts = Keyword.put(opts, :as, as)
+  This implementation allows Ash changesets to be used directly with Phoenix forms,
+  providing access to changeset attributes, arguments, and validation errors.
+  """
 
-      params =
-        Map.merge(changeset.arguments, changeset.attributes)
-        |> Map.take([:label, :expires_in_qty, :expires_in_unit])
+  def to_form(changeset, opts) do
+    {name, _params, opts} = name_params_and_opts(changeset, opts)
+    {errors, opts} = Keyword.pop(opts, :errors, [])
+    {action, opts} = Keyword.pop(opts, :action, nil)
+    id = Keyword.get(opts, :id) || name
 
-      dbg(changeset.arguments)
-
-      prepare_source = fn chg ->
-        chg |> Ash.Changeset.set_arguments(changeset.arguments)
-        # chg = if changeset.errors |> is_list and changeset.errors |> length > 0 do
-        #   # chg |> Ash.Changeset.add_error(errors)
-        #   #
-        #   else
-        #     chg
-        # end
-      end
-
-      case action_type do
-        :create ->
-          ash_form =
-            data.__struct__
-            |> AshPhoenix.Form.for_create(action.name,
-              as: as,
-              domain: changeset.domain,
-              prepare_source: prepare_source,
-              params: params
-            )
-
-          phx_form = Phoenix.Component.to_form(ash_form, opts)
-          flattened_errors = extract_and_flatten_errors(ash_form, changeset) |> dbg
-          Map.put(phx_form, :errors, flattened_errors) |> dbg
-
-        :update ->
-          data |> Ash.Changeset.for_update(action, opts)
-      end
+    unless is_binary(id) or is_nil(id) do
+      raise ArgumentError, ":id option in form_for must be a binary/string, got: #{inspect(id)}"
     end
 
-    def to_form(source, %{action: parent_action} = form, field, opts) do
-      if Keyword.has_key?(opts, :default) do
-        raise ArgumentError,
-              ":default is not supported on inputs_for with changesets. " <>
-                "The default value must be set in the changeset data"
-      end
+    # Use changeset errors plus any additional errors passed in
+    all_errors = changeset_errors_to_form_errors(changeset) ++ List.wrap(errors)
 
-      {prepend, opts} = Keyword.pop(opts, :prepend, [])
-      {append, opts} = Keyword.pop(opts, :append, [])
-      {name, opts} = Keyword.pop(opts, :as)
-      {id, opts} = Keyword.pop(opts, :id)
+    %Phoenix.HTML.Form{
+      source: changeset,
+      impl: __MODULE__,
+      id: id,
+      name: name,
+      params: build_params(changeset),
+      data: changeset.data || %{},
+      errors: all_errors,
+      action: action,
+      options: opts
+    }
+  end
 
-      id = to_string(id || form.id <> "_#{field}")
-      name = to_string(name || form.name <> "[#{field}]")
+  def to_form(changeset, form, field, opts) when is_atom(field) or is_binary(field) do
+    {default, opts} = Keyword.pop(opts, :default, %{})
+    {prepend, opts} = Keyword.pop(opts, :prepend, [])
+    {append, opts} = Keyword.pop(opts, :append, [])
+    {name, opts} = Keyword.pop(opts, :as)
+    {id, opts} = Keyword.pop(opts, :id)
+    {hidden, opts} = Keyword.pop(opts, :hidden, [])
+    {action, opts} = Keyword.pop(opts, :action, form.action)
 
-      case find_inputs_for_type!(source, field) do
-        {:one, cast, module} ->
-          changesets =
-            case Map.fetch(source.relationships, field) do
-              {:ok, nil} ->
-                []
+    id = to_string(id || form.id <> "_#{field}")
+    name = to_string(name || form.name <> "[#{field}]")
 
-              {:ok, map} ->
-                [validate_map!(map, field)]
+    field_string = field_to_string(field)
+    params = get_in(form.params, [field_string])
 
-              _ ->
-                [validate_map!(assoc_from_data(source.data, field), field) || module.__struct__()]
-            end
+    cond do
+      # cardinality: one
+      is_map(default) ->
+        [
+          %Phoenix.HTML.Form{
+            source: changeset,
+            impl: __MODULE__,
+            id: id,
+            name: name,
+            data: default,
+            action: action,
+            params: params || %{},
+            hidden: hidden,
+            options: opts
+          }
+        ]
 
-          for changeset <- skip_replaced(changesets) do
-            %{data: data, params: params} =
-              changeset = to_changeset(changeset, parent_action, module, cast, nil)
-
-            %Phoenix.HTML.Form{
-              source: changeset,
-              action: parent_action,
-              impl: __MODULE__,
-              id: id,
-              name: name,
-              errors: form_for_errors(changeset, parent_action),
-              data: data,
-              params: params || %{},
-              hidden: form_for_hidden(data),
-              options: opts
-            }
+      # cardinality: many
+      is_list(default) ->
+        entries =
+          if params do
+            params
+            |> Enum.sort_by(&elem(&1, 0))
+            |> Enum.map(&{nil, elem(&1, 1)})
+          else
+            Enum.map(prepend ++ default ++ append, &{&1, %{}})
           end
 
-        {:many, cast, module} ->
-          changesets =
-            validate_list!(Map.get(source.relationships, field), field) ||
-              validate_list!(assoc_from_data(source.data, field), field) || []
+        for {{data, params}, index} <- Enum.with_index(entries) do
+          index_string = Integer.to_string(index)
 
-          changesets =
-            if form.params[Atom.to_string(field)] do
-              changesets
-            else
-              prepend ++ changesets ++ append
-            end
-
-          changesets = skip_replaced(changesets)
-
-          for {changeset, index} <- Enum.with_index(changesets) do
-            %{data: data, params: params} =
-              changeset = to_changeset(changeset, parent_action, module, cast, index)
-
-            index_string = Integer.to_string(index)
-
-            %Phoenix.HTML.Form{
-              source: changeset,
-              impl: __MODULE__,
-              action: parent_action,
-              id: id <> "_" <> index_string,
-              name: name <> "[" <> index_string <> "]",
-              index: index,
-              errors: form_for_errors(changeset, parent_action),
-              data: data,
-              params: params || %{},
-              hidden: form_for_hidden(data),
-              options: opts
-            }
-          end
-      end
-    end
-
-    def input_value(%{attributes: attributes, data: data}, %{params: params}, field)
-        when is_atom(field) do
-      case attributes do
-        %{^field => value} ->
-          value
-
-        %{} ->
-          string = Atom.to_string(field)
-
-          case params do
-            %{^string => value} -> value
-            %{} -> Map.get(data, field)
-          end
-      end
-    end
-
-    def input_value(_data, _form, field) do
-      raise ArgumentError, "expected field to be an atom, got: #{inspect(field)}"
-    end
-
-    def input_type(changeset, _, field) do
-      # Get attribute type from the resource schema
-      resource = changeset.resource
-
-      if function_exported?(resource, :__ash_attributes__, 0) do
-        attribute = Enum.find(resource.__ash_attributes__(), &(&1.name == field))
-
-        case attribute && attribute.type do
-          :integer ->
-            :number_input
-
-          :boolean ->
-            :checkbox
-
-          :date ->
-            :date_select
-
-          :time ->
-            :time_select
-
-          :utc_datetime ->
-            :datetime_select
-
-          :naive_datetime ->
-            :datetime_select
-
-          Ash.Type.Integer ->
-            :number_input
-
-          Ash.Type.Boolean ->
-            :checkbox
-
-          Ash.Type.Date ->
-            :date_select
-
-          Ash.Type.Time ->
-            :time_select
-
-          Ash.Type.UtcDatetime ->
-            :datetime_select
-
-          Ash.Type.NaiveDatetime ->
-            :datetime_select
-
-          # Handle custom types that implement a primitive type
-          type when not is_nil(type) ->
-            try do
-              if function_exported?(type, :storage_type, 1) do
-                case type.storage_type(attribute.constraints || []) do
-                  :integer -> :number_input
-                  :boolean -> :checkbox
-                  :date -> :date_select
-                  :time -> :time_select
-                  :utc_datetime -> :datetime_select
-                  :naive_datetime -> :datetime_select
-                  _ -> :text_input
-                end
-              else
-                :text_input
-              end
-            rescue
-              _ -> :text_input
-            end
-
-          _ ->
-            :text_input
+          %Phoenix.HTML.Form{
+            source: changeset,
+            impl: __MODULE__,
+            index: index,
+            action: action,
+            id: id <> "_" <> index_string,
+            name: name <> "[" <> index_string <> "]",
+            data: data,
+            params: params,
+            hidden: hidden,
+            options: opts
+          }
         end
-      else
-        :text_input
-      end
-    end
-
-    def input_validations(changeset, _, field) do
-      # Extract validations from Ash changeset
-      validations = extract_ash_validations(changeset, field)
-
-      # Check if field is required
-      required? = field_required?(changeset, field)
-
-      [required: required?] ++ validations
-    end
-
-    # Private helper functions
-
-    defp extract_ash_validations(changeset, field) do
-      resource = changeset.resource
-
-      # Get attribute definition to check constraints
-      if function_exported?(resource, :__ash_attributes__, 0) do
-        attribute = Enum.find(resource.__ash_attributes__(), &(&1.name == field))
-
-        case attribute do
-          nil -> []
-          attr -> constraints_to_validations(attr.constraints || [], field, attr.type)
-        end
-      else
-        []
-      end
-    end
-
-    defp constraints_to_validations(constraints, _field, type) do
-      Enum.flat_map(constraints, fn
-        {:max_length, val} -> [maxlength: val]
-        {:min_length, val} -> [minlength: val]
-        {:max, val} when type in [:integer, Ash.Type.Integer] -> [max: val]
-        {:min, val} when type in [:integer, Ash.Type.Integer] -> [min: val]
-        {:greater_than, val} when type in [:integer, Ash.Type.Integer] -> [min: val + 1]
-        {:greater_than_or_equal_to, val} when type in [:integer, Ash.Type.Integer] -> [min: val]
-        {:less_than, val} when type in [:integer, Ash.Type.Integer] -> [max: val - 1]
-        {:less_than_or_equal_to, val} when type in [:integer, Ash.Type.Integer] -> [max: val]
-        _ -> []
-      end) ++ type_specific_validations(type)
-    end
-
-    defp type_specific_validations(type) do
-      case type do
-        :integer -> [step: 1]
-        Ash.Type.Integer -> [step: 1]
-        _ -> [step: "any"]
-      end
-    end
-
-    defp field_required?(changeset, field) do
-      resource = changeset.resource
-      action = changeset.action
-
-      cond do
-        # Check if the action exists and has required arguments/attributes
-        action && function_exported?(resource, :__ash_actions__, 0) ->
-          actions = resource.__ash_actions__()
-          action_config = Enum.find(actions, &(&1.name == action.name && &1.type == action.type))
-
-          case action_config do
-            nil ->
-              false
-
-            config ->
-              # Check if field is in action's required attributes
-              required_attrs =
-                Enum.filter(config.accept || [], fn attr_name ->
-                  attr = Enum.find(resource.__ash_attributes__(), &(&1.name == attr_name))
-                  attr && !attr.allow_nil?
-                end)
-
-              field in required_attrs
-          end
-
-        # Fallback: check attribute definition
-        function_exported?(resource, :__ash_attributes__, 0) ->
-          attribute = Enum.find(resource.__ash_attributes__(), &(&1.name == field))
-          attribute && !attribute.allow_nil?
-
-        true ->
-          false
-      end
-    end
-
-    defp assoc_from_data(data, field) do
-      case Map.get(data, field) do
-        %Ash.NotLoaded{} -> nil
-        value -> value
-      end
-    end
-
-    defp skip_replaced(changesets) do
-      Enum.reject(changesets, fn
-        %Ash.Changeset{action: %{type: :destroy}} -> true
-        _ -> false
-      end)
-    end
-
-    defp find_inputs_for_type!(changeset, field) do
-      resource = changeset.resource
-
-      if function_exported?(resource, :__ash_relationships__, 0) do
-        relationship = Enum.find(resource.__ash_relationships__(), &(&1.name == field))
-
-        case relationship do
-          nil ->
-            raise ArgumentError,
-                  "could not generate inputs for #{inspect(field)} from #{inspect(resource)}. " <>
-                    "Check the field exists and it is a relationship"
-
-          %{cardinality: :one, destination: module} ->
-            {:one, nil, module}
-
-          %{cardinality: :many, destination: module} ->
-            {:many, nil, module}
-        end
-      else
-        raise ArgumentError,
-              "could not generate inputs for #{inspect(field)} from #{inspect(resource)}. " <>
-                "Resource does not define relationships"
-      end
-    end
-
-    defp to_changeset(%Ash.Changeset{} = changeset, parent_action, _module, _cast, _index),
-      do: apply_action(changeset, parent_action)
-
-    defp to_changeset(%{} = _data, parent_action, module, nil, _index),
-      do: apply_action(Ash.Changeset.new(module), parent_action)
-
-    # If the parent changeset had no action, we need to remove the action
-    # from children changeset so we ignore all errors accordingly.
-    defp apply_action(changeset, nil),
-      do: %{changeset | action: nil}
-
-    defp apply_action(changeset, _action),
-      do: changeset
-
-    defp validate_list!(value, _what) when is_list(value) or is_nil(value), do: value
-
-    defp validate_list!(value, what) do
-      raise ArgumentError, "expected #{what} to be a list, got: #{inspect(value)}"
-    end
-
-    defp validate_map!(value, _what) when is_map(value) or is_nil(value), do: value
-
-    defp validate_map!(value, what) do
-      raise ArgumentError, "expected #{what} to be a map/struct, got: #{inspect(value)}"
-    end
-
-    defp form_for_errors(_changeset, nil = _action), do: []
-    defp form_for_errors(_changeset, :ignore = _action), do: []
-
-    defp form_for_errors(%Ash.Changeset{errors: errors}, _action) do
-      Enum.map(errors, &{&1.field, &1.__struct__.message(&1)})
-    end
-
-    defp form_for_hidden(%{__struct__: module} = data) do
-      if function_exported?(module, :__ash_primary_key__, 0) do
-        keys = module.__ash_primary_key__()
-        for k <- keys, v = Map.get(data, k), do: {k, v}
-      else
-        []
-      end
-    rescue
-      _ -> []
-    end
-
-    defp form_for_hidden(_), do: []
-
-    defp form_for_name(%{__struct__: module}) do
-      module
-      |> Module.split()
-      |> List.last()
-      |> Macro.underscore()
-    end
-
-    defp form_for_name(_) do
-      raise ArgumentError,
-            "cannot generate name for changeset where the data is not backed by a struct. " <>
-              "You must either pass the :as option to form/form_for or use a struct-based changeset"
-    end
-
-    # Ash resources don't have the same concept of :loaded state like Ecto
-    # We'll determine the method based on whether there's an ID present
-    defp form_for_method(%{__struct__: module} = data) do
-      if function_exported?(module, :__ash_primary_key__, 0) do
-        primary_keys = module.__ash_primary_key__()
-        has_id = Enum.any?(primary_keys, &Map.get(data, &1))
-        if has_id, do: "put", else: "post"
-      else
-        "post"
-      end
-    rescue
-      _ -> "post"
-    end
-
-    defp form_for_method(_), do: "post"
-
-    defp extract_and_flatten_errors(ash_form, changeset) do
-      # Get errors from both the AshPhoenix form and original changeset
-      ash_form_errors = AshPhoenix.Form.errors(ash_form) || []
-      changeset_errors = changeset.errors || []
-
-      # Process both error sources
-      (ash_form_errors ++ changeset_errors)
-      |> Enum.flat_map(&process_error/1)
-    end
-
-    defp process_error(%{field: field, message: msg, vars: vars}) do
-      # Handle Ash error structs
-      translated_msg = translate_message(msg, vars)
-      [{field, {translated_msg, []}}]
-    end
-
-    defp process_error({field, {msg, opts}}) do
-      # Handle tuple format
-      translated_msg = translate_message(msg, opts)
-      [{field, {translated_msg, []}}]
-    end
-
-    defp process_error({field, msg}) when is_binary(msg) do
-      # Handle simple string format
-      [{field, {clean_message(msg), []}}]
-    end
-
-    defp process_error(_), do: []
-
-    defp translate_message(msg, vars) when is_list(vars) do
-      Enum.reduce(vars, msg, fn {key, value}, acc ->
-        String.replace(acc, "%{#{key}}", to_string(value))
-      end)
-    end
-
-    defp clean_message(msg) when is_binary(msg) do
-      msg
-      |> String.split("\n\n")
-      |> List.first()
-      |> String.trim()
     end
   end
+
+  def input_value(changeset, %{data: data, params: params}, field)
+      when is_atom(field) or is_binary(field) do
+    key = field_to_string(field)
+
+    case params do
+      %{^key => value} ->
+        value
+
+      %{} ->
+        # Try to get the value from changeset first, then fall back to data
+        case get_changeset_value(changeset, field) do
+          nil -> Map.get(data, field)
+          value -> value
+        end
+    end
+  end
+
+  def input_validations(_changeset, _form, _field) do
+    # Return empty list for now - could be enhanced to return HTML5 validations
+    # based on Ash resource attribute constraints
+    []
+  end
+
+  # Private helper functions
+
+  defp name_params_and_opts(changeset, opts) do
+    case Keyword.pop(opts, :as) do
+      {nil, opts} ->
+        # Default form name based on resource name
+        default_name =
+          changeset.resource
+          |> Module.split()
+          |> List.last()
+          |> Macro.underscore()
+
+        {default_name, build_params(changeset), opts}
+
+      {name, opts} ->
+        {to_string(name), build_params(changeset), opts}
+    end
+  end
+
+  defp build_params(changeset) do
+    # Combine changeset params with current attribute and argument values
+    base_params = changeset.params || %{}
+
+    # Add current attribute values
+    attribute_params =
+      changeset.attributes
+      |> Enum.into(%{}, fn {key, value} -> {to_string(key), value} end)
+
+    # Add current argument values
+    argument_params =
+      changeset.arguments
+      |> Enum.into(%{}, fn {key, value} -> {to_string(key), value} end)
+
+    # Merge with changeset params taking precedence
+    Map.merge(Map.merge(attribute_params, argument_params), base_params)
+  end
+
+  defp get_changeset_value(changeset, field) when is_atom(field) do
+    # Try to get from arguments first, then attributes, then data
+    case Ash.Changeset.fetch_argument(changeset, field) do
+      {:ok, value} ->
+        value
+
+      :error ->
+        case Ash.Changeset.fetch_change(changeset, field) do
+          {:ok, value} -> value
+          :error -> Ash.Changeset.get_data(changeset, field)
+        end
+    end
+  end
+
+  defp get_changeset_value(changeset, field) when is_binary(field) do
+    field_atom = String.to_existing_atom(field)
+    get_changeset_value(changeset, field_atom)
+  rescue
+    ArgumentError -> nil
+  end
+
+  defp changeset_errors_to_form_errors(changeset) do
+    Enum.map(changeset.errors, &ash_error_to_form_error/1)
+  end
+
+  defp ash_error_to_form_error(%{field: field} = err) when not is_nil(field) do
+    {field, Exception.message(err)}
+  end
+
+  defp ash_error_to_form_error(%{fields: [field | _], message: message}) do
+    {field, message}
+  end
+
+  defp ash_error_to_form_error(%{fields: fields, message: message})
+       when is_list(fields) and fields != [] do
+    {hd(fields), message}
+  end
+
+  defp ash_error_to_form_error(%{message: message}) do
+    {:base, message}
+  end
+
+  defp ash_error_to_form_error(error) when is_binary(error) do
+    {:base, error}
+  end
+
+  defp ash_error_to_form_error(error) do
+    # Fallback for any other error format
+    {:base, inspect(error)}
+  end
+
+  # Normalize field name to string version
+  defp field_to_string(field) when is_atom(field), do: Atom.to_string(field)
+  defp field_to_string(field) when is_binary(field), do: field
 end

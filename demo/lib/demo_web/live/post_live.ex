@@ -16,6 +16,8 @@ defmodule DemoWeb.PostLive do
 
       field(:published)
 
+      field :rating
+
       field :word_count do
         except([:new, :edit])
       end
