@@ -2,6 +2,16 @@
 
 <!-- changelog -->
 
+## [v0.0.6]
+
+### Updates
+
+Improve support for Ash `{:array, type}` parameters including MultiSelect
+
+Ensure errors display correctly
+
+Use up-to-date fork of main Backpex repo with AshBackpex-specific fixes (temporary!)
+
 ## [v0.0.5]
 
 ### Updates

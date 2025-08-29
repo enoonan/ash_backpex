@@ -77,53 +77,65 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
           end
         end
 
+        derive_type = fn attribute_name ->
+          cond do
+            !is_nil(Ash.Resource.Info.attribute(@resource, attribute_name)) ->
+              Ash.Resource.Info.attribute(@resource, attribute_name).type
+
+            !is_nil(Ash.Resource.Info.relationship(@resource, attribute_name)) ->
+              Ash.Resource.Info.relationship(@resource, attribute_name).type
+
+            !is_nil(Ash.Resource.Info.calculation(@resource, attribute_name)) ->
+              Ash.Resource.Info.calculation(@resource, attribute_name).type
+
+            !is_nil(Ash.Resource.Info.aggregate(@resource, attribute_name)) ->
+              Ash.Resource.Info.aggregate(@resource, attribute_name).kind
+
+            true ->
+              att = inspect(attribute_name)
+
+              module_shortname =
+                __MODULE__ |> Atom.to_string() |> String.split(".") |> List.last()
+
+              raise """
+
+              Unable to derive the `Backpex.Field` module for the #{att} field in #{module_shortname}.
+
+              To debug:
+
+                * Ensure #{att} is spelled correctly, and is a valid attribute, relation,
+                  calculation, aggregate or other loadable entity on the #{module_shortname} resource.
+
+                * If a default field module still cannot be derived, specify it manually by using the `module` macro. E.g.:
+
+                  fields do
+                    field #{att} do
+                      module Backpex.Fields.Text
+                    end
+                  end
+              """
+          end
+        end
+
         multiselect_or = fn attribute_name, default ->
-          if attribute_name |> has_one_of_constraint.() do
-            Backpex.Fields.MultiSelect
-          else
-            default
+          case derive_type.(attribute_name) do
+            {:array, Ash.Type.Atom} ->
+              if attribute_name |> has_one_of_constraint.() do
+                Backpex.Fields.MultiSelect
+              else
+                default
+              end
+
+            {:array, _} ->
+              Backpex.Fields.MultiSelect
+
+            _ ->
+              default
           end
         end
 
         try_derive_module = fn attribute_name ->
-          type =
-            cond do
-              !is_nil(Ash.Resource.Info.attribute(@resource, attribute_name)) ->
-                Ash.Resource.Info.attribute(@resource, attribute_name).type
-
-              !is_nil(Ash.Resource.Info.relationship(@resource, attribute_name)) ->
-                Ash.Resource.Info.relationship(@resource, attribute_name).type
-
-              !is_nil(Ash.Resource.Info.calculation(@resource, attribute_name)) ->
-                Ash.Resource.Info.calculation(@resource, attribute_name).type
-
-              !is_nil(Ash.Resource.Info.aggregate(@resource, attribute_name)) ->
-                Ash.Resource.Info.aggregate(@resource, attribute_name).kind
-
-              true ->
-                att = inspect(attribute_name)
-
-                module_shortname =
-                  __MODULE__ |> Atom.to_string() |> String.split(".") |> List.last()
-
-                raise """
-
-                Unable to derive the `Backpex.Field` module for the #{att} field in #{module_shortname}.
-
-                To debug:
-
-                  * Ensure #{att} is spelled correctly, and is a valid attribute, relation,
-                    calculation, aggregate or other loadable entity on the #{module_shortname} resource.
-
-                  * If a default field module still cannot be derived, specify it manually by using the `module` macro. E.g.:
-
-                    fields do
-                      field #{att} do
-                        module Backpex.Fields.Text
-                      end
-                    end
-                """
-            end
+          type = derive_type.(attribute_name)
 
           case type do
             Ash.Type.Boolean ->

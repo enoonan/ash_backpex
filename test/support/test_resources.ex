@@ -22,7 +22,7 @@ defmodule AshBackpex.TestDomain.Post do
 
     attribute(:tags, {:array, :string},
       default: [],
-      constraints: [one_of: [:food, :entertainment, :politics]]
+      constraints: [items: [match: ~r/^(food|entertainment|politics)$/]]
     )
 
     attribute(:metadata, :map, default: %{})
