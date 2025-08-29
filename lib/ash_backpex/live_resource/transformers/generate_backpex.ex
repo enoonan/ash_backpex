@@ -54,12 +54,14 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
 
         get_one_of_constraint = fn attribute_name ->
           case Ash.Resource.Info.attribute(@resource, attribute_name) do
-            %{} = field ->
-              field.constraints
-              |> Access.get(:one_of)
+            %{constraints: constraints} ->
+              case Keyword.get(constraints, :items) do
+                items when is_list(items) -> Keyword.get(items, :one_of, nil)
+                _ -> Keyword.get(constraints, :one_of, nil)
+              end
 
             _ ->
-              false
+              nil
           end
         end
 
@@ -203,11 +205,22 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
 
         maybe_derive_options = fn attribute_name, module ->
           case module do
-            m when m in [Backpex.Fields.Select, Backpex.Fields.Multiselect] ->
-              if attribute_name |> has_one_of_constraint.() do
-                attribute_name |> get_one_of_constraint.()
-              else
-                []
+            Backpex.Fields.Select ->
+              case attribute_name |> get_one_of_constraint.() do
+                constraints when is_list(constraints) ->
+                  constraints
+                  |> Enum.map(fn val ->
+                    {atom_to_title_case.(val), val}
+                  end)
+
+                _ ->
+                  []
+              end
+
+            Backpex.Fields.MultiSelect ->
+              case attribute_name |> get_one_of_constraint.() do
+                [_ | _] -> &__MODULE__.maybe_default_options/1
+                _ -> []
               end
 
             _ ->
@@ -347,6 +360,36 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
             end
 
           Ash.can?({item, action}, Map.get(assigns, :current_user))
+        end
+
+        def maybe_default_options(assigns) do
+          # TODO: This seems to be throwing a warning...
+          with %{field: {attribute_name, _field_cfg}} <- assigns do
+            options =
+              case Ash.Resource.Info.attribute(@resource, attribute_name) do
+                %{constraints: constraints} ->
+                  case Keyword.get(constraints, :items) do
+                    items when is_list(items) -> Keyword.get(items, :one_of, nil)
+                    _ -> Keyword.get(constraints, :one_of, nil)
+                  end
+
+                _ ->
+                  []
+              end
+
+            options
+            |> Enum.map(fn atom_opt ->
+              {
+                atom_opt
+                |> Atom.to_string()
+                |> String.split("_")
+                |> Enum.map_join(" ", &String.capitalize/1),
+                atom_opt
+              }
+            end)
+          else
+            _ -> []
+          end
         end
 
         Backpex.LiveResource.__before_compile__(__ENV__)

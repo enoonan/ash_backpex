@@ -109,46 +109,20 @@ defmodule AshBackpex.Adapter do
 
   def load(_, _, _), do: []
 
-  def create_changeset(item, _params, assigns) do
+  def create_changeset(item, params, assigns) do
     live_resource = Keyword.get(assigns, :assigns).live_resource
-    config = live_resource.config(:adapter_config)
 
-    create_action =
-      case Keyword.get(config, :create_action) do
-        nil ->
-          primary_action =
-            item.__struct__
-            |> Ash.Resource.Info.actions()
-            |> Enum.find(&(&1.type == :create && &1.primary?))
+    create_action = live_resource |> primary_action(:create)
 
-          primary_action.name
-
-        action ->
-          action
-      end
-
-    Ash.Changeset.for_create(item.__struct__, create_action, %{},
+    Ash.Changeset.for_create(item.__struct__, create_action, params,
       actor: Keyword.get(assigns, :assigns).current_user
     )
   end
 
   def update_changeset(item, params, assigns) do
     live_resource = Keyword.get(assigns, :assigns).live_resource
-    config = live_resource.config(:adapter_config)
 
-    update_action =
-      case Keyword.get(config, :update_action) do
-        nil ->
-          primary_action =
-            item.__struct__
-            |> Ash.Resource.Info.actions()
-            |> Enum.find(&(&1.type == :update && &1.primary?))
-
-          primary_action.name
-
-        action ->
-          action
-      end
+    update_action = live_resource |> primary_action(:update)
 
     Ash.Changeset.for_update(item, update_action, params,
       actor: Keyword.get(assigns, :assigns).current_user
@@ -245,7 +219,14 @@ defmodule AshBackpex.Adapter do
   """
   @impl Backpex.Adapter
   def insert(changeset, _live_resource) do
-    changeset |> Ash.create(authorize?: false)
+    if !changeset.valid? do
+      {:error, changeset}
+    else
+      case changeset |> Ash.create(authorize?: false) do
+        {:ok, item} -> {:ok, item}
+        {:error, error} -> {:error, changeset |> Ash.Changeset.add_error(error)}
+      end
+    end
   end
 
   @doc """
@@ -271,11 +252,17 @@ defmodule AshBackpex.Adapter do
   def change(item, attrs, _fields, assigns, _live_resource, _opts) do
     action = assigns.form.source.action
 
-    case assigns.form.source.action_type do
-      :create ->
+    case assigns.form.source do
+      %{action_type: :create} ->
         Ash.Changeset.for_create(item.__struct__, action, attrs)
 
-      :update ->
+      %{type: :create} ->
+        Ash.Changeset.for_create(item.__struct__, action, attrs)
+
+      %{action_type: :update} ->
+        Ash.Changeset.for_update(item, action, attrs)
+
+      %{type: :update} ->
         Ash.Changeset.for_update(item, action, attrs)
     end
   end
@@ -301,5 +288,29 @@ defmodule AshBackpex.Adapter do
           if Ash.Expr.expr?(filter), do: Ash.Query.filter(query, ^filter), else: query
       end
     end)
+  end
+
+  defp primary_action(live_resource, action_type) do
+    config = live_resource.config(:adapter_config)
+    resource = live_resource.config(:resource)
+
+    config_val =
+      case action_type do
+        :create -> :create_action
+        :update -> :update_action
+      end
+
+    case Keyword.get(config, config_val) do
+      nil ->
+        primary_action =
+          resource
+          |> Ash.Resource.Info.actions()
+          |> Enum.find(&(&1.type == action_type && &1.primary?))
+
+        primary_action.name
+
+      action ->
+        action
+    end
   end
 end

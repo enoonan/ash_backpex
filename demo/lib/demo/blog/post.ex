@@ -34,7 +34,7 @@ defmodule Demo.Blog.Post do
   calculations do
     calculate :word_count, :integer do
       public? true
-      
+
       calculation fn records, _context ->
         Enum.map(records, fn record ->
           case record.content do
