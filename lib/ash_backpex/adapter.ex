@@ -99,6 +99,8 @@ defmodule AshBackpex.Adapter do
   """
 
   require Ash.Query
+  require Ash.Sort
+  alias Ash.Resource.Info, as: Info
 
   def load(_, _, _), do: []
 
@@ -161,10 +163,12 @@ defmodule AshBackpex.Adapter do
 
     %{size: page_size, page: page_num} = Keyword.get(criteria, :pagination, %{size: 15, page: 1})
 
+    resource = config[:resource]
     query =
-      config[:resource]
+      resource
       |> Ash.Query.new()
       |> apply_filters(Keyword.get(criteria, :filters))
+      |> apply_order(resource, Keyword.get(criteria, :order))
       |> Ash.Query.page(limit: page_size, offset: (page_num - 1) * page_size)
 
     with {:ok, %{results: results}} <- query |> Ash.read(load: load, actor: assigns.current_user) do
@@ -312,5 +316,47 @@ defmodule AshBackpex.Adapter do
       action ->
         action
     end
+  end
+
+  defp classify_sort_field(resource, field) when is_atom(field) do
+    cond do
+      Info.attribute(resource, field) != nil ->
+        {:attribute, Info.attribute(resource, field)}
+
+      Info.calculation(resource, field) != nil ->
+        {:calculation, Info.calculation(resource, field)}
+
+      Info.aggregate(resource, field) != nil ->
+        {:aggregate, Info.aggregate(resource, field)}
+
+      true ->
+        :unknown
+    end
+  end
+
+  defp apply_order(query, resource, %{by: field, direction: dir}) do
+    case classify_sort_field(resource, field) do
+      {:attribute, _attr} ->
+        query |> Ash.Query.sort([{field, dir}])
+
+      {:aggregate, _agg} ->
+        query |> Ash.Query.sort([{field, dir}])
+
+      {:calculation, _calc} ->
+        query
+        |> Ash.Query.load([field])
+        |> Ash.Query.sort([{field, dir}])
+
+      :unknown ->
+        # Fallback: try the parser (handles public attrs/aggs/calcs), or ignore
+        case Ash.Sort.parse_input(resource, ["#{field}:#{dir}"]) do
+          {:ok, sorts} -> Ash.Query.sort(query, sorts)
+          _ -> query
+        end
+    end
+  end
+
+  defp apply_order(query, _resource, _other) do
+    query
   end
 end
