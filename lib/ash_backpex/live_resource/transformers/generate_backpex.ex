@@ -180,6 +180,9 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
             :has_many ->
               Backpex.Fields.HasMany
 
+            :has_one ->
+              Backpex.Fields.BelongsTo
+
             :count ->
               Backpex.Fields.Number
 
