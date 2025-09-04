@@ -164,10 +164,12 @@ defmodule AshBackpex.Adapter do
     %{size: page_size, page: page_num} = Keyword.get(criteria, :pagination, %{size: 15, page: 1})
 
     resource = config[:resource]
+
     query =
       resource
       |> Ash.Query.new()
       |> apply_filters(Keyword.get(criteria, :filters))
+      |> apply_search(resource, Keyword.get(criteria, :search, {"", []}))
       |> apply_order(resource, Keyword.get(criteria, :order))
       |> Ash.Query.page(limit: page_size, offset: (page_num - 1) * page_size)
 
@@ -358,5 +360,53 @@ defmodule AshBackpex.Adapter do
 
   defp apply_order(query, _resource, _other) do
     query
+  end
+
+  import Ash.Expr, only: [expr: 1]
+  alias Ash.Resource.Info, as: Info
+
+  defp apply_search(query, _resource, {term, _}) when term in [nil, ""], do: query
+
+  defp apply_search(query, resource, {raw_term, fields}) when is_list(fields) do
+    term = raw_term |> to_string() |> String.trim()
+
+    if term == "" do
+      query
+    else
+      attrs =
+        for {field_key, cfg} <- fields,
+            Map.get(cfg, :module) == Backpex.Fields.Text,
+            Map.get(cfg, :searchable, false) == true,
+            Map.get(cfg, :queryable, resource) == resource,
+            attr = to_existing_atom(field_key),
+            not is_nil(attr),
+            Info.attribute(resource, attr) != nil do
+          attr
+        end
+
+      search_expr =
+        Enum.reduce(attrs, nil, fn attr, acc ->
+          clause = expr(contains(^Ash.Expr.ref(attr), ^term))
+
+          if acc == nil,
+            do: clause,
+            else: Ash.Expr.expr(^acc or ^clause)
+        end)
+
+      case search_expr do
+        nil -> query
+        expr_or -> Ash.Query.filter(query, Ash.Expr.expr(^expr_or))
+      end
+    end
+  end
+
+  defp to_existing_atom(a) when is_atom(a), do: a
+
+  defp to_existing_atom(s) when is_binary(s) do
+    try do
+      String.to_existing_atom(s)
+    rescue
+      _ -> nil
+    end
   end
 end
