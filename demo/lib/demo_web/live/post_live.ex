@@ -3,7 +3,7 @@ defmodule DemoWeb.PostLive do
 
   backpex do
     resource(Demo.Blog.Post)
-    layout({DemoWeb.Layouts, :admin})
+    layout &DemoWeb.Layouts.admin/1
 
     load([:word_count])
 

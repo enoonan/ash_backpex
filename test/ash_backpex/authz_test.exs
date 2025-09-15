@@ -32,19 +32,19 @@ defmodule AshBackpex.AuthzTest do
       user2 = user()
       post = post(actor: user)
 
-      {:ok, [p1]} = Adapter.list([], %{current_user: user}, TestPostLive)
+      {:ok, [p1]} = Adapter.list([], [], %{current_user: user}, TestPostLive)
       assert post.id == p1.id
 
-      assert {:ok, []} == Adapter.list([], %{current_user: user2}, TestPostLive)
+      assert {:ok, []} == Adapter.list([], [], %{current_user: user2}, TestPostLive)
     end
 
-    test "count/3" do
+    test "count/4" do
       user = user()
       user2 = user()
       post(actor: user)
 
-      assert Adapter.count([], %{current_user: user}, TestPostLive) == {:ok, 1}
-      assert Adapter.count([], %{current_user: user2}, TestPostLive) == {:ok, 0}
+      assert Adapter.count([], [], %{current_user: user}, TestPostLive) == {:ok, 1}
+      assert Adapter.count([], [], %{current_user: user2}, TestPostLive) == {:ok, 0}
     end
   end
 end

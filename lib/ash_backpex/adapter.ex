@@ -128,7 +128,8 @@ defmodule AshBackpex.Adapter do
   Returns `nil` if no result was found.
   """
   @impl Backpex.Adapter
-  def get(primary_value, assigns, live_resource) do
+  @spec list(keyword(), keyword(), map(), module()) :: {:ok, list(map())} | {:error, term()}
+  def get(primary_value, _fields, assigns, live_resource) do
     config = live_resource.config(:adapter_config)
     primary_key = live_resource.config(:primary_key)
     load_fn = Keyword.get(config, :load)
@@ -142,15 +143,21 @@ defmodule AshBackpex.Adapter do
     config[:resource]
     |> Ash.Query.filter(^Ash.Expr.ref(primary_key) == ^primary_value)
     |> Ash.read_one(actor: assigns.current_user, load: load)
+    |> case do
+      {:ok, %Ash.Error.Query.NotFound{}} -> {:ok, nil}
+      {:ok, item} -> {:ok, item}
+      err -> err
+    end
   end
 
   @doc """
   Returns a list of items by given criteria.
   """
   @impl Backpex.Adapter
-  @spec list(keyword(), map(), module()) :: {:ok, list(map())} | {:error, term()}
-  def list(criteria, assigns, live_resource) do
+  @spec list(keyword(), keyword(), map(), module()) :: {:ok, list(map())} | {:error, term()}
+  def list(criteria, _fields, assigns, live_resource) do
     config = live_resource.config(:adapter_config)
+
     load_fn = Keyword.get(config, :load)
 
     load =
@@ -166,8 +173,9 @@ defmodule AshBackpex.Adapter do
       |> Ash.Query.new()
       |> apply_filters(Keyword.get(criteria, :filters))
       |> Ash.Query.page(limit: page_size, offset: (page_num - 1) * page_size)
+      |> Ash.Query.load(load)
 
-    with {:ok, %{results: results}} <- query |> Ash.read(load: load, actor: assigns.current_user) do
+    with {:ok, %{results: results}} <- query |> Ash.read(actor: assigns.current_user) do
       {:ok, results}
     end
   end
@@ -176,7 +184,7 @@ defmodule AshBackpex.Adapter do
   Returns the number of items matching the given criteria.
   """
   @impl Backpex.Adapter
-  def count(criteria, assigns, live_resource) do
+  def count(criteria, _fields, assigns, live_resource) do
     config = live_resource.config(:adapter_config)
 
     config[:resource]
