@@ -128,21 +128,25 @@ defmodule AshBackpex.Adapter do
   Returns `nil` if no result was found.
   """
   @impl Backpex.Adapter
-  @spec list(keyword(), keyword(), map(), module()) :: {:ok, list(map())} | {:error, term()}
-  def get(primary_value, _fields, assigns, live_resource) do
+  @spec get(String.t(), keyword(), map(), module()) :: {:ok, list(map())} | {:error, term()}
+  def get(primary_value, fields, assigns, live_resource) do
     config = live_resource.config(:adapter_config)
     primary_key = live_resource.config(:primary_key)
     load_fn = Keyword.get(config, :load)
 
-    load =
-      case load_fn.(primary_value, assigns, live_resource) do
+    default_loads =
+      case load_fn.([], assigns, live_resource) do
         l when is_list(l) -> l
         _ -> []
       end
 
+    %{load: load, select: select} = resolve_fields_and_loads(config[:resource], fields)
+
     config[:resource]
     |> Ash.Query.filter(^Ash.Expr.ref(primary_key) == ^primary_value)
-    |> Ash.read_one(actor: assigns.current_user, load: load)
+    |> Ash.Query.select(select)
+    |> Ash.Query.load(default_loads ++ load)
+    |> Ash.read_one(actor: assigns.current_user)
     |> case do
       {:ok, %Ash.Error.Query.NotFound{}} -> {:ok, nil}
       {:ok, item} -> {:ok, item}
@@ -155,16 +159,18 @@ defmodule AshBackpex.Adapter do
   """
   @impl Backpex.Adapter
   @spec list(keyword(), keyword(), map(), module()) :: {:ok, list(map())} | {:error, term()}
-  def list(criteria, _fields, assigns, live_resource) do
+  def list(criteria, fields, assigns, live_resource) do
     config = live_resource.config(:adapter_config)
 
     load_fn = Keyword.get(config, :load)
 
-    load =
+    default_loads =
       case load_fn.(criteria, assigns, live_resource) do
         l when is_list(l) -> l
         _ -> []
       end
+
+    %{load: load, select: select} = resolve_fields_and_loads(config[:resource], fields)
 
     %{size: page_size, page: page_num} = Keyword.get(criteria, :pagination, %{size: 15, page: 1})
 
@@ -173,7 +179,8 @@ defmodule AshBackpex.Adapter do
       |> Ash.Query.new()
       |> apply_filters(Keyword.get(criteria, :filters))
       |> Ash.Query.page(limit: page_size, offset: (page_num - 1) * page_size)
-      |> Ash.Query.load(load)
+      |> Ash.Query.select(select)
+      |> Ash.Query.load(default_loads ++ load)
 
     with {:ok, %{results: results}} <- query |> Ash.read(actor: assigns.current_user) do
       {:ok, results}
@@ -184,6 +191,7 @@ defmodule AshBackpex.Adapter do
   Returns the number of items matching the given criteria.
   """
   @impl Backpex.Adapter
+  @spec count(keyword(), keyword(), map(), module()) :: {:ok, list(map())} | {:error, term()}
   def count(criteria, _fields, assigns, live_resource) do
     config = live_resource.config(:adapter_config)
 
@@ -320,5 +328,27 @@ defmodule AshBackpex.Adapter do
       action ->
         action
     end
+  end
+
+  defp resolve_fields_and_loads(resource, fields) do
+    atts = Ash.Resource.Info.attributes(resource)
+    is_att? = fn field -> field in atts end
+    is_calc? = fn field -> !is_nil(Ash.Resource.Info.calculation(resource, field)) end
+    is_rel? = fn field -> !is_nil(Ash.Resource.Info.relationship(resource, field)) end
+
+    fields
+    |> Keyword.keys()
+    |> Enum.reduce(%{load: [], select: []}, fn field, acc ->
+      case {is_att?.(field), is_calc?.(field), is_rel?.(field)} do
+        {true, false, false} ->
+          acc |> Map.update(:select, [field], &(&1 ++ [field]))
+
+        {false, calc?, rel?} when calc? or rel? ->
+          acc |> Map.update(:load, [field], &(&1 ++ [field]))
+
+        _ ->
+          raise "Unrecognized field. #{field |> inspect} is not a known attribute, relationship, or calculation on #{resource |> inspect}"
+      end
+    end)
   end
 end

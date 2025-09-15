@@ -4,7 +4,8 @@ You got your [Ash](https://ash-hq.org/) in my [Backpex](https://backpex.live/). 
 
 An integration library that brings together Ash Framework's powerful resource system with Backpex's admin interface capabilities. This library provides a clean DSL for creating admin interfaces directly from your Ash resources.
 
-> Warning!
+> ## Warning! {: .error}
+>
 > Backpex itself is pre-1.0 so expect the API to change in a breaking way! Also, it cannot currently take full advantage of Ash authorization policies. For now I would only recommend using it in a high-trust environment such as internal tooling.
 
 This is a partial implementation - feel free to open a github issue to request additional features or submit a PR if you're into that kind of thing ;)
@@ -31,7 +32,7 @@ defmodule MyAppWeb.Live.Admin.PostLive do
     backpex do
       resource MyApp.Blog.Post
       load [:author]
-      layout({MyAppWeb.Layouts, :admin})
+      layout &MyAppWeb.Layouts.admin/1
 
       fields do
         field :title
