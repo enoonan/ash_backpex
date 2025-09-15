@@ -2,6 +2,18 @@
 
 <!-- changelog -->
 
+## [v0.0.8]
+
+### Updates
+
+Implement changes required for upgrading Backpex to version 0.15.0 within AshBackpex and demo
+
+- Can now use `layout &DemoWeb.Layouts.admin/1` when declaring Resource layout
+- Updated resource adapter function signatures and incorporate it.
+- Other v15 updates happen transparently
+
+Return `{:ok, nil}` from `AshBackpex.Adapter.get\4` when item is not found.
+
 ## [v0.0.7]
 
 ### Updates
