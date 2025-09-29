@@ -185,9 +185,12 @@ defmodule AshBackpex.Adapter do
   def count(criteria, assigns, live_resource) do
     config = live_resource.config(:adapter_config)
 
-    config[:resource]
+    resource = config[:resource]
+
+    resource
     |> Ash.Query.new()
     |> apply_filters(Keyword.get(criteria, :filters))
+    |> apply_search(resource, Keyword.get(criteria, :search, {"", []}))
     |> Ash.count(actor: assigns.current_user)
   end
 
@@ -379,8 +382,10 @@ defmodule AshBackpex.Adapter do
             Map.get(cfg, :searchable, false) == true,
             Map.get(cfg, :queryable, resource) == resource,
             attr = to_existing_atom(field_key),
-            not is_nil(attr),
-            Info.attribute(resource, attr) != nil do
+            not is_nil(attr)
+            # FIXME: I'm not sure why do we need the info attribute
+            # Info.attribute(resource, attr) != nil
+        do
           attr
         end
 

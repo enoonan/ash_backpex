@@ -283,7 +283,8 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                      filter.attribute,
                      %{
                        module: filter.module,
-                       label: filter.label || filter.attribute |> atom_to_title_case.()
+                       label: filter.label || filter.attribute |> atom_to_title_case.(),
+                       query: Map.get(filter, :query)
                      }
                    )
                  end)
@@ -393,6 +394,11 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
             end
 
           Ash.can?({item, action}, Map.get(assigns, :current_user))
+        end
+
+        def can?(_assigns, _action, _item) do
+          # FIXME: We need this for custom actions for now, but ideally would like to use Ash.can? for everything
+          true
         end
 
         def maybe_default_options(assigns) do
