@@ -2,6 +2,14 @@
 
 <!-- changelog -->
 
+## [v0.0.9]
+
+### Updates
+
+Bump Backpex version to 0.16
+Fix [adapter load bug](https://github.com/enoonan/ash_backpex/issues/6)
+Add sorting support. [Closes pull request #4](https://github.com/enoonan/ash_backpex/pull/4/files)
+
 ## [v0.0.8]
 
 ### Updates

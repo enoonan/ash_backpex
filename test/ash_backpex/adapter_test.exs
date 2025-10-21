@@ -51,5 +51,28 @@ defmodule AshBackpex.AdapterTest do
       assert posts |> length == 2
       refute Enum.any?(posts, &(&1.view_count < 1))
     end
+
+    test "sort list/4" do
+      user = user()
+      post0 = post(actor: user, view_count: 0)
+      post1 = post(actor: user, view_count: 0)
+      default_sorted = Enum.sort([post0, post1], &(&1.id <= &2.id)) |> Enum.map(& &1.id)
+      assigns = %{current_user: user}
+
+      {:ok, posts} = Adapter.list([], [], assigns, TestPostLive)
+      assert posts |> Enum.map(& &1.id) === default_sorted
+
+      inserted_at_desc = [post1.id, post0.id]
+
+      params = %{"order_by" => "inserted_at", "order_direction" => "desc"}
+
+      {:ok, posts} = Adapter.list([], [], Map.put(assigns, :params, params), TestPostLive)
+      assert posts |> Enum.map(& &1.id) === inserted_at_desc
+
+      params = Map.put(params, "order_direction", "asc")
+      inserted_at_asc = inserted_at_desc |> Enum.reverse()
+      {:ok, posts} = Adapter.list([], [], Map.put(assigns, :params, params), TestPostLive)
+      assert posts |> Enum.map(& &1.id) === inserted_at_asc
+    end
   end
 end

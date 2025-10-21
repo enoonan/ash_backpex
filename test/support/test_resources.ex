@@ -149,3 +149,48 @@ defmodule AshBackpex.TestDomain.Comment do
     end
   end
 end
+
+defmodule AshBackpex.TestDomain.Item do
+  @moduledoc false
+  use Ash.Resource,
+    domain: AshBackpex.TestDomain,
+    data_layer: AshSqlite.DataLayer
+
+  sqlite do
+    table "items"
+    repo(AshBackpex.TestRepo)
+  end
+
+  actions do
+    defaults [:read, :destroy, create: [:name, :note], update: [:name, :note]]
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :name, :string do
+      allow_nil? false
+      public? true
+    end
+
+    attribute :note, :string do
+      public? true
+    end
+
+    attribute :view_count, :integer do
+      public? true
+    end
+  end
+
+  relationships do
+    belongs_to(:user, AshBackpex.TestDomain.User)
+  end
+
+  aggregates do
+    max :most_viewed, AshBackpex.TestDomain.Item, :view_count
+  end
+
+  calculations do
+    calculate :name_note, :string, expr(name <> " " <> note)
+  end
+end

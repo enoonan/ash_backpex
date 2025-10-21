@@ -67,9 +67,33 @@ defmodule AshBackpex.Adapter do
       """,
       type: {:fun, 3},
       default: &__MODULE__.load/3
+    ],
+    init_order: [
+      doc: """
+      You can configure the ordering of the resource index page. By default, the resources are ordered by the id field in ascending order.
+      - %{by: :inserted_at, direction: :desc}
+      """,
+      type: {
+        :or,
+        [
+          {:fun, 1},
+          map: [
+            by: [
+              doc: "The column used for ordering.",
+              type: :atom
+            ],
+            direction: [
+              doc: "The order direction",
+              type: :atom
+            ]
+          ]
+        ]
+      },
+      default: %{by: :id, direction: :asc}
     ]
   ]
   use Backpex.Adapter, config_schema: @config_schema
+  alias AshBackpex.LoadSelectResolver
 
   @moduledoc """
     The `Backpex.Adapter` to connect your `Backpex.LiveResource` to an `Ash.Resource`.
@@ -140,7 +164,7 @@ defmodule AshBackpex.Adapter do
         _ -> []
       end
 
-    %{load: load, select: select} = resolve_fields_and_loads(config[:resource], fields)
+    {load, select} = LoadSelectResolver.resolve(config[:resource], fields)
 
     config[:resource]
     |> Ash.Query.filter(^Ash.Expr.ref(primary_key) == ^primary_value)
@@ -162,15 +186,7 @@ defmodule AshBackpex.Adapter do
   def list(criteria, fields, assigns, live_resource) do
     config = live_resource.config(:adapter_config)
 
-    load_fn = Keyword.get(config, :load)
-
-    default_loads =
-      case load_fn.(criteria, assigns, live_resource) do
-        l when is_list(l) -> l
-        _ -> []
-      end
-
-    %{load: load, select: select} = resolve_fields_and_loads(config[:resource], fields)
+    {load, select} = LoadSelectResolver.resolve(config[:resource], fields)
 
     %{size: page_size, page: page_num} = Keyword.get(criteria, :pagination, %{size: 15, page: 1})
 
@@ -178,9 +194,10 @@ defmodule AshBackpex.Adapter do
       config[:resource]
       |> Ash.Query.new()
       |> apply_filters(Keyword.get(criteria, :filters))
+      |> Ash.Query.sort(resolve_sort(assigns, config[:init_order]))
       |> Ash.Query.page(limit: page_size, offset: (page_num - 1) * page_size)
       |> Ash.Query.select(select)
-      |> Ash.Query.load(default_loads ++ load)
+      |> Ash.Query.load(load)
 
     with {:ok, %{results: results}} <- query |> Ash.read(actor: assigns.current_user) do
       {:ok, results}
@@ -330,25 +347,19 @@ defmodule AshBackpex.Adapter do
     end
   end
 
-  defp resolve_fields_and_loads(resource, fields) do
-    atts = Ash.Resource.Info.attributes(resource)
-    is_att? = fn field -> field in atts end
-    is_calc? = fn field -> !is_nil(Ash.Resource.Info.calculation(resource, field)) end
-    is_rel? = fn field -> !is_nil(Ash.Resource.Info.relationship(resource, field)) end
-
-    fields
-    |> Keyword.keys()
-    |> Enum.reduce(%{load: [], select: []}, fn field, acc ->
-      case {is_att?.(field), is_calc?.(field), is_rel?.(field)} do
-        {true, false, false} ->
-          acc |> Map.update(:select, [field], &(&1 ++ [field]))
-
-        {false, calc?, rel?} when calc? or rel? ->
-          acc |> Map.update(:load, [field], &(&1 ++ [field]))
-
-        _ ->
-          raise "Unrecognized field. #{field |> inspect} is not a known attribute, relationship, or calculation on #{resource |> inspect}"
-      end
-    end)
+  defp resolve_sort(%{params: %{"order_by" => field, "order_direction" => dir}}, _init) do
+    Keyword.put([], String.to_existing_atom(field), String.to_existing_atom(dir))
   end
+
+  defp resolve_sort(assigns, fun) when is_function(fun, 1) do
+    fun.(assigns)
+  end
+
+  defp resolve_sort(_assigns, %{by: field, direction: :asc}),
+    do: Keyword.put([], field, :asc)
+
+  defp resolve_sort(_assigns, %{by: field, direction: :desc}),
+    do: Keyword.put([], field, :desc)
+
+  defp resolve_sort(_assigns, _), do: [id: :asc]
 end

@@ -4,7 +4,7 @@ defmodule DemoWeb.PostLive do
   backpex do
     resource(Demo.Blog.Post)
     layout &DemoWeb.Layouts.admin/1
-
+    init_order %{by: :inserted_at, direction: :desc}
     load([:word_count])
 
     fields do

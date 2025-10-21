@@ -324,7 +324,8 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                     case Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :load) do
                       nil -> &AshBackpex.Adapter.load/3
                       some_loads -> &__MODULE__.load/3
-                    end
+                    end,
+                  init_order: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :init_order)
                 ]
                 |> Keyword.reject(&(&1 |> elem(1) |> is_nil)),
               pubsub: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :pubsub),
@@ -332,7 +333,6 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                 Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :per_page_options),
               per_page_default:
                 Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :per_page_default),
-              init_order: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :init_order),
               fluid?: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :fluid?),
               full_text_search:
                 Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :full_text_search),

@@ -38,18 +38,17 @@ defmodule Demo.Blog.Post do
   end
 
   calculations do
-    calculate :word_count, :integer do
-      public? true
-
-      calculation fn records, _context ->
-        Enum.map(records, fn record ->
-          case record.content do
-            nil -> 0
-            content -> content |> String.split(~r/\s+/) |> Enum.reject(&(&1 == "")) |> length()
-          end
-        end)
-      end
-    end
+    calculate :word_count, :integer,
+          expr(
+            fragment(
+              "CASE
+              WHEN ? IS NULL THEN 0
+              WHEN length(btrim(?)) = 0 THEN 0
+              ELSE cardinality(regexp_split_to_array(btrim(?), '\\s+'))
+              END",
+              content, content, content
+            )
+          ), public?: true
   end
 
   actions do
