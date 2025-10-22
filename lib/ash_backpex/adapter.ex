@@ -186,6 +186,13 @@ defmodule AshBackpex.Adapter do
   @spec list(keyword(), keyword(), map(), module()) :: {:ok, list(map())} | {:error, term()}
   def list(criteria, fields, assigns, live_resource) do
     config = live_resource.config(:adapter_config)
+    load_fn = Keyword.get(config, :load)
+
+    default_loads =
+      case load_fn.([], assigns, live_resource) do
+        l when is_list(l) -> l
+        _ -> []
+      end
 
     {load, select} = LoadSelectResolver.resolve(config[:resource], fields)
 
@@ -195,11 +202,11 @@ defmodule AshBackpex.Adapter do
       config[:resource]
       |> Ash.Query.new()
       |> apply_filters(Keyword.get(criteria, :filters))
-      |> BasicSearch.apply(assigns.params, live_resource)
+      |> BasicSearch.apply(Map.get(assigns, :params), live_resource)
       |> Ash.Query.sort(resolve_sort(assigns, config[:init_order]))
       |> Ash.Query.page(limit: page_size, offset: (page_num - 1) * page_size)
       |> Ash.Query.select(select)
-      |> Ash.Query.load(load)
+      |> Ash.Query.load(default_loads ++ load)
 
     with {:ok, %{results: results}} <- query |> Ash.read(actor: assigns.current_user) do
       {:ok, results}
