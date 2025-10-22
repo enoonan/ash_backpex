@@ -33,7 +33,7 @@ defmodule AshBackpex.BasicSearch do
     end
   end
 
-  def apply(%Ash.Query{} = query, _, _), do: query
+  def apply(query, _, _), do: query
 
   defp build_filter(fields, search) do
     fields
