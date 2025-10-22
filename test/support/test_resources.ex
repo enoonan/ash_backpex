@@ -13,7 +13,7 @@ defmodule AshBackpex.TestDomain.Post do
 
   attributes do
     uuid_primary_key(:id)
-    attribute(:title, :string, allow_nil?: false)
+    attribute(:title, :string, allow_nil?: false, public?: true)
     attribute(:content, :string)
     attribute(:published, :boolean, default: false)
     attribute(:published_at, :datetime)
@@ -174,6 +174,10 @@ defmodule AshBackpex.TestDomain.Item do
     end
 
     attribute :note, :string do
+      public? true
+    end
+
+    attribute :content, :string do
       public? true
     end
 

@@ -258,6 +258,7 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                       display_field: field.display_field,
                       live_resource: field.live_resource,
                       panel: field.panel,
+                      searchable: field.searchable,
                       link_assocs:
                         case {module, Map.get(field, :link_assocs)} do
                           {Backpex.Fields.HasMany, nil} -> true

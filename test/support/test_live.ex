@@ -8,7 +8,9 @@ defmodule TestPostLive do
     layout({TestLayout, :admin})
 
     fields do
-      field(:title)
+      field(:title) do
+        searchable(true)
+      end
 
       field :content do
         module(Backpex.Fields.Textarea)
@@ -28,6 +30,30 @@ defmodule TestPostLive do
     filters do
       filter :published do
         module(Backpex.Filters.Boolean)
+      end
+    end
+  end
+end
+
+defmodule TestItemLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.Item)
+    layout({TestLayout, :admin})
+
+    fields do
+      field :name do
+        searchable(true)
+      end
+
+      field :note do
+        searchable(true)
+      end
+
+      field :content do
+        searchable(true)
       end
     end
   end

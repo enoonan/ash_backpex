@@ -93,7 +93,8 @@ defmodule AshBackpex.Adapter do
     ]
   ]
   use Backpex.Adapter, config_schema: @config_schema
-  alias AshBackpex.LoadSelectResolver
+  require Ash.Expr
+  alias AshBackpex.{LoadSelectResolver, BasicSearch}
 
   @moduledoc """
     The `Backpex.Adapter` to connect your `Backpex.LiveResource` to an `Ash.Resource`.
@@ -194,6 +195,7 @@ defmodule AshBackpex.Adapter do
       config[:resource]
       |> Ash.Query.new()
       |> apply_filters(Keyword.get(criteria, :filters))
+      |> BasicSearch.apply(assigns.params, live_resource)
       |> Ash.Query.sort(resolve_sort(assigns, config[:init_order]))
       |> Ash.Query.page(limit: page_size, offset: (page_num - 1) * page_size)
       |> Ash.Query.select(select)
