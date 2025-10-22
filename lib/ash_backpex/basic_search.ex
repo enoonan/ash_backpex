@@ -2,7 +2,6 @@ defmodule AshBackpex.BasicSearch do
   @moduledoc """
   Supports basic search operations using the Ash.Expr `contains` function.
   """
-  alias ElixirLS.LanguageServer.Providers.Completion.Reducers.Returns
   require Ash.Query
 
   @type query :: Ash.Query.t()
