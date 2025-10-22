@@ -17,7 +17,7 @@ defmodule AshBackpex.BasicSearch do
       AshBackpex.BasicSearch.apply(query, %{"search" => "foo"}, MyLiveResource)
     ```
   """
-  @spec apply(query(), params(), live_resource()) :: Ash.Query.t()
+  @spec apply(query(), params(), live_resource()) :: query()
   def apply(query, %{"search" => search}, live_resource) do
     case live_resource.fields() |> Enum.filter(&Map.get(elem(&1, 1), :searchable)) do
       [] ->
