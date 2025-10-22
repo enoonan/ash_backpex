@@ -94,7 +94,7 @@ defmodule AshBackpex.Adapter do
   ]
   use Backpex.Adapter, config_schema: @config_schema
   require Ash.Expr
-  alias AshBackpex.{LoadSelectResolver, BasicSearch}
+  alias AshBackpex.{BasicSearch, LoadSelectResolver}
 
   @moduledoc """
     The `Backpex.Adapter` to connect your `Backpex.LiveResource` to an `Ash.Resource`.

@@ -1,7 +1,7 @@
 defmodule AshBackpex.BasicSearchTest do
   use ExUnit.Case, async: true
   alias AshBackpex.BasicSearch
-  alias AshBackpex.TestDomain.{Post, Item}
+  alias AshBackpex.TestDomain.{Item, Post}
 
   describe "AshBackpex.BasicSearch :: it can" do
     test "skip if no search provided" do
