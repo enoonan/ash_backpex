@@ -241,11 +241,13 @@ defmodule AshBackpex.Fields.BelongsTo do
   end
 
   defp get_ash_authorized_options(queryable, field_options, display_field, assigns) do
-    # Get the actor from assigns (current_user)
-    actor = Map.get(assigns, :current_user) || Map.get(assigns, :actor)
+    # Get the actor from multiple possible sources:
+    # 1. Direct current_user or actor in assigns (preferred)
+    # 2. From the form's changeset context (fallback for field components)
+    actor = get_actor_from_assigns(assigns)
 
     Logger.info(
-      "[AshBackpex.Fields.BelongsTo] Filtering options for #{inspect(queryable)} with actor: #{inspect(actor && actor.email)}"
+      "[AshBackpex.Fields.BelongsTo] Filtering options for #{inspect(queryable)} with actor: #{inspect(actor && Map.get(actor, :email))}"
     )
 
     # Get the repo for fallback Ecto queries
@@ -372,5 +374,37 @@ defmodule AshBackpex.Fields.BelongsTo do
       end
 
     assign(assigns, :prompt, prompt)
+  end
+
+  # Get the actor from multiple possible sources in order of preference:
+  # 1. Direct current_user in assigns (set by some LiveView setups)
+  # 2. Direct actor in assigns
+  # 3. From the form's source changeset context (Ash stores actor here)
+  defp get_actor_from_assigns(assigns) do
+    cond do
+      # Direct current_user in assigns
+      actor = Map.get(assigns, :current_user) ->
+        actor
+
+      # Direct actor in assigns
+      actor = Map.get(assigns, :actor) ->
+        actor
+
+      # Try to extract from form's source (Ash changeset)
+      true ->
+        get_actor_from_form_changeset(assigns)
+    end
+  end
+
+  defp get_actor_from_form_changeset(assigns) do
+    with form when not is_nil(form) <- Map.get(assigns, :form),
+         source when is_struct(source) <- Map.get(form, :source),
+         %{context: context} when is_map(context) <- source,
+         private when is_map(private) <- Map.get(context, :private),
+         actor when not is_nil(actor) <- Map.get(private, :actor) do
+      actor
+    else
+      _ -> nil
+    end
   end
 end
