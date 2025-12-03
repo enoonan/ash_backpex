@@ -175,7 +175,7 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
               attribute_name |> select_or.(Backpex.Fields.Number)
 
             :belongs_to ->
-              Backpex.Fields.BelongsTo
+              AshBackpex.Fields.BelongsTo
 
             :has_many ->
               Backpex.Fields.HasMany
