@@ -198,3 +198,33 @@ defmodule AshBackpex.TestDomain.Item do
     calculate :name_note, :string, expr(name <> " " <> note)
   end
 end
+
+defmodule AshBackpex.TestDomain.ReadOnlyEntry do
+  @moduledoc """
+  A read-only resource without update or destroy actions.
+  Used for testing can?/3 behavior when actions don't exist.
+  """
+  use Ash.Resource,
+    domain: AshBackpex.TestDomain,
+    data_layer: AshSqlite.DataLayer
+
+  sqlite do
+    table "read_only_entries"
+    repo(AshBackpex.TestRepo)
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :name, :string do
+      allow_nil? false
+      public? true
+    end
+
+    create_timestamp :inserted_at
+  end
+
+  actions do
+    defaults [:read, :create]
+  end
+end

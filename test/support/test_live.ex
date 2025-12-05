@@ -83,6 +83,25 @@ defmodule TestCustomNamesLive do
   end
 end
 
+# LiveResource for read-only resource (no update/destroy actions)
+defmodule TestReadOnlyLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.ReadOnlyEntry)
+    layout({TestLayout, :admin})
+
+    item_actions do
+      strip_default([:edit, :delete])
+    end
+
+    fields do
+      field(:name)
+    end
+  end
+end
+
 # Test modules for layout and actions
 defmodule TestLayout do
   @moduledoc false
