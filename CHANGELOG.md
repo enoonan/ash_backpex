@@ -2,6 +2,10 @@
 
 <!-- changelog -->
 
+## [v0.0.10]
+
+- fix: can?/3 returns false for missing actions instead of crashing. Thank you [psoukry](https://github.com/pshoukry)!
+
 ## [v0.0.9]
 
 ### Updates
