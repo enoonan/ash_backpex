@@ -129,11 +129,11 @@ defmodule AshBackpex.Adapter do
 
   def create_changeset(item, params, assigns) do
     live_resource = Keyword.get(assigns, :assigns).live_resource
-
+    current_user = Keyword.get(assigns, :assigns).current_user
     create_action = live_resource |> primary_action(:create)
 
     Ash.Changeset.for_create(item.__struct__, create_action, params,
-      actor: Keyword.get(assigns, :assigns).current_user
+      actor: current_user
     )
   end
 
@@ -293,19 +293,21 @@ defmodule AshBackpex.Adapter do
   @impl Backpex.Adapter
   def change(item, attrs, _fields, assigns, _live_resource, _opts) do
     action = assigns.form.source.action
+    # Get actor from assigns for proper authorization during form validation
+    actor = Map.get(assigns, :current_user)
 
     case assigns.form.source do
       %{action_type: :create} ->
-        Ash.Changeset.for_create(item.__struct__, action, attrs)
+        Ash.Changeset.for_create(item.__struct__, action, attrs, actor: actor)
 
       %{type: :create} ->
-        Ash.Changeset.for_create(item.__struct__, action, attrs)
+        Ash.Changeset.for_create(item.__struct__, action, attrs, actor: actor)
 
       %{action_type: :update} ->
-        Ash.Changeset.for_update(item, action, attrs)
+        Ash.Changeset.for_update(item, action, attrs, actor: actor)
 
       %{type: :update} ->
-        Ash.Changeset.for_update(item, action, attrs)
+        Ash.Changeset.for_update(item, action, attrs, actor: actor)
     end
   end
 

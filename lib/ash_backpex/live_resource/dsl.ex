@@ -136,7 +136,13 @@ defmodule AshBackpex.LiveResource.Dsl do
           doc: """
           Manipulates the list of available options in the select.
 
-          Defaults to `fn (query, _field) -> query end` which returns all entries.
+          For Ash resources with BelongsTo relationships, options are automatically filtered
+          to only show records the current actor is authorized to read based on Ash policies.
+
+          You can provide a custom function to further filter the already-authorized options.
+          The function receives `(query, assigns)` where query is an Ecto query.
+
+          Defaults to showing all authorized entries for Ash resources, or all entries for non-Ash resources.
           """,
           type: {:fun, 2}
         ],
