@@ -17,12 +17,12 @@ Add `ash_backpex` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:ash_backpex, "~> 0.0.9"}
+    {:ash_backpex, "~> 0.0.10"}
   ]
 end
 ```
 
-## Usage
+## Basic Usage
 
 ```elixir
 # myapp_web/live/admin/post_live.ex
@@ -43,15 +43,11 @@ defmodule MyAppWeb.Live.Admin.PostLive do
           live_resource(MyAppWeb.Live.Admin.AuthorLive)
         end
       end
-
-      filters do
-        filter :state do
-          module MyAppWeb.Live.Admin.Filters.PostStateFilter
-        end
-      end
     end
 end
 ```
+
+## Filters and Actions
 
 ## Thanks!
 

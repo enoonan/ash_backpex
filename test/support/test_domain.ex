@@ -10,5 +10,6 @@ defmodule AshBackpex.TestDomain do
     resource(AshBackpex.TestDomain.User)
     resource(AshBackpex.TestDomain.Comment)
     resource(AshBackpex.TestDomain.Item)
+    resource(AshBackpex.TestDomain.ReadOnlyEntry)
   end
 end

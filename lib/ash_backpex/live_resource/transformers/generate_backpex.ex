@@ -25,25 +25,23 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
         @plural_name Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :plural_name) ||
                        (@resource |> Atom.to_string() |> String.split(".") |> List.last()) <> "s"
 
-        @create_action Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :create_action) ||
-                         Ash.Resource.Info.primary_action(@resource, :create)
-                         |> then(&(&1 || %{}))
-                         |> Map.get(:name, :create)
+        get_action_name = fn resource, action_type, dsl_opt_path ->
+          case Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], dsl_opt_path) do
+            nil ->
+              case Ash.Resource.Info.primary_action(resource, action_type) do
+                nil -> nil
+                action -> action.name
+              end
 
-        @read_action Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :read_action) ||
-                       Ash.Resource.Info.primary_action(@resource, :read)
-                       |> then(&(&1 || %{}))
-                       |> Map.get(:name, :read)
+            action_name ->
+              action_name
+          end
+        end
 
-        @update_action Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :update_action) ||
-                         Ash.Resource.Info.primary_action(@resource, :update)
-                         |> then(&(&1 || %{}))
-                         |> Map.get(:name, :update)
-
-        @destroy_action Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :destroy_action) ||
-                          Ash.Resource.Info.primary_action(@resource, :destroy)
-                          |> then(&(&1 || %{}))
-                          |> Map.get(:name, :destroy)
+        @create_action get_action_name.(@resource, :create, :create_action)
+        @read_action get_action_name.(@resource, :read, :read_action)
+        @update_action get_action_name.(@resource, :update, :update_action)
+        @destroy_action get_action_name.(@resource, :destroy, :destroy_action)
 
         atom_to_title_case = fn atom ->
           atom
@@ -373,23 +371,41 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
         @impl Backpex.LiveResource
         def can?(assigns, action, item \\ %{})
 
-        def can?(assigns, :new, _item) do
-          Ash.can?({@resource, @create_action}, Map.get(assigns, :current_user))
+        if @create_action do
+          def can?(assigns, :new, _item) do
+            Ash.can?({@resource, @create_action}, Map.get(assigns, :current_user))
+          end
+        else
+          def can?(_assigns, :new, _item), do: false
         end
 
-        def can?(assigns, :index, _item) do
-          Ash.can?({@resource, @read_action}, Map.get(assigns, :current_user))
+        if @read_action do
+          def can?(assigns, :index, _item) do
+            Ash.can?({@resource, @read_action}, Map.get(assigns, :current_user))
+          end
+
+          def can?(assigns, :show, item) do
+            Ash.can?({item, @read_action}, Map.get(assigns, :current_user))
+          end
+        else
+          def can?(_assigns, :index, _item), do: false
+          def can?(_assigns, :show, _item), do: false
         end
 
-        def can?(assigns, action, item) when action in [:show, :edit, :delete] do
-          action =
-            case action do
-              :show -> @read_action
-              :edit -> @update_action
-              :delete -> @destroy_action
-            end
+        if @update_action do
+          def can?(assigns, :edit, item) do
+            Ash.can?({item, @update_action}, Map.get(assigns, :current_user))
+          end
+        else
+          def can?(_assigns, :edit, _item), do: false
+        end
 
-          Ash.can?({item, action}, Map.get(assigns, :current_user))
+        if @destroy_action do
+          def can?(assigns, :delete, item) do
+            Ash.can?({item, @destroy_action}, Map.get(assigns, :current_user))
+          end
+        else
+          def can?(_assigns, :delete, _item), do: false
         end
 
         def maybe_default_options(assigns) do
