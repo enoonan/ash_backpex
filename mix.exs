@@ -1,7 +1,7 @@
 defmodule AshBackpex.MixProject do
   use Mix.Project
 
-  @version "0.0.10"
+  @version "0.0.11"
   @source_url "https://github.com/enoonan/ash_backpex"
 
   def project do

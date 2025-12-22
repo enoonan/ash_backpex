@@ -2,6 +2,12 @@
 
 <!-- changelog -->
 
+## [v0.0.11]
+
+### Fixes
+
+- [fix: add catch-all can?/3 clause for custom item actions](https://github.com/enoonan/ash_backpex/pull/13) by [psoukry](https://github.com/pshoukry) 🎉
+
 ## [v0.0.10]
 
 - fix: can?/3 returns false for missing actions instead of crashing. Thank you [psoukry](https://github.com/pshoukry)!
