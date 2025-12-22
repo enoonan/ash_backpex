@@ -408,6 +408,25 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
           def can?(_assigns, :delete, _item), do: false
         end
 
+        # Fallback for custom item actions and any other actions
+        # Checks Ash authorization if a matching action exists, otherwise allows by default
+        def can?(assigns, action, item) do
+          case Ash.Resource.Info.action(@resource, action) do
+            nil ->
+              true
+
+            ash_action ->
+              target =
+                if is_struct(item) and item.__struct__ == @resource do
+                  {item, ash_action.name}
+                else
+                  {@resource, ash_action.name}
+                end
+
+              Ash.can?(target, Map.get(assigns, :current_user))
+          end
+        end
+
         def maybe_default_options(assigns) do
           case assigns do
             %{field: {attribute_name, _field_cfg}} ->

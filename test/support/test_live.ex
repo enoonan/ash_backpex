@@ -113,3 +113,46 @@ defmodule TestLayout do
     """
   end
 end
+
+# Custom item action for testing can?/3 fallback
+defmodule TestPromoteItemAction do
+  @moduledoc false
+  use BackpexWeb, :item_action
+
+  @impl Backpex.ItemAction
+  def icon(assigns, _item) do
+    ~H"""
+    <Backpex.HTML.CoreComponents.icon
+      name="hero-arrow-up-circle"
+      class="h-5 w-5 cursor-pointer transition duration-75 hover:scale-110 hover:text-success"
+    />
+    """
+  end
+
+  @impl Backpex.ItemAction
+  def label(_assigns, _item), do: "Promote"
+
+  @impl Backpex.ItemAction
+  def handle(socket, _items, _data) do
+    {:ok, socket}
+  end
+end
+
+# LiveResource with custom item action for testing can?/3 fallback
+defmodule TestCustomItemActionLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.Item)
+    layout({TestLayout, :admin})
+
+    item_actions do
+      action :promote, TestPromoteItemAction
+    end
+
+    fields do
+      field(:name)
+    end
+  end
+end

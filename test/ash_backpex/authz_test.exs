@@ -41,6 +41,20 @@ defmodule AshBackpex.AuthzTest do
     end
   end
 
+  describe "AshBackpex.LiveResource :: can? with custom item actions" do
+    test "returns true for unknown actions that don't exist on the resource" do
+      # :promote is not an Ash action on Item, so fallback returns true
+      assert TestCustomItemActionLive.can?(%{current_user: nil}, :promote, %{})
+      assert TestCustomItemActionLive.can?(%{current_user: nil}, :some_unknown_action, %{})
+    end
+
+    test "checks Ash authorization when action exists on resource" do
+      # :read exists on Item resource, so it checks Ash.can?
+      # Item has no policies, so it should return true
+      assert TestCustomItemActionLive.can?(%{current_user: nil}, :read, %{})
+    end
+  end
+
   describe "AshBackpex.Adapter :: it can" do
     test "list/3" do
       user = user()
