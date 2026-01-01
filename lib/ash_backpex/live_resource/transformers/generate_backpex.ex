@@ -43,6 +43,14 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
         @update_action get_action_name.(@resource, :update, :update_action)
         @destroy_action get_action_name.(@resource, :destroy, :destroy_action)
 
+        @ash_primary_key (case Ash.Resource.Info.primary_key(@resource) do
+                            [key] ->
+                              key
+
+                            keys ->
+                              raise "AshBackpex requires a single primary key, got: #{inspect(keys)}"
+                          end)
+
         atom_to_title_case = fn atom ->
           atom
           |> Atom.to_string()
@@ -324,7 +332,9 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                       nil -> &AshBackpex.Adapter.load/3
                       some_loads -> &__MODULE__.load/3
                     end,
-                  init_order: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :init_order)
+                  init_order:
+                    Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :init_order) ||
+                      %{by: @ash_primary_key, direction: :asc}
                 ]
                 |> Keyword.reject(&(&1 |> elem(1) |> is_nil)),
               pubsub: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :pubsub),
@@ -337,7 +347,10 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                 Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :full_text_search),
               save_and_continue_button?:
                 Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :save_and_continue_button?),
-              on_mount: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :on_mount)
+              on_mount: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :on_mount),
+              primary_key:
+                Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :primary_key) ||
+                  @ash_primary_key
             ]
             |> Keyword.reject(&(&1 |> elem(1) |> is_nil))
 

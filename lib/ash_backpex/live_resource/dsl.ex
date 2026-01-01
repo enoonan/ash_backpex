@@ -342,7 +342,6 @@ defmodule AshBackpex.LiveResource.Dsl do
       ],
       init_order: [
         doc: "Order that will be used when no other order options are given.",
-        default: %{by: :id, direction: :asc},
         type: {
           :or,
           [
@@ -374,6 +373,10 @@ defmodule AshBackpex.LiveResource.Dsl do
         doc: "If the \"Save & Continue editing\" button is shown on form views.",
         type: :boolean,
         default: false
+      ],
+      primary_key: [
+        doc: "The primary key attribute used for identifying items. Defaults to :id.",
+        type: :atom
       ],
       on_mount: [
         doc: """
