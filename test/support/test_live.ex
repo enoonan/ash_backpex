@@ -170,3 +170,39 @@ defmodule TestNonDefaultPrimaryKeyNameLive do
     end
   end
 end
+
+defmodule TestCustomItemActionLiveWithOnly do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.Item)
+    layout({TestLayout, :admin})
+
+    item_actions do
+      action :promote, TestPromoteItemAction, only: [:row]
+    end
+
+    fields do
+      field(:name)
+    end
+  end
+end
+
+defmodule TestCustomItemActionLiveWithExcept do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.Item)
+    layout({TestLayout, :admin})
+
+    item_actions do
+      action :promote, TestPromoteItemAction, except: [:index]
+    end
+
+    fields do
+      field(:name)
+    end
+  end
+end
