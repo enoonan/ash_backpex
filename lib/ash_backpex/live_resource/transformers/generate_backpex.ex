@@ -38,6 +38,18 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
           end
         end
 
+        primary_key = fn ->
+          case(Ash.Resource.Info.primary_key(@resource)) do
+            nil ->
+              raise """
+              Unable to derive Backpex configuration for #{@resource} because it lacks a primary key.
+              """
+
+            [key | _] ->
+              key
+          end
+        end
+
         @create_action get_action_name.(@resource, :create, :create_action)
         @read_action get_action_name.(@resource, :read, :read_action)
         @update_action get_action_name.(@resource, :update, :update_action)
@@ -322,19 +334,14 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                     case Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :load) do
                       nil -> &AshBackpex.Adapter.load/3
                       some_loads -> &__MODULE__.load/3
-                    end,
-                  init_order: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :init_order)
+                    end
                 ]
                 |> Keyword.reject(&(&1 |> elem(1) |> is_nil)),
-              primary_key:
-                case Ash.Resource.Info.primary_key(@resource) do
-                  nil ->
-                    raise """
-                    Unable to derive Backpex configuration for #{@resource} because it lacks a primary key.
-                    """
-
-                  [key | _] ->
-                    key
+              primary_key: primary_key.(),
+              init_order:
+                case Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :init_order) do
+                  nil -> %{by: primary_key.(), direction: :asc}
+                  order -> order
                 end,
               layout: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :layout),
               pubsub: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :pubsub),

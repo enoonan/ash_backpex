@@ -103,9 +103,20 @@ defmodule AshBackpex.LiveResource.TransformerTest do
       assert Keyword.get(fields, :author).module == Backpex.Fields.BelongsTo
     end
 
-    test "derive non-default primary key" do
+    test "derive default and non-default primary key with init_order" do
       assert TestPostLive.config(:primary_key) == :id
+
+      assert TestPostLive.config(:init_order) == %{
+               direction: :asc,
+               by: :id
+             }
+
       assert TestNonDefaultPrimaryKeyNameLive.config(:primary_key) == :foo_key
+
+      assert TestNonDefaultPrimaryKeyNameLive.config(:init_order) == %{
+               direction: :asc,
+               by: :foo_key
+             }
     end
 
     test "include calculations as fields" do

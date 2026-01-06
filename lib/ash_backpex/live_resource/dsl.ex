@@ -341,8 +341,8 @@ defmodule AshBackpex.LiveResource.Dsl do
         default: 15
       ],
       init_order: [
-        doc: "Order that will be used when no other order options are given.",
-        default: %{by: :id, direction: :asc},
+        doc:
+          "Order that will be used when no other order options are given. Defaults to the primary key, ascending.",
         type: {
           :or,
           [

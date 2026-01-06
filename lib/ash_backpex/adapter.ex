@@ -70,7 +70,7 @@ defmodule AshBackpex.Adapter do
     ],
     init_order: [
       doc: """
-      You can configure the ordering of the resource index page. By default, the resources are ordered by the id field in ascending order.
+      You can configure the ordering of the resource index page. By default, the resources are ordered by the primary key field in ascending order.
       - %{by: :inserted_at, direction: :desc}
       """,
       type: {
