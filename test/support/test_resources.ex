@@ -230,6 +230,7 @@ defmodule AshBackpex.TestDomain.ReadOnlyEntry do
 end
 
 defmodule AshBackpex.TestDomain.NonDefaultPrimaryKeyName do
+  @moduledoc false
   use Ash.Resource,
     domain: AshBackpex.TestDomain,
     data_layer: AshSqlite.DataLayer
