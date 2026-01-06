@@ -103,9 +103,13 @@ defmodule AshBackpex.LiveResource.TransformerTest do
       assert Keyword.get(fields, :author).module == Backpex.Fields.BelongsTo
     end
 
+    test "derive non-default primary key" do
+      assert TestPostLive.config(:primary_key) == :id
+      assert TestNonDefaultPrimaryKeyNameLive.config(:primary_key) == :foo_key
+    end
+
     test "include calculations as fields" do
       fields = TestPostLive.fields()
-
       # Calculation
       assert Keyword.has_key?(fields, :word_count)
       word_count_field = Keyword.get(fields, :word_count)

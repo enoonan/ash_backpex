@@ -303,7 +303,6 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
         use Backpex.LiveResource,
             [
               adapter: AshBackpex.Adapter,
-              layout: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :layout),
               adapter_config:
                 [
                   resource: @resource,
@@ -327,6 +326,17 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                   init_order: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :init_order)
                 ]
                 |> Keyword.reject(&(&1 |> elem(1) |> is_nil)),
+              primary_key:
+                case Ash.Resource.Info.primary_key(@resource) do
+                  nil ->
+                    raise """
+                    Unable to derive Backpex configuration for #{@resource} because it lacks a primary key.
+                    """
+
+                  [key | _] ->
+                    key
+                end,
+              layout: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :layout),
               pubsub: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :pubsub),
               per_page_options:
                 Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :per_page_options),

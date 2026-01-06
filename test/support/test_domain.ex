@@ -11,5 +11,6 @@ defmodule AshBackpex.TestDomain do
     resource(AshBackpex.TestDomain.Comment)
     resource(AshBackpex.TestDomain.Item)
     resource(AshBackpex.TestDomain.ReadOnlyEntry)
+    resource AshBackpex.TestDomain.NonDefaultPrimaryKeyName
   end
 end

@@ -156,3 +156,17 @@ defmodule TestCustomItemActionLive do
     end
   end
 end
+
+defmodule TestNonDefaultPrimaryKeyNameLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource AshBackpex.TestDomain.NonDefaultPrimaryKeyName
+    layout({TestLayout, :admin})
+
+    fields do
+      field :foo_key
+    end
+  end
+end

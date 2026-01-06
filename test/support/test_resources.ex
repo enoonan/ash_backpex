@@ -228,3 +228,22 @@ defmodule AshBackpex.TestDomain.ReadOnlyEntry do
     defaults [:read, :create]
   end
 end
+
+defmodule AshBackpex.TestDomain.NonDefaultPrimaryKeyName do
+  use Ash.Resource,
+    domain: AshBackpex.TestDomain,
+    data_layer: AshSqlite.DataLayer
+
+  sqlite do
+    table "non_default_primary_key_name"
+    repo(AshBackpex.TestRepo)
+  end
+
+  attributes do
+    integer_primary_key :foo_key
+  end
+
+  actions do
+    defaults [:read, :create, :update, :destroy]
+  end
+end
