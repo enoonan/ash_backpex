@@ -2,6 +2,12 @@
 
 <!-- changelog -->
 
+## [v0.0.12]
+
+### Updates
+
+- Add missing ability to specify primary_key
+
 ## [v0.0.11]
 
 ### Fixes
