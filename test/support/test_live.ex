@@ -170,3 +170,37 @@ defmodule TestNonDefaultPrimaryKeyNameLive do
     end
   end
 end
+
+defmodule Demo.Backpex.Fields.CustomDateTime do
+  @moduledoc "Dummy field module for testing :field_mappings config override"
+  use Backpex.Field
+
+  @impl Backpex.Field
+  def render_value(assigns) do
+    ~H"<span>{@value}</span>"
+  end
+
+  @impl Backpex.Field
+  def render_form(assigns) do
+    ~H"""
+    <input type="datetime-local" />
+    """
+  end
+end
+
+defmodule TestCustomFieldMappingsLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.Post)
+    layout({TestLayout, :admin})
+
+    field_mappings(%{Ash.Type.DateTime => Demo.Backpex.Fields.CustomDateTime})
+
+    fields do
+      field(:title)
+      field(:published_at)
+    end
+  end
+end

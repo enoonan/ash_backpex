@@ -103,6 +103,16 @@ defmodule AshBackpex.LiveResource.TransformerTest do
       assert Keyword.get(fields, :author).module == Backpex.Fields.BelongsTo
     end
 
+    test "derive custom Backpex field types with field overrides" do
+      fields = TestCustomFieldMappingsLive.fields()
+
+      # this one is standard and not overridden
+      assert Keyword.get(fields, :title).module == Backpex.Fields.Text
+
+      # this one would be Ash.Type.DateTime if not overridden
+      assert Keyword.get(fields, :published_at).module == Demo.Backpex.Fields.CustomDateTime
+    end
+
     test "derive default and non-default primary key with init_order" do
       assert TestPostLive.config(:primary_key) == :id
 

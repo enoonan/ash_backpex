@@ -146,82 +146,90 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
 
         try_derive_module = fn attribute_name ->
           type = derive_type.(attribute_name)
+          field_mappings = Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :field_mappings) || %{}
 
-          case type do
-            Ash.Type.Boolean ->
-              Backpex.Fields.Boolean
+          # Check custom mappings first, then fall back to defaults
+          case Map.get(field_mappings, type) do
+            nil ->
+              case type do
+                Ash.Type.Boolean ->
+                  Backpex.Fields.Boolean
 
-            Ash.Type.String ->
-              attribute_name |> select_or.(Backpex.Fields.Text)
+                Ash.Type.String ->
+                  attribute_name |> select_or.(Backpex.Fields.Text)
 
-            Ash.Type.Atom ->
-              attribute_name |> select_or.(Backpex.Fields.Text)
+                Ash.Type.Atom ->
+                  attribute_name |> select_or.(Backpex.Fields.Text)
 
-            Ash.Type.CiString ->
-              attribute_name |> select_or.(Backpex.Fields.Text)
+                Ash.Type.CiString ->
+                  attribute_name |> select_or.(Backpex.Fields.Text)
 
-            Ash.Type.Time ->
-              Backpex.Fields.Time
+                Ash.Type.Time ->
+                  Backpex.Fields.Time
 
-            Ash.Type.Date ->
-              Backpex.Fields.Date
+                Ash.Type.Date ->
+                  Backpex.Fields.Date
 
-            Ash.Type.UtcDatetime ->
-              Backpex.Fields.DateTime
+                Ash.Type.UtcDatetime ->
+                  Backpex.Fields.DateTime
 
-            Ash.Type.UtcDatetimeUsec ->
-              Backpex.Fields.DateTime
+                Ash.Type.UtcDatetimeUsec ->
+                  Backpex.Fields.DateTime
 
-            Ash.Type.DateTime ->
-              Backpex.Fields.DateTime
+                Ash.Type.DateTime ->
+                  Backpex.Fields.DateTime
 
-            Ash.Type.NaiveDateTime ->
-              Backpex.Fields.DateTime
+                Ash.Type.NaiveDateTime ->
+                  Backpex.Fields.DateTime
 
-            Ash.Type.Integer ->
-              attribute_name |> select_or.(Backpex.Fields.Number)
+                Ash.Type.Integer ->
+                  attribute_name |> select_or.(Backpex.Fields.Number)
 
-            Ash.Type.Float ->
-              attribute_name |> select_or.(Backpex.Fields.Number)
+                Ash.Type.Float ->
+                  attribute_name |> select_or.(Backpex.Fields.Number)
 
-            :belongs_to ->
-              Backpex.Fields.BelongsTo
+                :belongs_to ->
+                  Backpex.Fields.BelongsTo
 
-            :has_many ->
-              Backpex.Fields.HasMany
+                :has_many ->
+                  Backpex.Fields.HasMany
 
-            :count ->
-              Backpex.Fields.Number
+                :count ->
+                  Backpex.Fields.Number
 
-            :exists ->
-              Backpex.Fields.Boolean
+                :exists ->
+                  Backpex.Fields.Boolean
 
-            :sum ->
-              Backpex.Fields.Number
+                :sum ->
+                  Backpex.Fields.Number
 
-            :max ->
-              Backpex.Fields.Number
+                :max ->
+                  Backpex.Fields.Number
 
-            :min ->
-              Backpex.Fields.Number
+                :min ->
+                  Backpex.Fields.Number
 
-            :avg ->
-              Backpex.Fields.Number
+                :avg ->
+                  Backpex.Fields.Number
 
-            {:array, Ash.Type.Atom} ->
-              attribute_name |> multiselect_or.(Backpex.Fields.Text)
+                {:array, Ash.Type.Atom} ->
+                  attribute_name |> multiselect_or.(Backpex.Fields.Text)
 
-            {:array, Ash.Type.String} ->
-              attribute_name |> multiselect_or.(Backpex.Fields.Text)
+                {:array, Ash.Type.String} ->
+                  attribute_name |> multiselect_or.(Backpex.Fields.Text)
 
-            {:array, Ash.Type.CiString} ->
-              attribute_name |> multiselect_or.(Backpex.Fields.Text)
+                {:array, Ash.Type.CiString} ->
+                  attribute_name |> multiselect_or.(Backpex.Fields.Text)
 
-            {:array, Ash.Type.Integer} ->
-              attribute_name |> multiselect_or.(Backpex.Fields.Number)
+                {:array, Ash.Type.Integer} ->
+                  attribute_name |> multiselect_or.(Backpex.Fields.Number)
 
-            {:array, Ash.Type.Float} ->
-              attribute_name |> multiselect_or.(Backpex.Fields.Number)
+                {:array, Ash.Type.Float} ->
+                  attribute_name |> multiselect_or.(Backpex.Fields.Number)
+              end
+
+            custom_module ->
+              custom_module
           end
         end
 

@@ -309,6 +309,12 @@ defmodule AshBackpex.LiveResource.Dsl do
         doc:
           "Panels to be displayed in the admin create/edit forms. Format: [panel_key: \"Panel Title\"]"
       ],
+      field_mappings: [
+        type: {:map, :atom, :atom},
+        default: %{},
+        doc:
+          "Override default Ash type to Backpex field module mappings. Format: %{Ash.Type.DateTime => MyApp.Fields.CustomDateTime}"
+      ],
       pubsub: [
         doc: "PubSub configuration.",
         type: :keyword_list,
