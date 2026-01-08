@@ -134,4 +134,36 @@ defmodule AshBackpex.LiveResource.TransformerTest do
       assert function_exported?(TestPostLive, :can?, 3)
     end
   end
+
+  describe "return correct placement for item_actions" do
+    test "include :only option in item action config" do
+      item_actions = TestCustomItemActionLiveWithOnly.item_actions([])
+
+      assert Keyword.has_key?(item_actions, :promote)
+      promote_config = Keyword.get(item_actions, :promote)
+      assert promote_config.only == [:row]
+    end
+
+    test "include :except option in item action config" do
+      item_actions = TestCustomItemActionLiveWithExcept.item_actions([])
+
+      assert Keyword.has_key?(item_actions, :promote)
+      promote_config = Keyword.get(item_actions, :promote)
+      assert promote_config.except == [:index]
+    end
+
+    test "not include :only when not specified" do
+      item_actions = TestCustomItemActionLive.item_actions([])
+
+      promote_config = Keyword.get(item_actions, :promote)
+      refute Map.has_key?(promote_config, :only)
+    end
+
+    test "not include :except when not specified" do
+      item_actions = TestCustomItemActionLiveWithOnly.item_actions([])
+
+      promote_config = Keyword.get(item_actions, :promote)
+      refute Map.has_key?(promote_config, :except)
+    end
+  end
 end

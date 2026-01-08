@@ -213,7 +213,7 @@ defmodule AshBackpex.LiveResource.Dsl do
     @moduledoc """
     Configuration options for `Backpex.ItemAction`
     """
-    defstruct [:name, :module]
+    defstruct [:name, :module, :only, :except]
   end
 
   @item_action %Spark.Dsl.Entity{
@@ -228,7 +228,17 @@ defmodule AshBackpex.LiveResource.Dsl do
          type: :module,
          required: true,
          doc: "The module to use for the item action. You must create the module"
-       ]}
+       ]},
+      only: [
+        type: {:list, :atom},
+        doc:
+          "The only key is used to include specified placements, meaning the item action will only appear in the specified locations."
+      ],
+      except: [
+        type: {:list, :atom},
+        doc:
+          "The except key is used to exclude specified placements, meaning the item action will appear in all locations except those specified."
+      ]
     ]
   }
 

@@ -296,13 +296,19 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                  end)
 
         @item_actions Spark.Dsl.Extension.get_entities(__MODULE__, [:backpex, :item_actions])
-                      |> Enum.reduce([], fn action, acc ->
+                      |> Enum.reverse()
+                      |> Enum.reduce([], fn field, acc ->
                         Keyword.put(
                           acc,
-                          action.name,
+                          field.name,
                           %{
-                            module: action.module
+                            module: field.module,
+                            only: field.only,
+                            except: field.except
                           }
+                          |> Map.to_list()
+                          |> Enum.reject(fn {k, v} -> is_nil(v) end)
+                          |> Map.new()
                         )
                       end)
 
