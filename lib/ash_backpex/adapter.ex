@@ -203,7 +203,7 @@ defmodule AshBackpex.Adapter do
       |> Ash.Query.new()
       |> apply_filters(Keyword.get(criteria, :filters))
       |> BasicSearch.apply(Map.get(assigns, :params), live_resource)
-      |> Ash.Query.sort(resolve_sort(assigns, config[:init_order]))
+      |> Ash.Query.sort(resolve_sort(assigns, live_resource.config(:init_order)))
       |> Ash.Query.page(limit: page_size, offset: (page_num - 1) * page_size)
       |> Ash.Query.select(select)
       |> Ash.Query.load(default_loads ++ load)
