@@ -2,6 +2,16 @@
 
 <!-- changelog -->
 
+## [v0.0.13]
+
+### Fixes
+
+- [fix: fix: one more init_order fix](https://github.com/enoonan/ash_backpex/pull/18) by [kepi](https://github.com/kepi)
+
+### Fixes
+
+- [fix: add catch-all can?/3 clause for custom item actions](https://github.com/enoonan/ash_backpex/pull/13) by [psoukry](https://github.com/pshoukry) 
+
 ## [v0.0.12]
 
 ### Updates
