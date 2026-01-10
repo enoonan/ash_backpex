@@ -100,7 +100,7 @@ defmodule AshBackpex.LiveResource.TransformerTest do
       assert Keyword.get(fields, :tags).module == Backpex.Fields.MultiSelect
 
       # Belongs to -> BelongsTo
-      assert Keyword.get(fields, :author).module == Backpex.Fields.BelongsTo
+      assert Keyword.get(fields, :author).module == AshBackpex.Fields.BelongsTo
     end
 
     test "derive default and non-default primary key with init_order" do
