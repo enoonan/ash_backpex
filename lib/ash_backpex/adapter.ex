@@ -97,30 +97,132 @@ defmodule AshBackpex.Adapter do
   alias AshBackpex.{BasicSearch, LoadSelectResolver}
 
   @moduledoc """
-    The `Backpex.Adapter` to connect your `Backpex.LiveResource` to an `Ash.Resource`.
+  The Backpex adapter implementation for Ash resources.
 
-    Typically, you should not need to reference this Adapter directly. Sensible defaults will be provided when using AshBackpex.LiveResource
+  This module implements the `Backpex.Adapter` behaviour to bridge Backpex's admin
+  interface operations with Ash Framework's resource system. It handles all CRUD
+  operations, search, filtering, sorting, and pagination by translating Backpex
+  requests into Ash queries and actions.
+
+  ## Automatic Usage
+
+  When you use `AshBackpex.LiveResource`, this adapter is automatically configured
+  for you. You typically don't need to reference it directly:
+
   ```elixir
-  defmodule MyAppWeb.Live.PostLive do
-    use AshBackpex.Live
+  defmodule MyAppWeb.Admin.PostLive do
+    use AshBackpex.LiveResource
 
     backpex do
       resource MyApp.Blog.Post
-      load [:author, :comments]
+      layout {MyAppWeb.Layouts, :admin}
+
       fields do
-        field :title, Backpex.Fields.Text
-        field :author, Backpex.Fields.BelongsTo
-        field :comments, Backpex.Fields.HasMany, only: [:show]
+        field :title
+        field :author
       end
-      singular_label "Post"
-      plural_label "Posts"
     end
   end
   ```
 
-    ## `adapter_config`
+  ## Key Features
 
-    #{NimbleOptions.docs(@config_schema)}
+  ### CRUD Operations
+
+  The adapter translates Backpex operations to Ash actions:
+
+  - `get/4` - Fetches a single record using `Ash.read_one/2`
+  - `list/4` - Lists records with pagination using `Ash.read/2`
+  - `count/4` - Counts matching records using `Ash.count/2`
+  - `insert/2` - Creates records using `Ash.create/2`
+  - `update/2` - Updates records using `Ash.update/2`
+  - `delete_all/2` - Bulk deletes using `Ash.bulk_destroy/4`
+
+  ### Authorization
+
+  The adapter respects Ash authorization by passing the `actor` option
+  (from `assigns.current_user`) to all Ash operations. This integrates
+  with your Ash policies automatically.
+
+  ### Custom Actions
+
+  You can specify which Ash actions to use via the DSL or adapter config:
+
+  ```elixir
+  backpex do
+    resource MyApp.Blog.Post
+    layout {MyAppWeb.Layouts, :admin}
+
+    create_action :admin_create
+    read_action :admin_read
+    update_action :admin_update
+    destroy_action :soft_delete
+  end
+  ```
+
+  If not specified, the primary action for each type is used.
+
+  ### Custom Changesets
+
+  For advanced control over creates and updates, provide custom changeset functions:
+
+  ```elixir
+  backpex do
+    resource MyApp.Blog.Post
+    layout {MyAppWeb.Layouts, :admin}
+
+    create_changeset fn item, params, metadata ->
+      assigns = Keyword.get(metadata, :assigns)
+      target = Keyword.get(metadata, :target)
+
+      Ash.Changeset.for_create(item.__struct__, :create, params,
+        actor: assigns.current_user
+      )
+    end
+  end
+  ```
+
+  The changeset function receives:
+  - `item` - The struct being created/updated
+  - `params` - The form parameters
+  - `metadata` - Keyword list with `:assigns` and `:target` keys
+
+  ### Loads
+
+  Relationships, calculations, and aggregates are loaded automatically based on
+  the fields you configure. Additional loads can be specified:
+
+  ```elixir
+  backpex do
+    resource MyApp.Blog.Post
+    layout {MyAppWeb.Layouts, :admin}
+    load [:author, :comments, nested: [:author]]
+  end
+  ```
+
+  ### Search and Filtering
+
+  Search is handled by `AshBackpex.BasicSearch` which applies `contains` filters
+  on searchable fields. Filters from the Backpex UI are translated to Ash query
+  filters automatically.
+
+  ### Sorting
+
+  Initial sorting is configurable via `init_order`:
+
+  ```elixir
+  backpex do
+    resource MyApp.Blog.Post
+    layout {MyAppWeb.Layouts, :admin}
+    init_order %{by: :inserted_at, direction: :desc}
+  end
+  ```
+
+  User-requested sorting from the UI is handled via query parameters.
+
+  ## Configuration Schema
+
+  #{NimbleOptions.docs(@config_schema)}
   """
 
   require Ash.Query

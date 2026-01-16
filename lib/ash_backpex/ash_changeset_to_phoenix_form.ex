@@ -1,9 +1,52 @@
 defimpl Phoenix.HTML.FormData, for: Ash.Changeset do
   @moduledoc """
-  Implementation of Phoenix.HTML.FormData protocol for Ash.Changeset.
+  Implementation of `Phoenix.HTML.FormData` protocol for `Ash.Changeset`.
 
-  This implementation allows Ash changesets to be used directly with Phoenix forms,
-  providing access to changeset attributes, arguments, and validation errors.
+  This protocol implementation allows Ash changesets to be used directly with
+  Phoenix forms and Backpex's form rendering. It bridges Ash's changeset system
+  with Phoenix's form handling, enabling seamless integration in the admin interface.
+
+  ## What This Enables
+
+  With this implementation, you can use Ash changesets directly in Phoenix forms:
+
+  ```heex
+  <.form for={@changeset} phx-submit="save">
+    <.input field={@form[:title]} label="Title" />
+    <.input field={@form[:content]} label="Content" />
+  </.form>
+  ```
+
+  ## Features
+
+  - **Attribute Access** - Form inputs can read from changeset attributes
+  - **Argument Access** - Form inputs can read from action arguments
+  - **Error Handling** - Ash changeset errors are converted to Phoenix form errors
+  - **Nested Forms** - Supports both single (cardinality one) and multiple (cardinality many) nested forms
+  - **Data Binding** - Values are sourced from params, then changeset changes, then original data
+
+  ## Value Resolution
+
+  When a form field requests a value, this implementation looks in order:
+
+  1. Form params (user input from the current request)
+  2. Changeset arguments (for action arguments)
+  3. Changeset attribute changes
+  4. Original changeset data
+
+  ## Error Conversion
+
+  Ash errors are converted to Phoenix form error tuples `{field, message}`:
+
+  - Errors with a `:field` key use that field
+  - Errors with a `:fields` list use the first field
+  - Other errors are assigned to the `:base` field
+
+  ## Automatic Usage
+
+  This implementation is loaded automatically when you use AshBackpex. You don't
+  need to configure anything - the adapter uses Ash changesets internally and
+  this protocol makes them work with Phoenix/Backpex forms.
   """
 
   def to_form(changeset, opts) do

@@ -1,25 +1,257 @@
 defmodule AshBackpex.LiveResource.Dsl do
   @moduledoc """
-  defmodule MyAppWeb.Live.PostLive do
-    use AshBackpex.Live
+  DSL extension for defining AshBackpex LiveResources.
+
+  This module defines the `backpex` DSL section and all its nested sections
+  (`fields`, `filters`, `item_actions`) that configure how your Ash resource
+  is presented in the Backpex admin interface.
+
+  ## Sections
+
+  - `backpex` - The root section containing all configuration
+    - `fields` - Define which attributes, relationships, calculations, and aggregates to display
+    - `filters` - Add filterable columns to the index view
+    - `item_actions` - Add or remove actions available on individual items
+
+  ## backpex Section Options
+
+  ### Required Options
+
+  - `resource` - The Ash resource module to connect to
+  - `layout` - The LiveView layout function or tuple, e.g., `{MyAppWeb.Layouts, :admin}`
+
+  ### Optional Options
+
+  - `load` - List of relationships/calculations/aggregates to preload
+  - `create_action` - Ash action for creating (defaults to primary create action)
+  - `read_action` - Ash action for reading (defaults to primary read action)
+  - `update_action` - Ash action for updating (defaults to primary update action)
+  - `destroy_action` - Ash action for destroying (defaults to primary destroy action)
+  - `create_changeset` - Custom changeset function for creates (3-arity)
+  - `update_changeset` - Custom changeset function for updates (3-arity)
+  - `singular_name` - Display name for single items (e.g., "Post")
+  - `plural_name` - Display name for multiple items (e.g., "Posts")
+  - `panels` - Keyword list of panel definitions for form organization
+  - `pubsub` - PubSub configuration with `:server` and `:topic` keys
+  - `per_page_options` - List of page size options (default: `[15, 50, 100]`)
+  - `per_page_default` - Default page size (default: `15`)
+  - `init_order` - Initial sort order, e.g., `%{by: :inserted_at, direction: :desc}`
+  - `fluid?` - Whether layout fills entire width (default: `false`)
+  - `full_text_search` - Column name for full-text search
+  - `save_and_continue_button?` - Show "Save & Continue" button (default: `false`)
+  - `on_mount` - LiveView on_mount hooks to attach
+
+  ## fields Section
+
+  The `fields` section defines which Ash resource fields appear in the admin interface.
+  Fields can be attributes, relationships, calculations, or aggregates.
+
+  ```elixir
+  fields do
+    field :title do
+      searchable true
+      label "Post Title"
+    end
+
+    field :content do
+      module Backpex.Fields.Textarea
+      rows 10
+    end
+
+    field :status do
+      # Automatically uses Select for atom with one_of constraint
+    end
+
+    field :author do
+      display_field :name
+      live_resource MyAppWeb.Admin.UserLive
+    end
+
+    field :published_at do
+      format "%Y-%m-%d %H:%M"
+      only [:show, :index]  # Hide from forms
+    end
+  end
+  ```
+
+  ### Field Options
+
+  #### Common Options (all field types)
+
+  - `module` - Override the auto-derived Backpex.Fields.* module
+  - `label` - Custom label (defaults to title-cased attribute name)
+  - `only` - List of views where field appears (`:index`, `:show`, `:new`, `:edit`)
+  - `except` - List of views where field is hidden
+  - `searchable` - Enable text search on this field (default: `false`)
+  - `orderable` - Allow sorting by this field
+  - `visible` - Function to control visibility `fn assigns -> boolean end`
+  - `can?` - Function to control access `fn assigns -> boolean end`
+  - `panel` - Panel key this field belongs to (must match `panels` config)
+  - `index_editable` - Allow inline editing on index view
+  - `index_column_class` - CSS class for index column
+  - `readonly` - Make field read-only (boolean or function)
+  - `help_text` - Help text below input (string or `:description` to use attribute description)
+  - `default` - Default value for new records
+  - `render` - Custom render function
+  - `render_form` - Custom form render function
+
+  #### Text Field Options
+
+  - `placeholder` - Placeholder text (string or function)
+  - `debounce` - Debounce timeout in ms, "blur", or function
+  - `throttle` - Throttle timeout in ms or function
+
+  #### Textarea Options
+
+  - `rows` - Number of visible text lines (default: `2`)
+
+  #### Relationship Field Options (BelongsTo, HasMany)
+
+  - `display_field` - Field to display from related record (e.g., `:name`)
+  - `display_field_form` - Field to display in form select
+  - `live_resource` - LiveResource module for the association (enables linking)
+  - `link_assocs` - Auto-generate links to associations (default: `true` for HasMany)
+  - `options_query` - Function to filter available options `fn query, field -> query end`
+  - `prompt` - Text when no option selected (string or function)
+
+  #### Date/Time Field Options
+
+  - `format` - strftime format string or function (default: `"%Y-%m-%d"`)
+
+  #### Select/MultiSelect Field Options
+
+  - `options` - List of options or function returning options
+
+  ## filters Section
+
+  Add filters to the index view:
+
+  ```elixir
+  filters do
+    filter :published do
+      module Backpex.Filters.Boolean
+    end
+
+    filter :status do
+      module Backpex.Filters.Select
+      label "Post Status"
+    end
+
+    filter :created_after do
+      module MyApp.Filters.DateRange
+    end
+  end
+  ```
+
+  ### Filter Options
+
+  - `module` (required) - The Backpex.Filters.* module or custom filter module
+  - `label` - Custom label (defaults to title-cased attribute name)
+
+  ## item_actions Section
+
+  Configure per-item actions:
+
+  ```elixir
+  item_actions do
+    # Remove default actions
+    strip_default [:delete]
+
+    # Add custom actions
+    action :publish, MyApp.ItemActions.Publish
+    action :archive, MyApp.ItemActions.Archive
+  end
+  ```
+
+  ### Item Action Options
+
+  - `strip_default` - List of default actions to remove (`:edit`, `:delete`, `:show`)
+  - `action` - Add a custom item action with `action :name, ModuleName`
+
+  ## Complete Example
+
+  ```elixir
+  defmodule MyAppWeb.Admin.PostLive do
+    use AshBackpex.LiveResource
 
     backpex do
       resource MyApp.Blog.Post
+      layout {MyAppWeb.Layouts, :admin}
       load [:author, :comments]
+
+      singular_name "Blog Post"
+      plural_name "Blog Posts"
+
+      init_order %{by: :inserted_at, direction: :desc}
+      per_page_default 25
+      per_page_options [10, 25, 50, 100]
+
+      panels [
+        content: "Content",
+        metadata: "Metadata"
+      ]
+
       fields do
-        field :title, Backpex.Fields.Text
-        field :author, Backpex.Fields.BelongsTo
-        field :comments, Backpex.Fields.HasMany, only: [:show]
+        field :title do
+          searchable true
+          panel :content
+        end
+
+        field :content do
+          module Backpex.Fields.Textarea
+          rows 15
+          panel :content
+        end
+
+        field :status do
+          panel :metadata
+        end
+
+        field :published_at do
+          format "%B %d, %Y at %H:%M"
+          panel :metadata
+        end
+
+        field :author do
+          display_field :name
+          live_resource MyAppWeb.Admin.UserLive
+          panel :metadata
+        end
+
+        field :view_count do
+          only [:show, :index]
+        end
       end
-      singular_name "Post"
-      plural_name "Posts"
+
+      filters do
+        filter :status do
+          module Backpex.Filters.Select
+        end
+
+        filter :published_at do
+          module Backpex.Filters.Date
+        end
+      end
+
+      item_actions do
+        strip_default [:delete]
+        action :publish, MyApp.ItemActions.Publish
+        action :archive, MyApp.ItemActions.Archive
+      end
     end
   end
+  ```
   """
 
   defmodule Field do
     @moduledoc """
-    Configuration options for `Backpex.Field.{}`
+    Internal struct representing a field configuration in the AshBackpex DSL.
+
+    This struct holds all the configuration options for a single field in the
+    `fields` section of a `backpex` block. Most users don't interact with this
+    struct directly - it's populated by the DSL at compile time.
+
+    See `AshBackpex.LiveResource.Dsl` for field configuration options.
     """
     defstruct [
       :attribute,
@@ -178,7 +410,12 @@ defmodule AshBackpex.LiveResource.Dsl do
 
   defmodule Filter do
     @moduledoc """
-    Configuration options for `Backpex.Filters.{}`
+    Internal struct representing a filter configuration in the AshBackpex DSL.
+
+    This struct holds the configuration for a single filter in the `filters`
+    section of a `backpex` block.
+
+    See `AshBackpex.LiveResource.Dsl` for filter configuration options.
     """
     defstruct [:attribute, :module, :label]
   end
@@ -211,7 +448,12 @@ defmodule AshBackpex.LiveResource.Dsl do
 
   defmodule ItemAction do
     @moduledoc """
-    Configuration options for `Backpex.ItemAction`
+    Internal struct representing an item action configuration in the AshBackpex DSL.
+
+    This struct holds the configuration for a single custom item action in the
+    `item_actions` section of a `backpex` block.
+
+    See `AshBackpex.LiveResource.Dsl` for item action configuration options.
     """
     defstruct [:name, :module, :only, :except]
   end

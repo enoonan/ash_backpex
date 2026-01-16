@@ -2,6 +2,13 @@
 
 <!-- changelog -->
 
+## [v0.1.0]
+
+### Updates
+
+- Bump Backpex dependency to 0.17.0. Backpex has dropped its built-in Ash integration in favor of this community project.
+- Add Getting Started guide
+
 ## [v0.0.13]
 
 ### Fixes

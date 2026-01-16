@@ -1,6 +1,83 @@
 defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
   @moduledoc """
-    Generates a Backpex.LiveResource based on the the `backpex` DSL configuration provided in files that `use AshBackpex.LiveResource`.
+  Spark DSL transformer that generates Backpex LiveResource code at compile time.
+
+  This transformer is the core of AshBackpex - it reads your `backpex` DSL configuration
+  and generates all the necessary code to create a fully functional Backpex LiveResource
+  backed by your Ash resource.
+
+  ## What Gets Generated
+
+  When you `use AshBackpex.LiveResource` with a `backpex` block, this transformer
+  generates:
+
+  ### Backpex Configuration
+
+  - `use Backpex.LiveResource` with the `AshBackpex.Adapter`
+  - Adapter configuration with resource, repo, and action settings
+  - Layout, pagination, sorting, and other Backpex options
+
+  ### Callback Implementations
+
+  - `fields/0` - Returns the field configurations with auto-derived modules
+  - `filters/0` - Returns the filter configurations
+  - `item_actions/1` - Returns item actions (with default stripping support)
+  - `singular_name/0` - Returns the singular display name
+  - `plural_name/0` - Returns the plural display name
+  - `panels/0` - Returns panel configurations
+
+  ### Authorization
+
+  - `can?/3` - Checks Ash authorization for each action type:
+    - `:new` checks create action authorization
+    - `:index` / `:show` check read action authorization
+    - `:edit` checks update action authorization
+    - `:delete` checks destroy action authorization
+    - Custom actions check for matching Ash actions
+
+  ### Helper Functions
+
+  - `load/3` - Returns configured loads for the adapter
+  - `maybe_default_options/1` - Derives select options from `one_of` constraints
+
+  ## Field Type Derivation
+
+  The transformer automatically maps Ash types to Backpex field modules:
+
+  | Ash Type | Backpex Field |
+  |----------|---------------|
+  | `Ash.Type.String` | `Backpex.Fields.Text` |
+  | `Ash.Type.Atom` | `Backpex.Fields.Text` (or `Select` with `one_of`) |
+  | `Ash.Type.Boolean` | `Backpex.Fields.Boolean` |
+  | `Ash.Type.Integer` | `Backpex.Fields.Number` |
+  | `Ash.Type.Float` | `Backpex.Fields.Number` |
+  | `Ash.Type.Date` | `Backpex.Fields.Date` |
+  | `Ash.Type.Time` | `Backpex.Fields.Time` |
+  | `Ash.Type.DateTime` | `Backpex.Fields.DateTime` |
+  | `:belongs_to` | `Backpex.Fields.BelongsTo` |
+  | `:has_many` | `Backpex.Fields.HasMany` |
+  | `{:array, _}` | `Backpex.Fields.MultiSelect` |
+  | Aggregates (`:count`, `:sum`, etc.) | `Backpex.Fields.Number` or `Boolean` |
+
+  ## Constraint Handling
+
+  - Attributes with `one_of` constraints automatically use `Backpex.Fields.Select`
+  - Array attributes with `one_of` constraints use `Backpex.Fields.MultiSelect`
+  - Options are auto-derived from constraint values with title-cased labels
+
+  ## Error Handling
+
+  The transformer raises helpful errors when:
+
+  - A field doesn't exist on the Ash resource
+  - A field type can't be derived (suggests using `module` option)
+  - The resource lacks a primary key
+
+  ## Internal Use
+
+  This module is invoked automatically by Spark during compilation. You don't
+  need to call it directly - just define your `backpex` block and the transformer
+  handles the rest.
   """
 
   use Spark.Dsl.Transformer

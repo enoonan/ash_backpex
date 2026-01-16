@@ -1,7 +1,7 @@
 defmodule AshBackpex.MixProject do
   use Mix.Project
 
-  @version "0.0.13"
+  @version "0.1.0"
   @source_url "https://github.com/enoonan/ash_backpex"
 
   def project do
@@ -26,9 +26,32 @@ defmodule AshBackpex.MixProject do
 
   defp docs do
     [
-      # The main page in the docs
       main: "readme",
-      extras: ["README.md"]
+      extras: [
+        "README.md",
+        "guides/getting-started.md"
+      ],
+      groups_for_extras: [
+        Guides: ~r/guides\/.*/
+      ],
+      groups_for_modules: [
+        "LiveResource DSL": [
+          AshBackpex.LiveResource,
+          AshBackpex.LiveResource.Dsl,
+          AshBackpex.LiveResource.Dsl.Field,
+          AshBackpex.LiveResource.Dsl.Filter,
+          AshBackpex.LiveResource.Dsl.ItemAction,
+          AshBackpex.LiveResource.Info
+        ],
+        Adapter: [
+          AshBackpex.Adapter
+        ],
+        Internals: [
+          AshBackpex.BasicSearch,
+          AshBackpex.LoadSelectResolver,
+          AshBackpex.LiveResource.Transformers.GenerateBackpex
+        ]
+      ]
     ]
   end
 
@@ -42,7 +65,7 @@ defmodule AshBackpex.MixProject do
     [
       {:ash, "~> 3.0"},
       {:ash_phoenix, "~> 2.3.14"},
-      {:backpex, "~> 0.16.0"},
+      {:backpex, "~> 0.17.0"},
       {:spark, "~> 2.0"},
       {:phoenix_html, "~> 3.0 or ~> 4.0"},
 
@@ -51,6 +74,7 @@ defmodule AshBackpex.MixProject do
       {:simple_sat, "~> 0.1.3", only: [:dev, :test]},
       {:ash_sqlite, "~> 0.1", only: :test},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
+      {:usage_rules, "~> 0.1", only: :dev, runtime: false},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:ex_check, "~> 0.14", only: [:dev, :test]},
       {:credo, ">= 0.0.0", only: [:dev, :test], runtime: false},
@@ -61,7 +85,7 @@ defmodule AshBackpex.MixProject do
   defp package do
     [
       name: "ash_backpex",
-      files: ~w(lib mix.exs README.md LICENSE),
+      files: ~w(lib mix.exs README.md LICENSE usage-rules.md),
       licenses: ["MIT"],
       links: %{
         "GitHub" => @source_url,

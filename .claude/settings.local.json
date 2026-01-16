@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mix test:*)",
+      "Bash(mix docs:*)",
+      "WebSearch",
+      "WebFetch(domain:hexdocs.pm)",
+      "WebFetch(domain:hex.pm)",
+      "WebFetch(domain:backpex.live)",
+      "Bash(mix deps.get:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(mix ecto.create:*)",
+      "Bash(mix ecto.migrate:*)"
+    ]
+  }
+}
