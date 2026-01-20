@@ -487,6 +487,45 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
           end
         end
 
+        # Derive the filter type for Range filters (used by Backpex.Filters.Range type/0 callback)
+        # Returns :number for numeric types, :date for dates, :datetime for datetimes
+        derive_filter_type = fn attribute_name ->
+          type = derive_type.(attribute_name)
+
+          case type do
+            Ash.Type.Integer -> :number
+            Ash.Type.Float -> :number
+            Ash.Type.Decimal -> :number
+            Ash.Type.Date -> :date
+            Ash.Type.DateTime -> :datetime
+            Ash.Type.UtcDatetime -> :datetime
+            Ash.Type.UtcDatetimeUsec -> :datetime
+            Ash.Type.NaiveDateTime -> :datetime
+            _ -> nil
+          end
+        end
+
+        # Derive filter options for Select filters from one_of constraints
+        # Returns a list of {label, value} tuples for use with Select filter options/1 callback
+        derive_filter_options = fn attribute_name, filter_module ->
+          case filter_module do
+            AshBackpex.Filters.Select ->
+              case attribute_name |> get_one_of_constraint.() do
+                constraints when is_list(constraints) ->
+                  constraints
+                  |> Enum.map(fn val ->
+                    {atom_to_title_case.(val), val}
+                  end)
+
+                _ ->
+                  []
+              end
+
+            _ ->
+              nil
+          end
+        end
+
         @fields Spark.Dsl.Extension.get_entities(__MODULE__, [:backpex, :fields])
                 |> Enum.reverse()
                 |> Enum.reduce([], fn field, acc ->
@@ -529,8 +568,13 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                      filter.attribute,
                      %{
                        module: module,
-                       label: filter.label || filter.attribute |> atom_to_title_case.()
+                       label: filter.label || filter.attribute |> atom_to_title_case.(),
+                       type: filter.attribute |> derive_filter_type.(),
+                       options: filter.attribute |> derive_filter_options.(module)
                      }
+                     |> Map.to_list()
+                     |> Enum.reject(fn {k, v} -> is_nil(v) end)
+                     |> Map.new()
                    )
                  end)
 
