@@ -47,6 +47,42 @@ defmodule MyAppWeb.Live.Admin.PostLive do
 end
 ```
 
+## Custom Field Type Mappings
+
+AshBackpex automatically maps Ash types to Backpex field modules, but you can customize these mappings globally or per-application.
+
+### Configuration
+
+```elixir
+# config/config.exs
+
+# Global config (applies to all apps using AshBackpex)
+config :ash_backpex,
+  field_type_mappings: %{
+    MyApp.Types.Money => Backpex.Fields.Currency,
+    MyApp.Types.RichText => Backpex.Fields.Textarea
+  }
+
+# Or use a function for conditional logic
+config :ash_backpex,
+  field_type_mappings: fn type, constraints ->
+    case type do
+      MyApp.Types.Money -> Backpex.Fields.Currency
+      _ -> nil  # Fall back to default
+    end
+  end
+```
+
+### Precedence
+
+Field type resolution follows this order:
+1. Explicit `module` option in the field DSL
+2. App-scoped config (`config :my_app, AshBackpex, ...`)
+3. Global config (`config :ash_backpex, ...`)
+4. Default Ash type mappings
+
+See `AshBackpex.LiveResource` module docs for more examples and details.
+
 ## Filters and Actions
 
 ## Thanks!

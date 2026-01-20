@@ -61,6 +61,125 @@ defmodule AshBackpex.LiveResource do
   end
   ```
 
+  ### Custom Field Type Mappings
+
+  You can configure custom mappings from Ash types to Backpex field modules globally
+  or per-application. This is useful when you have custom Ash types (like `Money` or
+  `RichText`) that should consistently map to specific Backpex fields.
+
+  #### Configuration Options
+
+  **Global config** (applies to all apps using AshBackpex):
+
+  ```elixir
+  # config/config.exs
+  config :ash_backpex,
+    field_type_mappings: %{
+      MyApp.Types.Money => Backpex.Fields.Currency,
+      MyApp.Types.RichText => Backpex.Fields.Textarea
+    }
+  ```
+
+  **App-scoped config** (overrides global for a specific app):
+
+  ```elixir
+  # config/config.exs
+  config :my_app, AshBackpex,
+    field_type_mappings: %{
+      MyApp.Types.Money => MyApp.Fields.MoneyField
+    }
+  ```
+
+  #### Precedence Rules
+
+  Field type derivation follows this precedence order (highest to lowest):
+
+  1. **Explicit `module` option in DSL** - Always wins
+  2. **App-scoped config** - `config :my_app, AshBackpex, field_type_mappings: ...`
+  3. **Global config** - `config :ash_backpex, field_type_mappings: ...`
+  4. **Default mappings** - Built-in Ash type to Backpex field mappings
+
+  #### Map Format
+
+  Use a map when you have simple type-to-field mappings:
+
+  ```elixir
+  config :ash_backpex,
+    field_type_mappings: %{
+      # Override default String -> Text mapping
+      Ash.Type.String => Backpex.Fields.Textarea,
+
+      # Map custom Ash types
+      MyApp.Types.Money => Backpex.Fields.Currency,
+      MyApp.Types.RichText => MyApp.Fields.RichTextField,
+
+      # Map array types
+      {:array, Ash.Type.String} => Backpex.Fields.MultiSelect
+    }
+  ```
+
+  #### Function Format
+
+  Use a function when you need to inspect constraints or implement conditional logic:
+
+  ```elixir
+  config :ash_backpex,
+    field_type_mappings: fn type, constraints ->
+      case {type, constraints} do
+        # Map Money type to currency field
+        {MyApp.Types.Money, _} ->
+          Backpex.Fields.Currency
+
+        # Map strings with max_length > 255 to Textarea
+        {Ash.Type.String, constraints} when is_list(constraints) ->
+          if Keyword.get(constraints, :max_length, 0) > 255 do
+            Backpex.Fields.Textarea
+          else
+            nil  # Fall back to default
+          end
+
+        # Return nil to use default mapping
+        _ ->
+          nil
+      end
+    end
+  ```
+
+  The function must have arity 2, receiving `(type, constraints)`, and return either:
+  - A Backpex field module (atom) - Use this field for the type
+  - `nil` - Fall back to the default mapping
+
+  #### Common Use Cases
+
+  **Custom Rich Text field:**
+
+  ```elixir
+  config :ash_backpex,
+    field_type_mappings: %{
+      MyApp.Types.RichText => MyApp.Fields.TiptapEditor
+    }
+  ```
+
+  **Custom Money/Currency field:**
+
+  ```elixir
+  config :ash_backpex,
+    field_type_mappings: %{
+      Money.Ecto.Composite.Type => Backpex.Fields.Currency
+    }
+  ```
+
+  **Override all strings to use Textarea:**
+
+  ```elixir
+  config :ash_backpex,
+    field_type_mappings: %{
+      Ash.Type.String => Backpex.Fields.Textarea
+    }
+  ```
+
+  See `AshBackpex.Config` for more details on configuration options and validation.
+
   ### Ash Authorization Integration
 
   AshBackpex respects your Ash authorization policies. The generated `can?/3` callback

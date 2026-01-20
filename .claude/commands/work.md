@@ -5,7 +5,7 @@ description: Pick the next bead, complete it, and run CI checks.
 
 # Work - Autonomous Task Execution
 
-When this skill is invoked, complete the following steps:
+When this skill is invoked, complete ALL of the following steps in order:
 
 ## 1. Check for available beads
 
@@ -31,7 +31,7 @@ bd update <id> --status in_progress
 bd show <id>
 ```
 
-Read the full bead context including the `--design` field to understand the implementation plan.
+Read the full bead context including the design field to understand the implementation plan.
 
 ## 4. Implement the task
 
@@ -40,14 +40,31 @@ Read the full bead context including the `--design` field to understand the impl
 - Use TodoWrite to track progress on multi-step tasks
 - Ask clarifying questions if requirements are ambiguous
 
-## 5. Run /done then /exit
+## 5. Run CI checks
 
-Once the implementation is complete:
+```bash
+mix ci
+```
 
-1. Invoke the `/done` skill
-2. **CRITICAL**: After `/done` completes, you MUST run `/exit` to end the session
+If CI fails, fix the issues and re-run until it passes.
 
-The `/exit` command returns control to the Ralph loop for the next bead. Forgetting to run `/exit` will hang the automation.
+## 6. Commit changes
+
+Once CI passes, commit all changes:
+
+```bash
+git add -A && git commit -m "<type>: <description>"
+```
+
+Use conventional commit types: `feat:`, `fix:`, `chore:`, `refactor:`, `docs:`, `test:`
+
+## 7. Close the bead
+
+```bash
+bd close <id> && bd sync
+```
+
+---
 
 ## Notes
 
