@@ -44,7 +44,7 @@ cd demo
 mix deps.get
 mix ecto.create && mix ecto.migrate
 mix assets.setup
-mix phx.server            # http://localhost:4000/
+mix phx.server            # http://localhost:4005/
 ```
 
 ## Architecture
@@ -86,3 +86,10 @@ Tests use in-memory SQLite with fixtures defined in `test/support/`:
 - `test_domain.ex` - Test Ash domain
 - `test_repo.ex` - Test Ecto repo (SQLite)
 - `test_generators.ex` - Factory functions for test data
+
+## Active Technologies
+- Elixir 1.15+ / OTP 26+ + Ash Framework (~> 3.0), Backpex (~> 0.9), Spark DSL (~> 2.0) (001-ash-native-filters)
+- N/A (library - uses consumer's data layer via Ash) (001-ash-native-filters)
+
+## Recent Changes
+- 001-ash-native-filters: Added Elixir 1.15+ / OTP 26+ + Ash Framework (~> 3.0), Backpex (~> 0.9), Spark DSL (~> 2.0)

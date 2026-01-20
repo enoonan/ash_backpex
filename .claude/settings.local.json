@@ -21,7 +21,21 @@
       "Bash(/usr/local/bin/bd ready:*)",
       "Bash(/usr/local/bin/bd tree:*)",
       "Bash(bd close:*)",
-      "Bash(bd status:*)"
+      "Bash(bd status:*)",
+      "Skill(speckit.specify)",
+      "Bash(git fetch:*)",
+      "Bash(ls:*)",
+      "Skill(speckit.plan)",
+      "Bash(.specify/scripts/bash/setup-plan.sh:*)",
+      "Bash(.specify/scripts/bash/update-agent-context.sh:*)",
+      "Skill(speckit.tasks)",
+      "Bash(.specify/scripts/bash/check-prerequisites.sh:*)",
+      "Bash(bd --help:*)",
+      "Bash(bd create --help:*)",
+      "Bash(bd create:*)",
+      "Bash(bd epic --help:*)",
+      "Bash(bd delete:*)",
+      "Bash(bd sync:*)"
     ]
   }
 }
