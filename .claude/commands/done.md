@@ -48,3 +48,4 @@ Replace `<id>` with the bead ID you've been working on (e.g., `insi-xb3`).
 - Always ensure CI passes before closing a bead
 - If you don't know the bead ID, run `bd show` to find it
 - The bead ID should have been established at the start of the task
+- **If invoked from /work**: After this skill completes, remember to run `/exit`

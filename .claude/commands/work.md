@@ -40,13 +40,14 @@ Read the full bead context including the `--design` field to understand the impl
 - Use TodoWrite to track progress on multi-step tasks
 - Ask clarifying questions if requirements are ambiguous
 
-## 5. Run /done
+## 5. Run /done then /exit
 
-Once the implementation is complete, invoke the `/done` skill.
+Once the implementation is complete:
 
-## 6. Exit
+1. Invoke the `/done` skill
+2. **CRITICAL**: After `/done` completes, you MUST run `/exit` to end the session
 
-After `/done` completes, run `/exit` to end the session and return control to the Ralph loop.
+The `/exit` command returns control to the Ralph loop for the next bead. Forgetting to run `/exit` will hang the automation.
 
 ## Notes
 
