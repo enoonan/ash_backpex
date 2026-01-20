@@ -166,8 +166,6 @@ defmodule AshBackpex.Filters.RangeTest do
   end
 
   describe "to_ash_expr/3 with date type" do
-    @describetag :pending_implementation
-
     test "returns >= expression when only start date is provided" do
       expr = Range.to_ash_expr(:birth_date, %{"start" => "2024-01-15", "end" => ""}, %{})
 
@@ -230,8 +228,6 @@ defmodule AshBackpex.Filters.RangeTest do
   end
 
   describe "to_ash_expr/3 with datetime type" do
-    @describetag :pending_implementation
-
     test "returns >= expression when only start datetime is provided" do
       expr = Range.to_ash_expr(:created_at, %{"start" => "2024-01-15T10:30:00Z", "end" => ""}, %{})
 
