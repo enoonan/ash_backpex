@@ -497,6 +497,20 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
             Ash.Type.NaiveDateTime ->
               AshBackpex.Filters.Range
 
+            {:array, Ash.Type.Atom} ->
+              if attribute_name |> has_one_of_constraint.() do
+                AshBackpex.Filters.MultiSelect
+              else
+                nil
+              end
+
+            {:array, Ash.Type.String} ->
+              if attribute_name |> has_one_of_constraint.() do
+                AshBackpex.Filters.MultiSelect
+              else
+                nil
+              end
+
             _ ->
               nil
           end
@@ -520,11 +534,23 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
           end
         end
 
-        # Derive filter options for Select filters from one_of constraints
-        # Returns a list of {label, value} tuples for use with Select filter options/1 callback
+        # Derive filter options for Select and MultiSelect filters from one_of constraints
+        # Returns a list of {label, value} tuples for use with Select/MultiSelect filter options/1 callback
         derive_filter_options = fn attribute_name, filter_module ->
           case filter_module do
             AshBackpex.Filters.Select ->
+              case attribute_name |> get_one_of_constraint.() do
+                constraints when is_list(constraints) ->
+                  constraints
+                  |> Enum.map(fn val ->
+                    {atom_to_title_case.(val), val}
+                  end)
+
+                _ ->
+                  []
+              end
+
+            AshBackpex.Filters.MultiSelect ->
               case attribute_name |> get_one_of_constraint.() do
                 constraints when is_list(constraints) ->
                   constraints

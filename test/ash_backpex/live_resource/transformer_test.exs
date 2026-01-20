@@ -294,6 +294,25 @@ defmodule AshBackpex.LiveResource.TransformerTest do
       filters = TestDateFilterTypeLive.filters()
       assert is_list(filters)
     end
+
+    test "derive MultiSelect filter for array type with one_of constraints" do
+      filters = TestArrayFilterTypeLive.filters()
+
+      # Array with one_of constraints (tags is {:array, :atom} with one_of constraints)
+      # should derive to AshBackpex.Filters.MultiSelect
+      tags_filter = Keyword.get(filters, :tags)
+      assert tags_filter.module == AshBackpex.Filters.MultiSelect
+      assert tags_filter.label == "Tags"
+    end
+
+    test "derive filter options from array one_of constraints" do
+      filters = TestArrayFilterTypeLive.filters()
+
+      # The tags attribute has one_of: [:food, :entertainment, :politics]
+      # Should generate options list with title-cased labels
+      tags_filter = Keyword.get(filters, :tags)
+      assert tags_filter.options == [{"Food", :food}, {"Entertainment", :entertainment}, {"Politics", :politics}]
+    end
   end
 
   describe "function-based field type mappings" do

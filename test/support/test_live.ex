@@ -321,3 +321,25 @@ defmodule TestDatetimeFilterTypeLive do
     end
   end
 end
+
+# LiveResource with array filter for testing array type derivation
+defmodule TestArrayFilterTypeLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.Post)
+    layout({TestLayout, :admin})
+
+    fields do
+      field(:title)
+      field(:tags)
+    end
+
+    filters do
+      # Array filter - tags is {:array, :atom} with one_of constraints
+      # Should derive to AshBackpex.Filters.MultiSelect
+      filter(:tags)
+    end
+  end
+end
