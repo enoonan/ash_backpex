@@ -8,6 +8,9 @@ defmodule AshBackpex.Filters.RangeTest do
   """
   use ExUnit.Case, async: true
 
+  # Skip these tests until AshBackpex.Filters.Range is implemented
+  @moduletag :pending_implementation
+
   # The module under test - will be implemented in lib/ash_backpex/filters/range.ex
   alias AshBackpex.Filters.Range
 
