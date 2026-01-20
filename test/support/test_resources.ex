@@ -188,6 +188,14 @@ defmodule AshBackpex.TestDomain.Item do
     attribute :view_count, :integer do
       public? true
     end
+
+    attribute :birth_date, :date do
+      public? true
+    end
+
+    attribute :created_at, :datetime do
+      public? true
+    end
   end
 
   relationships do

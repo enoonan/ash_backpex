@@ -277,3 +277,51 @@ defmodule TestExplicitAshFilterModuleLive do
     end
   end
 end
+
+# LiveResource with date filter for testing filter type derivation
+defmodule TestDateFilterTypeLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.Item)
+    layout({TestLayout, :admin})
+
+    fields do
+      field(:name)
+      field(:birth_date)
+    end
+
+    filters do
+      # Date filter with explicit module (since derive_filter_module doesn't yet support date)
+      # This tests that derive_filter_type returns :date for date attributes
+      filter :birth_date do
+        module(AshBackpex.Filters.Range)
+      end
+    end
+  end
+end
+
+# LiveResource with datetime filter for testing filter type derivation
+defmodule TestDatetimeFilterTypeLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.Item)
+    layout({TestLayout, :admin})
+
+    fields do
+      field(:name)
+      field(:created_at)
+    end
+
+    filters do
+      # DateTime filter with explicit module (since derive_filter_module doesn't yet support datetime)
+      # This tests that derive_filter_type returns :datetime for datetime attributes
+      filter :created_at do
+        module(AshBackpex.Filters.Range)
+      end
+    end
+  end
+end
