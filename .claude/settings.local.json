@@ -10,7 +10,16 @@
       "Bash(mix deps.get:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(mix ecto.create:*)",
-      "Bash(mix ecto.migrate:*)"
+      "Bash(mix ecto.migrate:*)",
+      "Bash(mix phx.server:*)",
+      "Bash(specify *)",
+      "Bash(bd list:*)",
+      "Bash(/usr/local/bin/bd list:*)",
+      "Bash(/usr/local/bin/bd init:*)",
+      "Bash(/usr/local/bin/bd create:*)",
+      "Bash(/usr/local/bin/bd show:*)",
+      "Bash(/usr/local/bin/bd ready:*)",
+      "Bash(/usr/local/bin/bd tree:*)"
     ]
   }
 }

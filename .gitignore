@@ -28,3 +28,7 @@ ash_backpex-*.tar
 
 .elixir_ls
 .expert
+
+/.claude/settings-local.json
+/.specify/
+/.beads
