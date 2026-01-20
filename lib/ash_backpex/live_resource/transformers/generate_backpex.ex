@@ -482,6 +482,21 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
             Ash.Type.Decimal ->
               AshBackpex.Filters.Range
 
+            Ash.Type.Date ->
+              AshBackpex.Filters.Range
+
+            Ash.Type.DateTime ->
+              AshBackpex.Filters.Range
+
+            Ash.Type.UtcDatetime ->
+              AshBackpex.Filters.Range
+
+            Ash.Type.UtcDatetimeUsec ->
+              AshBackpex.Filters.Range
+
+            Ash.Type.NaiveDateTime ->
+              AshBackpex.Filters.Range
+
             _ ->
               nil
           end

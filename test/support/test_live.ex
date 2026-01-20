@@ -293,11 +293,9 @@ defmodule TestDateFilterTypeLive do
     end
 
     filters do
-      # Date filter with explicit module (since derive_filter_module doesn't yet support date)
-      # This tests that derive_filter_type returns :date for date attributes
-      filter :birth_date do
-        module(AshBackpex.Filters.Range)
-      end
+      # Date filter - module is auto-derived to AshBackpex.Filters.Range
+      # This tests that derive_filter_module returns Range and derive_filter_type returns :date
+      filter(:birth_date)
     end
   end
 end
@@ -317,11 +315,9 @@ defmodule TestDatetimeFilterTypeLive do
     end
 
     filters do
-      # DateTime filter with explicit module (since derive_filter_module doesn't yet support datetime)
-      # This tests that derive_filter_type returns :datetime for datetime attributes
-      filter :created_at do
-        module(AshBackpex.Filters.Range)
-      end
+      # DateTime filter - module is auto-derived to AshBackpex.Filters.Range
+      # This tests that derive_filter_module returns Range and derive_filter_type returns :datetime
+      filter(:created_at)
     end
   end
 end
