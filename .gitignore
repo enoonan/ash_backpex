@@ -31,3 +31,5 @@ ash_backpex-*.tar
 
 /.claude/settings-local.json
 /.specify/
+.DS_Store
+.vscode
