@@ -206,3 +206,49 @@ defmodule TestCustomItemActionLiveWithExcept do
     end
   end
 end
+
+# LiveResource with derived filters (no explicit module)
+defmodule TestDerivedFiltersLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.Post)
+    layout({TestLayout, :admin})
+
+    fields do
+      field(:title)
+      field(:published)
+      field(:status)
+    end
+
+    filters do
+      # Filter without module - should be derived from Ash attribute type
+      filter(:published)
+      filter(:status)
+    end
+  end
+end
+
+# LiveResource with explicit filter module override
+defmodule TestExplicitFilterModuleLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.Post)
+    layout({TestLayout, :admin})
+
+    fields do
+      field(:title)
+      field(:published)
+    end
+
+    filters do
+      # Explicit module should be preserved (uses Backpex filter, not AshBackpex)
+      filter :published do
+        module(Backpex.Filters.Boolean)
+      end
+    end
+  end
+end

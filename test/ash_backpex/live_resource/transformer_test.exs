@@ -201,6 +201,35 @@ defmodule AshBackpex.LiveResource.TransformerTest do
     end
   end
 
+  describe "filter type derivation :: it can" do
+    # Mark as pending until T017-T020 implement the derivation logic
+    @describetag :pending_implementation
+
+    test "derive correct AshBackpex filter modules from Ash attribute types" do
+      filters = TestDerivedFiltersLive.filters()
+
+      # Boolean -> AshBackpex.Filters.Boolean
+      assert Keyword.get(filters, :published).module == AshBackpex.Filters.Boolean
+
+      # Atom with one_of constraints -> AshBackpex.Filters.Select
+      assert Keyword.get(filters, :status).module == AshBackpex.Filters.Select
+    end
+
+    test "derive filter labels from attribute names" do
+      filters = TestDerivedFiltersLive.filters()
+
+      assert Keyword.get(filters, :published).label == "Published"
+      assert Keyword.get(filters, :status).label == "Status"
+    end
+
+    test "allow explicit module override for filters" do
+      filters = TestExplicitFilterModuleLive.filters()
+
+      # Explicit module should be preserved
+      assert Keyword.get(filters, :published).module == Backpex.Filters.Boolean
+    end
+  end
+
   describe "function-based field type mappings" do
     # Note: These tests use compile-time evaluation of functions set before module
     # compilation. Since TestPostLive is already compiled, we test the function
