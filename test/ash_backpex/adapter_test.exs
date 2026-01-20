@@ -146,6 +146,76 @@ defmodule AshBackpex.AdapterTest do
       assert length(posts) == 2
     end
 
+    test "filter with module-based Range filter - start only (>=)" do
+      user = user()
+      _low_post = post(actor: user, view_count: 5)
+      mid_post = post(actor: user, view_count: 15)
+      high_post = post(actor: user, view_count: 25)
+
+      assigns = %{current_user: user}
+
+      # Only start value - filters for view_count >= 10
+      filter = %{field: :view_count, value: %{"start" => "10", "end" => ""}, module: AshBackpex.Filters.Range}
+
+      assert {:ok, 2} == Adapter.count([filters: [filter]], [], assigns, TestPostLive)
+      {:ok, posts} = Adapter.list([filters: [filter]], [], assigns, TestPostLive)
+      assert length(posts) == 2
+      post_ids = Enum.map(posts, & &1.id) |> MapSet.new()
+      assert MapSet.member?(post_ids, mid_post.id)
+      assert MapSet.member?(post_ids, high_post.id)
+    end
+
+    test "filter with module-based Range filter - end only (<=)" do
+      user = user()
+      low_post = post(actor: user, view_count: 5)
+      mid_post = post(actor: user, view_count: 15)
+      _high_post = post(actor: user, view_count: 25)
+
+      assigns = %{current_user: user}
+
+      # Only end value - filters for view_count <= 20
+      filter = %{field: :view_count, value: %{"start" => "", "end" => "20"}, module: AshBackpex.Filters.Range}
+
+      assert {:ok, 2} == Adapter.count([filters: [filter]], [], assigns, TestPostLive)
+      {:ok, posts} = Adapter.list([filters: [filter]], [], assigns, TestPostLive)
+      assert length(posts) == 2
+      post_ids = Enum.map(posts, & &1.id) |> MapSet.new()
+      assert MapSet.member?(post_ids, low_post.id)
+      assert MapSet.member?(post_ids, mid_post.id)
+    end
+
+    test "filter with module-based Range filter - both start and end" do
+      user = user()
+      _low_post = post(actor: user, view_count: 5)
+      mid_post = post(actor: user, view_count: 15)
+      _high_post = post(actor: user, view_count: 25)
+
+      assigns = %{current_user: user}
+
+      # Both values - filters for 10 <= view_count <= 20
+      filter = %{field: :view_count, value: %{"start" => "10", "end" => "20"}, module: AshBackpex.Filters.Range}
+
+      assert {:ok, 1} == Adapter.count([filters: [filter]], [], assigns, TestPostLive)
+      {:ok, [post]} = Adapter.list([filters: [filter]], [], assigns, TestPostLive)
+      assert post.id == mid_post.id
+    end
+
+    test "filter with module-based Range filter - empty values returns all" do
+      user = user()
+      _post1 = post(actor: user, view_count: 5)
+      _post2 = post(actor: user, view_count: 15)
+      _post3 = post(actor: user, view_count: 25)
+
+      assigns = %{current_user: user}
+
+      # Both empty - no filter applied
+      filter = %{field: :view_count, value: %{"start" => "", "end" => ""}, module: AshBackpex.Filters.Range}
+
+      assert {:ok, 3} == Adapter.count([filters: [filter]], [], assigns, TestPostLive)
+      {:ok, posts} = Adapter.list([filters: [filter]], [], assigns, TestPostLive)
+      assert length(posts) == 3
+    end
+
     test "sort list/4" do
       user = user()
       post0 = post(actor: user, view_count: 0)
