@@ -303,7 +303,7 @@ defmodule AshBackpex.Adapter do
     query =
       config[:resource]
       |> Ash.Query.new()
-      |> apply_filters(Keyword.get(criteria, :filters))
+      |> apply_filters(Keyword.get(criteria, :filters), assigns)
       |> BasicSearch.apply(Map.get(assigns, :params), live_resource)
       |> Ash.Query.sort(resolve_sort(assigns, live_resource.config(:init_order)))
       |> Ash.Query.page(limit: page_size, offset: (page_num - 1) * page_size)
@@ -325,7 +325,7 @@ defmodule AshBackpex.Adapter do
 
     config[:resource]
     |> Ash.Query.new()
-    |> apply_filters(Keyword.get(criteria, :filters))
+    |> apply_filters(Keyword.get(criteria, :filters), assigns)
     |> Ash.count(actor: assigns.current_user)
   end
 
@@ -411,9 +411,9 @@ defmodule AshBackpex.Adapter do
     end
   end
 
-  defp apply_filters(query, nil), do: query
+  defp apply_filters(query, nil, _assigns), do: query
 
-  defp apply_filters(query, filters) do
+  defp apply_filters(query, filters, assigns) do
     Enum.reduce(filters, query, fn filter, query ->
       case filter do
         {k, v} ->
@@ -421,6 +421,9 @@ defmodule AshBackpex.Adapter do
 
         %{field: :empty_filter} ->
           query
+
+        %{field: f, value: v, module: module} when not is_nil(module) ->
+          apply_filter_with_module(query, f, v, module, assigns)
 
         %{field: f, value: v} when is_list(v) ->
           Ash.Query.filter(query, ^Ash.Expr.ref(f) in ^v)
@@ -432,6 +435,40 @@ defmodule AshBackpex.Adapter do
           if Ash.Expr.expr?(filter), do: Ash.Query.filter(query, ^filter), else: query
       end
     end)
+  end
+
+  @doc """
+  Applies a filter to the query using a filter module's `to_ash_expr/3` callback.
+
+  This helper function is used when filters have an associated module that implements
+  the `AshBackpex.Filters.Filter` behavior. The module's `to_ash_expr/3` callback
+  is invoked to generate an `Ash.Expr` expression, which is then applied to the query.
+
+  ## Parameters
+
+  - `query` - The `Ash.Query` to apply the filter to
+  - `field` - The atom name of the attribute being filtered
+  - `value` - The filter value from the UI
+  - `module` - The filter module implementing `AshBackpex.Filters.Filter`
+  - `assigns` - The LiveView assigns map
+
+  ## Returns
+
+  The query with the filter applied, or the unchanged query if the filter module
+  returns `nil` from `to_ash_expr/3`.
+
+  ## Example
+
+      iex> query = Ash.Query.new(MyResource)
+      iex> apply_filter_with_module(query, :published, ["true"], AshBackpex.Filters.Boolean, %{})
+      # Returns query with filter: published == true
+  """
+  @spec apply_filter_with_module(Ash.Query.t(), atom(), any(), module(), map()) :: Ash.Query.t()
+  def apply_filter_with_module(query, field, value, module, assigns) do
+    case module.to_ash_expr(field, value, assigns) do
+      nil -> query
+      expr -> Ash.Query.filter(query, ^expr)
+    end
   end
 
   defp primary_action(live_resource, action_type) do
