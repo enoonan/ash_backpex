@@ -30,11 +30,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: deps
-          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
-          restore-keys: ${{ runner.os }}-mix-
+          key: ${{ runner.os }}-mix-elixir-1.18-otp-26.0-${{ hashFiles('**/mix.lock') }}
+          restore-keys: ${{ runner.os }}-mix-elixir-1.18-otp-26.0-
       - name: Install dependencies
         run: mix deps.get
       - name: Run CI checks
         run: mix ci
-      - name: Run tests
-        run: mix test
