@@ -52,6 +52,100 @@ defmodule AshBackpex.AdapterTest do
       refute Enum.any?(posts, &(&1.view_count < 1))
     end
 
+    test "filter with module-based Boolean filter applies to_ash_expr/3" do
+      user = user()
+      published_post = post(actor: user, published: true)
+      _unpublished_post = post(actor: user, published: false)
+
+      assigns = %{current_user: user}
+
+      # Filter with module key triggers to_ash_expr/3 callback
+      filter = %{field: :published, value: ["true"], module: AshBackpex.Filters.Boolean}
+
+      assert {:ok, 1} == Adapter.count([filters: [filter]], [], assigns, TestPostLive)
+      {:ok, [post]} = Adapter.list([filters: [filter]], [], assigns, TestPostLive)
+      assert post.id == published_post.id
+    end
+
+    test "filter with module-based Boolean filter returns false records" do
+      user = user()
+      _published_post = post(actor: user, published: true)
+      unpublished_post = post(actor: user, published: false)
+
+      assigns = %{current_user: user}
+
+      filter = %{field: :published, value: ["false"], module: AshBackpex.Filters.Boolean}
+
+      assert {:ok, 1} == Adapter.count([filters: [filter]], [], assigns, TestPostLive)
+      {:ok, [post]} = Adapter.list([filters: [filter]], [], assigns, TestPostLive)
+      assert post.id == unpublished_post.id
+    end
+
+    test "filter with module-based Boolean filter returns all when both selected" do
+      user = user()
+      _published_post = post(actor: user, published: true)
+      _unpublished_post = post(actor: user, published: false)
+
+      assigns = %{current_user: user}
+
+      # Both selected means no filter applied - should return all
+      filter = %{field: :published, value: ["true", "false"], module: AshBackpex.Filters.Boolean}
+
+      assert {:ok, 2} == Adapter.count([filters: [filter]], [], assigns, TestPostLive)
+      {:ok, posts} = Adapter.list([filters: [filter]], [], assigns, TestPostLive)
+      assert length(posts) == 2
+    end
+
+    test "filter with module-based Select filter applies to_ash_expr/3" do
+      user = user()
+      draft_post = post(actor: user, status: :draft)
+      _published_post = post(actor: user, status: :published)
+      _archived_post = post(actor: user, status: :archived)
+
+      assigns = %{current_user: user}
+
+      filter = %{field: :status, value: :draft, module: AshBackpex.Filters.Select}
+
+      assert {:ok, 1} == Adapter.count([filters: [filter]], [], assigns, TestPostLive)
+      {:ok, [post]} = Adapter.list([filters: [filter]], [], assigns, TestPostLive)
+      assert post.id == draft_post.id
+    end
+
+    test "multiple module-based filters combine correctly" do
+      user = user()
+      # Create posts with different combinations
+      matching_post = post(actor: user, published: true, status: :published)
+      _wrong_published = post(actor: user, published: false, status: :published)
+      _wrong_status = post(actor: user, published: true, status: :draft)
+      _wrong_both = post(actor: user, published: false, status: :archived)
+
+      assigns = %{current_user: user}
+
+      filters = [
+        %{field: :published, value: ["true"], module: AshBackpex.Filters.Boolean},
+        %{field: :status, value: :published, module: AshBackpex.Filters.Select}
+      ]
+
+      assert {:ok, 1} == Adapter.count([filters: filters], [], assigns, TestPostLive)
+      {:ok, [post]} = Adapter.list([filters: filters], [], assigns, TestPostLive)
+      assert post.id == matching_post.id
+    end
+
+    test "module filter returning nil applies no filter" do
+      user = user()
+      _post1 = post(actor: user, published: true)
+      _post2 = post(actor: user, published: false)
+
+      assigns = %{current_user: user}
+
+      # Empty list value causes Boolean filter to return nil
+      filter = %{field: :published, value: [], module: AshBackpex.Filters.Boolean}
+
+      assert {:ok, 2} == Adapter.count([filters: [filter]], [], assigns, TestPostLive)
+      {:ok, posts} = Adapter.list([filters: [filter]], [], assigns, TestPostLive)
+      assert length(posts) == 2
+    end
+
     test "sort list/4" do
       user = user()
       post0 = post(actor: user, view_count: 0)

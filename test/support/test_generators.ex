@@ -17,6 +17,8 @@ defmodule TestGenerators do
       title: Faker.Lorem.sentence(),
       content: Faker.Lorem.paragraphs(1..3) |> Enum.join(" "),
       view_count: Keyword.get(opts, :view_count, 0),
+      published: Keyword.get(opts, :published, false),
+      status: Keyword.get(opts, :status),
       author_id: actor.id
     })
   end
