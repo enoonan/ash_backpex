@@ -234,6 +234,33 @@ defmodule AshBackpex.LiveResource.TransformerTest do
       # but explicit module override takes precedence
       assert Keyword.get(filters, :view_count).module == AshBackpex.Filters.Boolean
     end
+
+    @tag :pending_implementation
+    test "raise compile-time error when filter type cannot be derived" do
+      # When a filter is declared for an attribute with an undecidable type
+      # (e.g., string without one_of constraints), the transformer should raise
+      # a compile-time error if no explicit module is provided.
+      assert_raise Spark.Error.DslError, ~r/Unable to derive the filter module/, fn ->
+        defmodule TestUndecidableFilterTypeLive do
+          use AshBackpex.LiveResource
+
+          backpex do
+            resource(AshBackpex.TestDomain.Post)
+            layout({TestLayout, :admin})
+
+            fields do
+              field(:title)
+            end
+
+            filters do
+              # title is Ash.Type.String without one_of constraints
+              # This should fail to compile without an explicit module
+              filter(:title)
+            end
+          end
+        end
+      end
+    end
   end
 
   describe "function-based field type mappings" do
