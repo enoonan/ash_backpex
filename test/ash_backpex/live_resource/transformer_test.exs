@@ -225,6 +225,15 @@ defmodule AshBackpex.LiveResource.TransformerTest do
       # Explicit module should be preserved
       assert Keyword.get(filters, :published).module == Backpex.Filters.Boolean
     end
+
+    test "allow explicit AshBackpex module override for filters" do
+      filters = TestExplicitAshFilterModuleLive.filters()
+
+      # Explicit AshBackpex module should be preserved even when different from derived
+      # view_count is Integer which would derive to AshBackpex.Filters.Range,
+      # but explicit module override takes precedence
+      assert Keyword.get(filters, :view_count).module == AshBackpex.Filters.Boolean
+    end
   end
 
   describe "function-based field type mappings" do

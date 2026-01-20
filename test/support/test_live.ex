@@ -252,3 +252,28 @@ defmodule TestExplicitFilterModuleLive do
     end
   end
 end
+
+# LiveResource with explicit AshBackpex filter module override (different from derived)
+defmodule TestExplicitAshFilterModuleLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.Post)
+    layout({TestLayout, :admin})
+
+    fields do
+      field(:title)
+      field(:view_count)
+    end
+
+    filters do
+      # Explicit AshBackpex module should be preserved even when different from derived
+      # view_count is Integer which would normally derive to Range filter,
+      # but we explicitly override to use Boolean filter
+      filter :view_count do
+        module(AshBackpex.Filters.Boolean)
+      end
+    end
+  end
+end
