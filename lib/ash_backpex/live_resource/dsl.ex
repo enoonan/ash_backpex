@@ -124,20 +124,46 @@ defmodule AshBackpex.LiveResource.Dsl do
 
   ## filters Section
 
-  Add filters to the index view. Filter modules are auto-derived from Ash attribute types:
+  Add filters to the index view. Filter modules are auto-derived from Ash attribute types,
+  so you only need to declare which attributes to filter on.
+
+  ### Auto-Derivation Mapping
+
+  | Ash Type | Filter Module | Notes |
+  |----------|---------------|-------|
+  | `Ash.Type.Boolean` | `AshBackpex.Filters.Boolean` | Checkboxes for true/false |
+  | `Ash.Type.Atom` with `one_of` | `AshBackpex.Filters.Select` | Dropdown from constraint values |
+  | `Ash.Type.String` with `one_of` | `AshBackpex.Filters.Select` | Dropdown from constraint values |
+  | `Ash.Type.Integer` | `AshBackpex.Filters.Range` | Min/max number inputs |
+  | `Ash.Type.Float` | `AshBackpex.Filters.Range` | Min/max number inputs |
+  | `Ash.Type.Decimal` | `AshBackpex.Filters.Range` | Min/max number inputs |
+  | `Ash.Type.Date` | `AshBackpex.Filters.Range` | Date range picker |
+  | `Ash.Type.DateTime` | `AshBackpex.Filters.Range` | Datetime range picker |
+  | `Ash.Type.UtcDatetime` | `AshBackpex.Filters.Range` | Datetime range picker |
+  | `Ash.Type.NaiveDateTime` | `AshBackpex.Filters.Range` | Datetime range picker |
+  | `{:array, Ash.Type.Atom}` with `one_of` | `AshBackpex.Filters.MultiSelect` | Checkboxes for multi-value |
+  | `{:array, Ash.Type.String}` with `one_of` | `AshBackpex.Filters.MultiSelect` | Checkboxes for multi-value |
+
+  ### Usage Examples
 
   ```elixir
   filters do
-    # Auto-derived: Boolean attribute → AshBackpex.Filters.Boolean
+    # Boolean filter - renders true/false checkboxes
     filter :published
 
-    # Auto-derived: atom with one_of constraint → AshBackpex.Filters.Select
+    # Select filter - auto-derived for atom/string with one_of constraint
     filter :status do
       label "Post Status"
     end
 
-    # Auto-derived: datetime attribute → AshBackpex.Filters.Range
+    # Range filter - auto-derived for numeric types
+    filter :view_count
+
+    # Range filter - auto-derived for date/datetime types
     filter :inserted_at
+
+    # MultiSelect filter - auto-derived for array types with one_of constraint
+    filter :tags
 
     # Explicit module override for custom filters
     filter :custom_field do
@@ -146,11 +172,33 @@ defmodule AshBackpex.LiveResource.Dsl do
   end
   ```
 
+  ### Filter Types
+
+  #### Boolean Filter
+
+  Renders checkboxes for filtering true/false values. When both are selected,
+  no filter is applied.
+
+  #### Select Filter
+
+  Renders a dropdown for single-value filtering. Options are auto-derived from
+  `one_of` constraints, or can be provided via the `options` option.
+
+  #### Range Filter
+
+  Renders min/max input fields for range filtering. The input type (number, date,
+  or datetime) is auto-derived from the Ash attribute type.
+
+  #### MultiSelect Filter
+
+  Renders checkboxes for multi-value filtering using `IN` queries. Useful for
+  filtering records where a field matches any of the selected values.
+
   ### Filter Options
 
   - `module` - The filter module (optional, auto-derived from Ash attribute type if not specified)
   - `label` - Custom label (defaults to title-cased attribute name)
-  - `options` - List of options for Select/MultiSelect filters (optional, list or 1-arity function)
+  - `options` - List of options for Select/MultiSelect filters (optional, auto-derived from `one_of` constraints)
   - `prompt` - Prompt text for empty selection (optional, string)
   - `type` - Type hint for Range filter: `:number`, `:date`, `:datetime` (optional, auto-derived)
 
@@ -230,11 +278,20 @@ defmodule AshBackpex.LiveResource.Dsl do
       end
 
       filters do
-        # Auto-derived from atom with one_of constraint
+        # Select filter - auto-derived from atom with one_of constraint
         filter :status
 
-        # Auto-derived from datetime attribute
+        # Range filter - auto-derived from datetime attribute
         filter :published_at
+
+        # Boolean filter - auto-derived from boolean attribute
+        filter :featured
+
+        # Range filter - auto-derived from integer attribute
+        filter :view_count
+
+        # MultiSelect filter - auto-derived from {:array, :atom} with one_of
+        filter :tags
       end
 
       item_actions do
