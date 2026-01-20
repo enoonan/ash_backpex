@@ -25,13 +25,15 @@ defmodule Demo.MixProject do
 
   defp deps do
     [
+      {:tidewave, "~> 0.5", only: [:dev]},
       {:ash_backpex, path: "../"},
+      {:igniter, "~> 0.7.0"},
       {:ash, "~> 3.0"},
-      {:ash_postgres, "~> 2.0"},
+      {:ash_sqlite, "~> 0.2"},
       {:phoenix, "~> 1.7"},
       {:phoenix_ecto, "~> 4.4"},
       {:ecto_sql, "~> 3.10"},
-      {:postgrex, "~> 0.20"},
+      {:ecto_sqlite3, "~> 0.18"},
       {:phoenix_live_view, "~> 1.0"},
       {:phoenix_html, "~> 4.0"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},

@@ -20,7 +20,8 @@
       "Bash(/usr/local/bin/bd show:*)",
       "Bash(/usr/local/bin/bd ready:*)",
       "Bash(/usr/local/bin/bd tree:*)",
-      "Bash(bd close:*)"
+      "Bash(bd close:*)",
+      "Bash(bd status:*)"
     ]
   }
 }

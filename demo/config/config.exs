@@ -49,13 +49,10 @@ config :demo,
 
 # Configure your database
 config :demo, Demo.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
-  database: "demo_dev",
+  database: Path.expand("../demo_dev.db", __DIR__),
+  pool_size: 5,
   stacktrace: true,
-  show_sensitive_data_on_connection_error: true,
-  pool_size: 10
+  show_sensitive_data_on_connection_error: true
 
 config :demo, DemoWeb.Endpoint,
   adapter: Bandit.PhoenixAdapter,
@@ -65,7 +62,7 @@ config :demo, DemoWeb.Endpoint,
   ],
   live_view: [signing_salt: "n3YLtKq8"],
   url: [host: "localhost"],
-  http: [ip: {127, 0, 0, 1}, port: 4000],
+  http: [ip: {127, 0, 0, 1}, port: 4001],
   check_origin: false,
   code_reloader: true,
   debug_errors: true,

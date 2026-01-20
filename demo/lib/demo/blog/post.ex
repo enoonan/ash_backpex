@@ -1,11 +1,11 @@
 defmodule Demo.Blog.Post do
   use Ash.Resource,
     domain: Demo.Blog,
-    data_layer: AshPostgres.DataLayer
+    data_layer: AshSqlite.DataLayer
 
-  postgres do
+  sqlite do
     table "posts"
-    repo Demo.Repo
+    repo(Demo.Repo)
   end
 
   attributes do
@@ -24,7 +24,7 @@ defmodule Demo.Blog.Post do
     attribute :rating, :integer do
       default 5
       public? true
-      constraints [min: 1, max: 5]
+      constraints min: 1, max: 5
     end
 
     attribute :published, :boolean do
@@ -38,17 +38,22 @@ defmodule Demo.Blog.Post do
   end
 
   calculations do
-    calculate :word_count, :integer,
-          expr(
-            fragment(
-              "CASE
+    calculate :word_count,
+              :integer,
+              expr(
+                fragment(
+                  "CASE
               WHEN ? IS NULL THEN 0
-              WHEN length(btrim(?)) = 0 THEN 0
-              ELSE cardinality(regexp_split_to_array(btrim(?), '\\s+'))
+              WHEN length(trim(?)) = 0 THEN 0
+              ELSE length(trim(?)) - length(replace(trim(?), ' ', '')) + 1
               END",
-              content, content, content
-            )
-          ), public?: true
+                  content,
+                  content,
+                  content,
+                  content
+                )
+              ),
+              public?: true
   end
 
   actions do

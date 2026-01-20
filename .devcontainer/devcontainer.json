@@ -7,8 +7,12 @@
   "postCreateCommand": "mix deps.get",
   "mounts": [
     "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,readonly"
+    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,readonly",
+    "source=${localEnv:HOME}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,readonly"
   ],
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
   "remoteUser": "vscode",
   "customizations": {
     "vscode": {
