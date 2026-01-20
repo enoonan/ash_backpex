@@ -235,7 +235,6 @@ defmodule AshBackpex.LiveResource.TransformerTest do
       assert Keyword.get(filters, :view_count).module == AshBackpex.Filters.Boolean
     end
 
-    @tag :pending_implementation
     test "raise compile-time error when filter type cannot be derived" do
       # When a filter is declared for an attribute with an undecidable type
       # (e.g., string without one_of constraints), the transformer should raise

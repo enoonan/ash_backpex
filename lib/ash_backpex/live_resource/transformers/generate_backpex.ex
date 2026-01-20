@@ -561,7 +561,40 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
 
         @filters Spark.Dsl.Extension.get_entities(__MODULE__, [:backpex, :filters])
                  |> Enum.reduce([], fn filter, acc ->
-                   module = filter.module || filter.attribute |> derive_filter_module.()
+                   derived_module = filter.attribute |> derive_filter_module.()
+                   module = filter.module || derived_module
+
+                   # Raise compile-time error if filter module cannot be derived
+                   # and no explicit module was provided
+                   if is_nil(module) do
+                     att = inspect(filter.attribute)
+                     type = derive_type.(filter.attribute)
+
+                     module_shortname =
+                       __MODULE__ |> Atom.to_string() |> String.split(".") |> List.last()
+
+                     raise Spark.Error.DslError,
+                       module: __MODULE__,
+                       message: """
+                       Unable to derive the filter module for the #{att} filter in #{module_shortname}.
+
+                       The Ash type #{inspect(type)} cannot be automatically mapped to a filter module.
+
+                       To fix this, specify an explicit filter module:
+
+                         filters do
+                           filter #{att} do
+                             module AshBackpex.Filters.Text  # or another appropriate filter
+                           end
+                         end
+
+                       Supported automatic derivations:
+                         • Boolean types → AshBackpex.Filters.Boolean
+                         • Atom/String with one_of constraints → AshBackpex.Filters.Select
+                         • Integer/Float/Decimal → AshBackpex.Filters.Range
+                         • Date/DateTime types → AshBackpex.Filters.Range
+                       """
+                   end
 
                    Keyword.put(
                      acc,
