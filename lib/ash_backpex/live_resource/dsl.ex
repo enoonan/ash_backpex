@@ -415,9 +415,18 @@ defmodule AshBackpex.LiveResource.Dsl do
     This struct holds the configuration for a single filter in the `filters`
     section of a `backpex` block.
 
+    ## Fields
+
+    - `:attribute` - The Ash attribute to filter on (required)
+    - `:module` - Filter module implementing the filter behavior (optional, auto-derived)
+    - `:label` - Display label for the filter (optional, defaults to title-cased attribute)
+    - `:options` - Options for Select/MultiSelect filters (optional, list or 1-arity function)
+    - `:prompt` - Prompt text for empty selection (optional, string)
+    - `:type` - Type hint for Range filter: `:number`, `:date`, `:datetime` (optional, auto-derived)
+
     See `AshBackpex.LiveResource.Dsl` for filter configuration options.
     """
-    defstruct [:attribute, :module, :label]
+    defstruct [:attribute, :module, :label, :options, :prompt, :type]
   end
 
   @filter %Spark.Dsl.Entity{
@@ -437,6 +446,23 @@ defmodule AshBackpex.LiveResource.Dsl do
        [
          type: :string,
          doc: "The label for the filter. Defaults to the attribute name, title_cased"
+       ]},
+      {:options,
+       [
+         type: {:or, [{:list, :any}, {:fun, 1}]},
+         doc:
+           "Options for Select/MultiSelect filters. List of options or 1-arity function receiving assigns."
+       ]},
+      {:prompt,
+       [
+         type: :string,
+         doc: "Prompt text displayed when no option is selected. Defaults to \"Select...\""
+       ]},
+      {:type,
+       [
+         type: {:in, [:number, :date, :datetime]},
+         doc:
+           "Type hint for Range filter: :number, :date, or :datetime. Auto-derived from attribute type if not specified."
        ]}
     ]
   }
