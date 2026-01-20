@@ -444,6 +444,49 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
           end
         end
 
+        # Derive the appropriate AshBackpex filter module from an Ash attribute type
+        derive_filter_module = fn attribute_name ->
+          type = derive_type.(attribute_name)
+
+          case type do
+            Ash.Type.Boolean ->
+              AshBackpex.Filters.Boolean
+
+            Ash.Type.Atom ->
+              if attribute_name |> has_one_of_constraint.() do
+                AshBackpex.Filters.Select
+              else
+                nil
+              end
+
+            Ash.Type.String ->
+              if attribute_name |> has_one_of_constraint.() do
+                AshBackpex.Filters.Select
+              else
+                nil
+              end
+
+            Ash.Type.CiString ->
+              if attribute_name |> has_one_of_constraint.() do
+                AshBackpex.Filters.Select
+              else
+                nil
+              end
+
+            Ash.Type.Integer ->
+              AshBackpex.Filters.Range
+
+            Ash.Type.Float ->
+              AshBackpex.Filters.Range
+
+            Ash.Type.Decimal ->
+              AshBackpex.Filters.Range
+
+            _ ->
+              nil
+          end
+        end
+
         @fields Spark.Dsl.Extension.get_entities(__MODULE__, [:backpex, :fields])
                 |> Enum.reverse()
                 |> Enum.reduce([], fn field, acc ->
@@ -479,11 +522,13 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
 
         @filters Spark.Dsl.Extension.get_entities(__MODULE__, [:backpex, :filters])
                  |> Enum.reduce([], fn filter, acc ->
+                   module = filter.module || filter.attribute |> derive_filter_module.()
+
                    Keyword.put(
                      acc,
                      filter.attribute,
                      %{
-                       module: filter.module,
+                       module: module,
                        label: filter.label || filter.attribute |> atom_to_title_case.()
                      }
                    )

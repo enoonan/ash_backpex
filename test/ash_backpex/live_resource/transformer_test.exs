@@ -202,9 +202,6 @@ defmodule AshBackpex.LiveResource.TransformerTest do
   end
 
   describe "filter type derivation :: it can" do
-    # Mark as pending until T017-T020 implement the derivation logic
-    @describetag :pending_implementation
-
     test "derive correct AshBackpex filter modules from Ash attribute types" do
       filters = TestDerivedFiltersLive.filters()
 
