@@ -317,14 +317,14 @@ defmodule AshBackpex.LiveResource.CustomFieldMappingsIntegrationTest do
           layout({TestLayout, :admin})
 
           fields do
-            # tags is {:array, Ash.Type.String}
-            field(:tags)
+            # keywords is {:array, Ash.Type.String} without constraints
+            field(:keywords)
           end
         end
       end
 
       fields = ArrayMapLive.fields()
-      assert Keyword.get(fields, :tags).module == Backpex.Fields.Textarea
+      assert Keyword.get(fields, :keywords).module == Backpex.Fields.Textarea
     end
 
     test "function-based config maps array types correctly" do
@@ -341,13 +341,13 @@ defmodule AshBackpex.LiveResource.CustomFieldMappingsIntegrationTest do
           layout({TestLayout, :admin})
 
           fields do
-            field(:tags)
+            field(:keywords)
           end
         end
       end
 
       fields = ArrayFunctionLive.fields()
-      assert Keyword.get(fields, :tags).module == Backpex.Fields.Text
+      assert Keyword.get(fields, :keywords).module == Backpex.Fields.Text
     end
 
     test "scalar and array mappings are independent" do
@@ -365,7 +365,7 @@ defmodule AshBackpex.LiveResource.CustomFieldMappingsIntegrationTest do
 
           fields do
             field(:title)
-            field(:tags)
+            field(:keywords)
           end
         end
       end
@@ -374,15 +374,15 @@ defmodule AshBackpex.LiveResource.CustomFieldMappingsIntegrationTest do
       # Scalar string -> Textarea
       assert Keyword.get(fields, :title).module == Backpex.Fields.Textarea
       # Array string -> Text
-      assert Keyword.get(fields, :tags).module == Backpex.Fields.Text
+      assert Keyword.get(fields, :keywords).module == Backpex.Fields.Text
     end
 
     test "function-based config can inspect array item constraints" do
       Application.put_env(:ash_backpex, :field_type_mappings, fn
-        {:array, Ash.Type.String}, constraints ->
-          # Check for items constraints (Post.tags has items with match constraint)
-          case Keyword.get(constraints, :items) do
-            items when is_list(items) and length(items) > 0 -> Backpex.Fields.Text
+        {:array, Ash.Type.Atom}, constraints ->
+          # Check for items constraints with one_of (Post.tags has items with one_of constraint)
+          case get_in(constraints, [:items, :one_of]) do
+            list when is_list(list) and length(list) > 0 -> Backpex.Fields.Text
             _ -> nil
           end
 
@@ -404,7 +404,7 @@ defmodule AshBackpex.LiveResource.CustomFieldMappingsIntegrationTest do
       end
 
       fields = ArrayConstraintsLive.fields()
-      # tags has items constraints - function should map it to Text
+      # tags has items constraints with one_of - function should map it to Text
       assert Keyword.get(fields, :tags).module == Backpex.Fields.Text
     end
   end
@@ -430,7 +430,7 @@ defmodule AshBackpex.LiveResource.CustomFieldMappingsIntegrationTest do
             field(:content)
             field(:published)
             field(:view_count)
-            field(:tags)
+            field(:keywords)
             # rating uses default since Float not in config
             field(:rating)
           end
@@ -446,7 +446,7 @@ defmodule AshBackpex.LiveResource.CustomFieldMappingsIntegrationTest do
       # Integer -> Text
       assert Keyword.get(fields, :view_count).module == Backpex.Fields.Text
       # Array String -> Text
-      assert Keyword.get(fields, :tags).module == Backpex.Fields.Text
+      assert Keyword.get(fields, :keywords).module == Backpex.Fields.Text
       # Float -> Number (default, not in config)
       assert Keyword.get(fields, :rating).module == Backpex.Fields.Number
     end

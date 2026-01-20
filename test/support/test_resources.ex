@@ -20,10 +20,13 @@ defmodule AshBackpex.TestDomain.Post do
     attribute(:view_count, :integer, default: 0)
     attribute(:rating, :float)
 
-    attribute(:tags, {:array, :string},
+    attribute(:tags, {:array, :atom},
       default: [],
-      constraints: [items: [match: ~r/^(food|entertainment|politics)$/]]
+      constraints: [items: [one_of: [:food, :entertainment, :politics]]]
     )
+
+    # Plain string array without constraints - used for custom field mapping tests
+    attribute(:keywords, {:array, :string}, default: [])
 
     attribute(:metadata, :map, default: %{})
     attribute(:status, :atom, constraints: [one_of: [:draft, :published, :archived]])
@@ -73,6 +76,7 @@ defmodule AshBackpex.TestDomain.Post do
         :view_count,
         :rating,
         :tags,
+        :keywords,
         :metadata,
         :status,
         :author_id
