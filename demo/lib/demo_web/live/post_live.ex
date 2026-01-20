@@ -7,6 +7,20 @@ defmodule DemoWeb.PostLive do
     init_order(%{by: :inserted_at, direction: :desc})
     load([:word_count])
 
+    # Filters demonstrating auto-derivation from Ash attribute types
+    filters do
+      # Boolean filter - auto-derived from :boolean attribute
+      filter :published
+
+      # Range filter - auto-derived from :integer attribute
+      filter :rating
+
+      # Range filter - auto-derived from :utc_datetime attribute
+      filter :inserted_at do
+        label "Created Date"
+      end
+    end
+
     fields do
       field(:title) do
         searchable(true)
