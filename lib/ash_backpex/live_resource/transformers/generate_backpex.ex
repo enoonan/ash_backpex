@@ -221,84 +221,201 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
           end
         end
 
+        # Get custom field type mappings from config
+        custom_mappings = AshBackpex.Config.field_type_mappings(nil)
+
+        lookup_custom_mapping = fn type, constraints, field_name ->
+          result =
+            case custom_mappings do
+              %{} = mappings when map_size(mappings) > 0 ->
+                Map.get(mappings, type)
+
+              fun when is_function(fun, 2) ->
+                try do
+                  fun.(type, constraints)
+                rescue
+                  e ->
+                    module_shortname =
+                      __MODULE__ |> Atom.to_string() |> String.split(".") |> List.last()
+
+                    reraise """
+                            Error in custom field_type_mappings function while deriving field type.
+
+                            Field: #{inspect(field_name)}
+                            Ash type: #{inspect(type)}
+                            Constraints: #{inspect(constraints)}
+                            Module: #{module_shortname}
+
+                            Original error: #{Exception.message(e)}
+                            """,
+                            __STACKTRACE__
+                end
+
+              _ ->
+                nil
+            end
+
+          # Validate the return value is a module or nil
+          case result do
+            nil ->
+              nil
+
+            module when is_atom(module) ->
+              # Validate module exists and implements Backpex.Field behavior
+              module_shortname =
+                __MODULE__ |> Atom.to_string() |> String.split(".") |> List.last()
+
+              case Code.ensure_loaded(module) do
+                {:module, ^module} ->
+                  # Check if module implements Backpex.Field behavior
+                  behaviors =
+                    module.module_info(:attributes)
+                    |> Keyword.get(:behaviour, [])
+
+                  if Backpex.Field in behaviors do
+                    module
+                  else
+                    raise """
+                    Invalid field module in custom field_type_mappings.
+
+                    Field: #{inspect(field_name)}
+                    Ash type: #{inspect(type)}
+                    Module: #{inspect(module)}
+                    LiveResource: #{module_shortname}
+
+                    The module #{inspect(module)} does not implement the Backpex.Field behavior.
+
+                    Ensure your custom field module uses `use Backpex.Field` or implements
+                    the required callbacks from the Backpex.Field behavior.
+                    """
+                  end
+
+                {:error, reason} ->
+                  raise """
+                  Invalid field module in custom field_type_mappings.
+
+                  Field: #{inspect(field_name)}
+                  Ash type: #{inspect(type)}
+                  Module: #{inspect(module)}
+                  LiveResource: #{module_shortname}
+                  Error: #{inspect(reason)}
+
+                  The module #{inspect(module)} could not be loaded. Ensure the module exists
+                  and is compiled before this LiveResource module.
+                  """
+              end
+
+            invalid ->
+              module_shortname =
+                __MODULE__ |> Atom.to_string() |> String.split(".") |> List.last()
+
+              raise """
+              Invalid return value from custom field_type_mappings function.
+
+              Field: #{inspect(field_name)}
+              Ash type: #{inspect(type)}
+              Expected: a module atom or nil
+              Got: #{inspect(invalid)}
+              Module: #{module_shortname}
+
+              The field_type_mappings function must return a Backpex field module (atom) or nil.
+              """
+          end
+        end
+
+        get_constraints = fn attribute_name ->
+          case Ash.Resource.Info.attribute(@resource, attribute_name) do
+            %{constraints: constraints} -> constraints
+            _ -> []
+          end
+        end
+
         try_derive_module = fn attribute_name ->
           type = derive_type.(attribute_name)
+          constraints = get_constraints.(attribute_name)
 
-          case type do
-            Ash.Type.Boolean ->
-              Backpex.Fields.Boolean
+          # Check custom mappings first, then fall back to defaults
+          case lookup_custom_mapping.(type, constraints, attribute_name) do
+            nil ->
+              case type do
+                Ash.Type.Boolean ->
+                  Backpex.Fields.Boolean
 
-            Ash.Type.String ->
-              attribute_name |> select_or.(Backpex.Fields.Text)
+                Ash.Type.String ->
+                  attribute_name |> select_or.(Backpex.Fields.Text)
 
-            Ash.Type.Atom ->
-              attribute_name |> select_or.(Backpex.Fields.Text)
+                Ash.Type.Atom ->
+                  attribute_name |> select_or.(Backpex.Fields.Text)
 
-            Ash.Type.CiString ->
-              attribute_name |> select_or.(Backpex.Fields.Text)
+                Ash.Type.CiString ->
+                  attribute_name |> select_or.(Backpex.Fields.Text)
 
-            Ash.Type.Time ->
-              Backpex.Fields.Time
+                Ash.Type.Time ->
+                  Backpex.Fields.Time
 
-            Ash.Type.Date ->
-              Backpex.Fields.Date
+                Ash.Type.Date ->
+                  Backpex.Fields.Date
 
-            Ash.Type.UtcDatetime ->
-              Backpex.Fields.DateTime
+                Ash.Type.UtcDatetime ->
+                  Backpex.Fields.DateTime
 
-            Ash.Type.UtcDatetimeUsec ->
-              Backpex.Fields.DateTime
+                Ash.Type.UtcDatetimeUsec ->
+                  Backpex.Fields.DateTime
 
-            Ash.Type.DateTime ->
-              Backpex.Fields.DateTime
+                Ash.Type.DateTime ->
+                  Backpex.Fields.DateTime
 
-            Ash.Type.NaiveDateTime ->
-              Backpex.Fields.DateTime
+                Ash.Type.NaiveDateTime ->
+                  Backpex.Fields.DateTime
 
-            Ash.Type.Integer ->
-              attribute_name |> select_or.(Backpex.Fields.Number)
+                Ash.Type.Integer ->
+                  attribute_name |> select_or.(Backpex.Fields.Number)
 
-            Ash.Type.Float ->
-              attribute_name |> select_or.(Backpex.Fields.Number)
+                Ash.Type.Float ->
+                  attribute_name |> select_or.(Backpex.Fields.Number)
 
-            :belongs_to ->
-              Backpex.Fields.BelongsTo
+                :belongs_to ->
+                  Backpex.Fields.BelongsTo
 
-            :has_many ->
-              Backpex.Fields.HasMany
+                :has_many ->
+                  Backpex.Fields.HasMany
 
-            :count ->
-              Backpex.Fields.Number
+                :count ->
+                  Backpex.Fields.Number
 
-            :exists ->
-              Backpex.Fields.Boolean
+                :exists ->
+                  Backpex.Fields.Boolean
 
-            :sum ->
-              Backpex.Fields.Number
+                :sum ->
+                  Backpex.Fields.Number
 
-            :max ->
-              Backpex.Fields.Number
+                :max ->
+                  Backpex.Fields.Number
 
-            :min ->
-              Backpex.Fields.Number
+                :min ->
+                  Backpex.Fields.Number
 
-            :avg ->
-              Backpex.Fields.Number
+                :avg ->
+                  Backpex.Fields.Number
 
-            {:array, Ash.Type.Atom} ->
-              attribute_name |> multiselect_or.(Backpex.Fields.Text)
+                {:array, Ash.Type.Atom} ->
+                  attribute_name |> multiselect_or.(Backpex.Fields.Text)
 
-            {:array, Ash.Type.String} ->
-              attribute_name |> multiselect_or.(Backpex.Fields.Text)
+                {:array, Ash.Type.String} ->
+                  attribute_name |> multiselect_or.(Backpex.Fields.Text)
 
-            {:array, Ash.Type.CiString} ->
-              attribute_name |> multiselect_or.(Backpex.Fields.Text)
+                {:array, Ash.Type.CiString} ->
+                  attribute_name |> multiselect_or.(Backpex.Fields.Text)
 
-            {:array, Ash.Type.Integer} ->
-              attribute_name |> multiselect_or.(Backpex.Fields.Number)
+                {:array, Ash.Type.Integer} ->
+                  attribute_name |> multiselect_or.(Backpex.Fields.Number)
 
-            {:array, Ash.Type.Float} ->
-              attribute_name |> multiselect_or.(Backpex.Fields.Number)
+                {:array, Ash.Type.Float} ->
+                  attribute_name |> multiselect_or.(Backpex.Fields.Number)
+              end
+
+            custom_module ->
+              custom_module
           end
         end
 

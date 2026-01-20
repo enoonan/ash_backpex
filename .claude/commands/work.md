@@ -44,6 +44,10 @@ Read the full bead context including the `--design` field to understand the impl
 
 Once the implementation is complete, invoke the `/done` skill.
 
+## 6. Exit
+
+After `/done` completes, run `/exit` to end the session and return control to the Ralph loop.
+
 ## Notes
 
 - Always get approval before implementing if there's no design in the bead, unless you are running with --dangerously-skip-permissions

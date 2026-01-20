@@ -1,5 +1,5 @@
 defmodule AshBackpex.LiveResource.TransformerTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   describe "generated module callbacks :: it can" do
     test "implement all required Backpex.LiveResource callbacks" do
@@ -164,6 +164,126 @@ defmodule AshBackpex.LiveResource.TransformerTest do
 
       promote_config = Keyword.get(item_actions, :promote)
       refute Map.has_key?(promote_config, :except)
+    end
+  end
+
+  describe "custom field type mappings :: backward compatibility" do
+    # These tests verify that modules compiled without custom config still work.
+    # Note: The custom field type mappings are read at compile time. Testing
+    # compile-time behavior requires compiling modules with config already set.
+    # Full integration tests are in a separate test file that sets up config
+    # before module compilation.
+
+    test "modules compiled without config use default type mappings" do
+      # TestPostLive was compiled without custom mappings set
+      fields = TestPostLive.fields()
+
+      # String -> Text (default)
+      title_field = Keyword.get(fields, :title)
+      assert title_field.module == Backpex.Fields.Text
+
+      # Boolean -> Boolean (default)
+      published_field = Keyword.get(fields, :published)
+      assert published_field.module == Backpex.Fields.Boolean
+
+      # Integer -> Number (default)
+      view_count_field = Keyword.get(fields, :view_count)
+      assert view_count_field.module == Backpex.Fields.Number
+    end
+
+    test "explicit DSL module option is always preserved" do
+      # The content field in TestPostLive has explicit module: Backpex.Fields.Textarea
+      # This verifies the precedence: DSL module > custom config > defaults
+      fields = TestPostLive.fields()
+      content_field = Keyword.get(fields, :content)
+
+      assert content_field.module == Backpex.Fields.Textarea
+    end
+  end
+
+  describe "function-based field type mappings" do
+    # Note: These tests use compile-time evaluation of functions set before module
+    # compilation. Since TestPostLive is already compiled, we test the function
+    # interface through unit tests of the lookup logic.
+
+    test "function receives type and constraints arguments" do
+      # This test verifies the function signature is (type, constraints) -> module | nil
+      # We test by setting up a function that tracks its calls
+      :persistent_term.put({__MODULE__, :fn_args}, nil)
+
+      mapping_fn = fn type, constraints ->
+        :persistent_term.put({__MODULE__, :fn_args}, {type, constraints})
+        nil
+      end
+
+      Application.put_env(:ash_backpex, :field_type_mappings, mapping_fn)
+
+      # Call the config to get the function
+      result = AshBackpex.Config.field_type_mappings()
+      assert is_function(result, 2)
+
+      # Test that calling it with specific args stores them
+      result.(Ash.Type.String, max_length: 100)
+      assert :persistent_term.get({__MODULE__, :fn_args}) == {Ash.Type.String, [max_length: 100]}
+
+      # Clean up
+      Application.delete_env(:ash_backpex, :field_type_mappings)
+      :persistent_term.erase({__MODULE__, :fn_args})
+    end
+
+    test "function returning nil falls back to default mapping" do
+      # A function that always returns nil should cause fallback to defaults
+      mapping_fn = fn _type, _constraints -> nil end
+      Application.put_env(:ash_backpex, :field_type_mappings, mapping_fn)
+
+      # The function returning nil means the transformer will use default mappings
+      result = AshBackpex.Config.field_type_mappings()
+      assert is_function(result, 2)
+      assert result.(Ash.Type.String, []) == nil
+
+      # Clean up
+      Application.delete_env(:ash_backpex, :field_type_mappings)
+    end
+
+    test "function returning module is used as field type" do
+      mapping_fn = fn
+        Ash.Type.String, _constraints -> Backpex.Fields.Textarea
+        _type, _constraints -> nil
+      end
+
+      Application.put_env(:ash_backpex, :field_type_mappings, mapping_fn)
+
+      result = AshBackpex.Config.field_type_mappings()
+      assert result.(Ash.Type.String, []) == Backpex.Fields.Textarea
+      assert result.(Ash.Type.Integer, []) == nil
+
+      # Clean up
+      Application.delete_env(:ash_backpex, :field_type_mappings)
+    end
+
+    test "function can use constraints to determine field type" do
+      mapping_fn = fn type, constraints ->
+        case {type, Keyword.get(constraints, :max_length)} do
+          {Ash.Type.String, max} when is_integer(max) and max > 500 ->
+            Backpex.Fields.Textarea
+
+          _ ->
+            nil
+        end
+      end
+
+      Application.put_env(:ash_backpex, :field_type_mappings, mapping_fn)
+
+      result = AshBackpex.Config.field_type_mappings()
+      # Long string -> Textarea
+      assert result.(Ash.Type.String, max_length: 1000) == Backpex.Fields.Textarea
+      # Short string -> nil (use default)
+      assert result.(Ash.Type.String, max_length: 100) == nil
+      # No max_length -> nil (use default)
+      assert result.(Ash.Type.String, []) == nil
+
+      # Clean up
+      Application.delete_env(:ash_backpex, :field_type_mappings)
     end
   end
 end

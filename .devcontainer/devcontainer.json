@@ -1,21 +1,21 @@
 {
   "name": "Ash Backpex",
-  "dockerComposeFile": "docker-compose.yml",
-  "service": "app",
-  "workspaceFolder": "/workspace",
-  "forwardPorts": [4000, 5432],
-  "postCreateCommand": "npm install -g @anthropic-ai/claude-code && mix local.hex --force && mix local.rebar --force && mix deps.get",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "forwardPorts": [4000],
+  "postCreateCommand": "mix deps.get",
   "mounts": [
     "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,readonly"
   ],
+  "remoteUser": "vscode",
   "customizations": {
     "vscode": {
       "extensions": [
         "JakeBecker.elixir-ls",
         "phoenixframework.phoenix",
-        "bradlc.vscode-tailwindcss",
-        "ms-azuretools.vscode-docker"
+        "bradlc.vscode-tailwindcss"
       ],
       "settings": {
         "elixirLS.dialyzerEnabled": false,
@@ -25,9 +25,5 @@
         }
       }
     }
-  },
-  "remoteEnv": {
-    "DATABASE_URL": "postgres://postgres:postgres@db:5432/demo_dev",
-    "MIX_ENV": "dev"
   }
 }

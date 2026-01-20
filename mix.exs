@@ -68,6 +68,7 @@ defmodule AshBackpex.MixProject do
       {:backpex, "~> 0.17.0"},
       {:spark, "~> 2.0"},
       {:phoenix_html, "~> 3.0 or ~> 4.0"},
+      {:igniter, "~> 0.7.0", override: true},
 
       # Dev/Test dependencies
       {:faker, "~> 0.19.0-alpha.1", only: :test},
@@ -103,10 +104,16 @@ defmodule AshBackpex.MixProject do
     """
   end
 
+  def cli do
+    [
+      preferred_envs: [ci: :test]
+    ]
+  end
+
   defp aliases do
     [
       credo: "credo --strict",
-      ci: ["credo --strict", "sobelow", "mix test"]
+      ci: ["credo --strict", "sobelow", "test"]
     ]
   end
 end

@@ -19,7 +19,8 @@
       "Bash(/usr/local/bin/bd create:*)",
       "Bash(/usr/local/bin/bd show:*)",
       "Bash(/usr/local/bin/bd ready:*)",
-      "Bash(/usr/local/bin/bd tree:*)"
+      "Bash(/usr/local/bin/bd tree:*)",
+      "Bash(bd close:*)"
     ]
   }
 }
