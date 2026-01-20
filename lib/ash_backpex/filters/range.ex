@@ -113,20 +113,53 @@ defmodule AshBackpex.Filters.Range do
   # Already a number - pass through
   defp parse_value(value) when is_number(value), do: value
 
+  # Already a Date - pass through
+  defp parse_value(%Date{} = value), do: value
+
+  # Already a DateTime - pass through
+  defp parse_value(%DateTime{} = value), do: value
+
+  # Already a NaiveDateTime - pass through
+  defp parse_value(%NaiveDateTime{} = value), do: value
+
   # Empty string - no value
   defp parse_value(""), do: nil
   defp parse_value(nil), do: nil
 
-  # String value - try to parse as number
+  # String value - try to parse as number, then datetime, then date
   defp parse_value(value) when is_binary(value) do
     case {Integer.parse(value), Float.parse(value)} do
       {{int_val, ""}, _} -> int_val
       {_, {float_val, ""}} -> float_val
-      _ -> nil
+      _ -> parse_datetime_or_date(value)
     end
   end
 
   defp parse_value(_), do: nil
+
+  # Try parsing as datetime first (ISO8601 with time), then as date
+  defp parse_datetime_or_date(value) do
+    cond do
+      # Try DateTime (with timezone)
+      match?({:ok, _, _}, DateTime.from_iso8601(value)) ->
+        {:ok, dt, _offset} = DateTime.from_iso8601(value)
+        dt
+
+      # Try NaiveDateTime (without timezone, but with time component)
+      match?({:ok, _}, NaiveDateTime.from_iso8601(value)) ->
+        {:ok, ndt} = NaiveDateTime.from_iso8601(value)
+        ndt
+
+      # Try Date (date only)
+      match?({:ok, _}, Date.from_iso8601(value)) ->
+        {:ok, date} = Date.from_iso8601(value)
+        date
+
+      # Not a valid datetime or date
+      true ->
+        nil
+    end
+  end
 
   # No valid values - no filter
   defp build_expr(_field, nil, nil), do: nil
