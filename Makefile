@@ -13,7 +13,7 @@ up: build
 		-v $(PWD):/workspace \
 		-v $(HOME)/.claude:/home/vscode/.claude \
 		-v $(HOME)/.ssh:/home/vscode/.ssh:ro \
-		-p 4000:4000 \
+		-p 4005:4005 \
 		-w /workspace \
 		$(IMAGE_NAME) sleep infinity
 	docker exec $(CONTAINER_NAME) mix deps.get

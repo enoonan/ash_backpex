@@ -164,4 +164,68 @@ defmodule AshBackpex.Filters.RangeTest do
       assert Ash.Expr.expr?(expr)
     end
   end
+
+  describe "to_ash_expr/3 with date type" do
+    @describetag :pending_implementation
+
+    test "returns >= expression when only start date is provided" do
+      expr = Range.to_ash_expr(:birth_date, %{"start" => "2024-01-15", "end" => ""}, %{})
+
+      assert expr != nil
+      assert Ash.Expr.expr?(expr)
+    end
+
+    test "returns <= expression when only end date is provided" do
+      expr = Range.to_ash_expr(:birth_date, %{"start" => "", "end" => "2024-12-31"}, %{})
+
+      assert expr != nil
+      assert Ash.Expr.expr?(expr)
+    end
+
+    test "returns combined >= and <= expression when both start and end dates are provided" do
+      expr = Range.to_ash_expr(:birth_date, %{"start" => "2024-01-01", "end" => "2024-12-31"}, %{})
+
+      assert expr != nil
+      assert Ash.Expr.expr?(expr)
+    end
+
+    test "handles pre-parsed Date values" do
+      start_date = ~D[2024-01-01]
+      end_date = ~D[2024-12-31]
+      expr = Range.to_ash_expr(:birth_date, %{"start" => start_date, "end" => end_date}, %{})
+
+      assert expr != nil
+      assert Ash.Expr.expr?(expr)
+    end
+
+    test "handles mixed string and Date values" do
+      end_date = ~D[2024-12-31]
+      expr = Range.to_ash_expr(:birth_date, %{"start" => "2024-01-01", "end" => end_date}, %{})
+
+      assert expr != nil
+      assert Ash.Expr.expr?(expr)
+    end
+
+    test "returns nil for invalid date strings" do
+      expr = Range.to_ash_expr(:birth_date, %{"start" => "not-a-date", "end" => "also-invalid"}, %{})
+
+      assert expr == nil
+    end
+
+    test "handles valid start with invalid end date" do
+      expr = Range.to_ash_expr(:birth_date, %{"start" => "2024-01-15", "end" => "invalid"}, %{})
+
+      # Should still produce >= expression for valid start
+      assert expr != nil
+      assert Ash.Expr.expr?(expr)
+    end
+
+    test "handles invalid start with valid end date" do
+      expr = Range.to_ash_expr(:birth_date, %{"start" => "invalid", "end" => "2024-12-31"}, %{})
+
+      # Should still produce <= expression for valid end
+      assert expr != nil
+      assert Ash.Expr.expr?(expr)
+    end
+  end
 end
