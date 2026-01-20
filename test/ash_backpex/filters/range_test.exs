@@ -228,4 +228,106 @@ defmodule AshBackpex.Filters.RangeTest do
       assert Ash.Expr.expr?(expr)
     end
   end
+
+  describe "to_ash_expr/3 with datetime type" do
+    @describetag :pending_implementation
+
+    test "returns >= expression when only start datetime is provided" do
+      expr = Range.to_ash_expr(:created_at, %{"start" => "2024-01-15T10:30:00Z", "end" => ""}, %{})
+
+      assert expr != nil
+      assert Ash.Expr.expr?(expr)
+    end
+
+    test "returns <= expression when only end datetime is provided" do
+      expr = Range.to_ash_expr(:created_at, %{"start" => "", "end" => "2024-12-31T23:59:59Z"}, %{})
+
+      assert expr != nil
+      assert Ash.Expr.expr?(expr)
+    end
+
+    test "returns combined >= and <= expression when both start and end datetimes are provided" do
+      expr =
+        Range.to_ash_expr(
+          :created_at,
+          %{"start" => "2024-01-01T00:00:00Z", "end" => "2024-12-31T23:59:59Z"},
+          %{}
+        )
+
+      assert expr != nil
+      assert Ash.Expr.expr?(expr)
+    end
+
+    test "handles pre-parsed DateTime values" do
+      {:ok, start_dt, _} = DateTime.from_iso8601("2024-01-01T00:00:00Z")
+      {:ok, end_dt, _} = DateTime.from_iso8601("2024-12-31T23:59:59Z")
+      expr = Range.to_ash_expr(:created_at, %{"start" => start_dt, "end" => end_dt}, %{})
+
+      assert expr != nil
+      assert Ash.Expr.expr?(expr)
+    end
+
+    test "handles pre-parsed NaiveDateTime values" do
+      start_dt = ~N[2024-01-01 00:00:00]
+      end_dt = ~N[2024-12-31 23:59:59]
+      expr = Range.to_ash_expr(:updated_at, %{"start" => start_dt, "end" => end_dt}, %{})
+
+      assert expr != nil
+      assert Ash.Expr.expr?(expr)
+    end
+
+    test "handles mixed string and DateTime values" do
+      {:ok, end_dt, _} = DateTime.from_iso8601("2024-12-31T23:59:59Z")
+      expr = Range.to_ash_expr(:created_at, %{"start" => "2024-01-01T00:00:00Z", "end" => end_dt}, %{})
+
+      assert expr != nil
+      assert Ash.Expr.expr?(expr)
+    end
+
+    test "returns nil for invalid datetime strings" do
+      expr = Range.to_ash_expr(:created_at, %{"start" => "not-a-datetime", "end" => "also-invalid"}, %{})
+
+      assert expr == nil
+    end
+
+    test "handles valid start with invalid end datetime" do
+      expr = Range.to_ash_expr(:created_at, %{"start" => "2024-01-15T10:30:00Z", "end" => "invalid"}, %{})
+
+      # Should still produce >= expression for valid start
+      assert expr != nil
+      assert Ash.Expr.expr?(expr)
+    end
+
+    test "handles invalid start with valid end datetime" do
+      expr = Range.to_ash_expr(:created_at, %{"start" => "invalid", "end" => "2024-12-31T23:59:59Z"}, %{})
+
+      # Should still produce <= expression for valid end
+      assert expr != nil
+      assert Ash.Expr.expr?(expr)
+    end
+
+    test "handles datetime with timezone offset" do
+      expr =
+        Range.to_ash_expr(
+          :created_at,
+          %{"start" => "2024-01-01T00:00:00+05:00", "end" => "2024-12-31T23:59:59-08:00"},
+          %{}
+        )
+
+      assert expr != nil
+      assert Ash.Expr.expr?(expr)
+    end
+
+    test "handles datetime without timezone (naive datetime string)" do
+      expr =
+        Range.to_ash_expr(
+          :updated_at,
+          %{"start" => "2024-01-01T00:00:00", "end" => "2024-12-31T23:59:59"},
+          %{}
+        )
+
+      assert expr != nil
+      assert Ash.Expr.expr?(expr)
+    end
+  end
 end
