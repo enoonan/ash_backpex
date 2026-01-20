@@ -124,29 +124,35 @@ defmodule AshBackpex.LiveResource.Dsl do
 
   ## filters Section
 
-  Add filters to the index view:
+  Add filters to the index view. Filter modules are auto-derived from Ash attribute types:
 
   ```elixir
   filters do
-    filter :published do
-      module Backpex.Filters.Boolean
-    end
+    # Auto-derived: Boolean attribute → AshBackpex.Filters.Boolean
+    filter :published
 
+    # Auto-derived: atom with one_of constraint → AshBackpex.Filters.Select
     filter :status do
-      module Backpex.Filters.Select
       label "Post Status"
     end
 
-    filter :created_after do
-      module MyApp.Filters.DateRange
+    # Auto-derived: datetime attribute → AshBackpex.Filters.Range
+    filter :inserted_at
+
+    # Explicit module override for custom filters
+    filter :custom_field do
+      module MyApp.Filters.CustomFilter
     end
   end
   ```
 
   ### Filter Options
 
-  - `module` (required) - The Backpex.Filters.* module or custom filter module
+  - `module` - The filter module (optional, auto-derived from Ash attribute type if not specified)
   - `label` - Custom label (defaults to title-cased attribute name)
+  - `options` - List of options for Select/MultiSelect filters (optional, list or 1-arity function)
+  - `prompt` - Prompt text for empty selection (optional, string)
+  - `type` - Type hint for Range filter: `:number`, `:date`, `:datetime` (optional, auto-derived)
 
   ## item_actions Section
 
@@ -224,13 +230,11 @@ defmodule AshBackpex.LiveResource.Dsl do
       end
 
       filters do
-        filter :status do
-          module Backpex.Filters.Select
-        end
+        # Auto-derived from atom with one_of constraint
+        filter :status
 
-        filter :published_at do
-          module Backpex.Filters.Date
-        end
+        # Auto-derived from datetime attribute
+        filter :published_at
       end
 
       item_actions do
@@ -439,8 +443,9 @@ defmodule AshBackpex.LiveResource.Dsl do
       {:module,
        [
          type: :module,
-         required: true,
-         doc: "The module to use for the filter. You must create the module"
+         required: false,
+         doc:
+           "The filter module to use. If not provided, will be auto-derived from the Ash attribute type (e.g., Boolean → AshBackpex.Filters.Boolean, atom with one_of → AshBackpex.Filters.Select)."
        ]},
       {:label,
        [
