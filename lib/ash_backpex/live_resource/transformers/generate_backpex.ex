@@ -444,6 +444,129 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
           end
         end
 
+        # Derive the appropriate AshBackpex filter module from an Ash attribute type
+        derive_filter_module = fn attribute_name ->
+          type = derive_type.(attribute_name)
+
+          case type do
+            Ash.Type.Boolean ->
+              AshBackpex.Filters.Boolean
+
+            Ash.Type.Atom ->
+              if attribute_name |> has_one_of_constraint.() do
+                AshBackpex.Filters.Select
+              else
+                nil
+              end
+
+            Ash.Type.String ->
+              if attribute_name |> has_one_of_constraint.() do
+                AshBackpex.Filters.Select
+              else
+                nil
+              end
+
+            Ash.Type.CiString ->
+              if attribute_name |> has_one_of_constraint.() do
+                AshBackpex.Filters.Select
+              else
+                nil
+              end
+
+            Ash.Type.Integer ->
+              AshBackpex.Filters.Range
+
+            Ash.Type.Float ->
+              AshBackpex.Filters.Range
+
+            Ash.Type.Decimal ->
+              AshBackpex.Filters.Range
+
+            Ash.Type.Date ->
+              AshBackpex.Filters.Range
+
+            Ash.Type.DateTime ->
+              AshBackpex.Filters.Range
+
+            Ash.Type.UtcDatetime ->
+              AshBackpex.Filters.Range
+
+            Ash.Type.UtcDatetimeUsec ->
+              AshBackpex.Filters.Range
+
+            Ash.Type.NaiveDateTime ->
+              AshBackpex.Filters.Range
+
+            {:array, Ash.Type.Atom} ->
+              if attribute_name |> has_one_of_constraint.() do
+                AshBackpex.Filters.MultiSelect
+              else
+                nil
+              end
+
+            {:array, Ash.Type.String} ->
+              if attribute_name |> has_one_of_constraint.() do
+                AshBackpex.Filters.MultiSelect
+              else
+                nil
+              end
+
+            _ ->
+              nil
+          end
+        end
+
+        # Derive the filter type for Range filters (used by Backpex.Filters.Range type/0 callback)
+        # Returns :number for numeric types, :date for dates, :datetime for datetimes
+        derive_filter_type = fn attribute_name ->
+          type = derive_type.(attribute_name)
+
+          case type do
+            Ash.Type.Integer -> :number
+            Ash.Type.Float -> :number
+            Ash.Type.Decimal -> :number
+            Ash.Type.Date -> :date
+            Ash.Type.DateTime -> :datetime
+            Ash.Type.UtcDatetime -> :datetime
+            Ash.Type.UtcDatetimeUsec -> :datetime
+            Ash.Type.NaiveDateTime -> :datetime
+            _ -> nil
+          end
+        end
+
+        # Derive filter options for Select and MultiSelect filters from one_of constraints
+        # Returns a list of {label, value} tuples for use with Select/MultiSelect filter options/1 callback
+        derive_filter_options = fn attribute_name, filter_module ->
+          case filter_module do
+            AshBackpex.Filters.Select ->
+              case attribute_name |> get_one_of_constraint.() do
+                constraints when is_list(constraints) ->
+                  constraints
+                  |> Enum.map(fn val ->
+                    {atom_to_title_case.(val), val}
+                  end)
+
+                _ ->
+                  []
+              end
+
+            AshBackpex.Filters.MultiSelect ->
+              case attribute_name |> get_one_of_constraint.() do
+                constraints when is_list(constraints) ->
+                  constraints
+                  |> Enum.map(fn val ->
+                    {atom_to_title_case.(val), val}
+                  end)
+
+                _ ->
+                  []
+              end
+
+            _ ->
+              nil
+          end
+        end
+
         @fields Spark.Dsl.Extension.get_entities(__MODULE__, [:backpex, :fields])
                 |> Enum.reverse()
                 |> Enum.reduce([], fn field, acc ->
@@ -458,6 +581,27 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                       only: field.only,
                       except: field.except,
                       default: field.default,
+                      render: field.render,
+                      render_form: field.render_form,
+                      custom_alias: field.custom_alias,
+                      align: field.align,
+                      align_label: field.align_label,
+                      orderable: field.orderable,
+                      visible: field.visible,
+                      can?: field.can?,
+                      index_editable: field.index_editable,
+                      index_column_class: field.index_column_class,
+                      translate_error: field.translate_error,
+                      help_text: field.help_text,
+                      debounce: field.debounce,
+                      throttle: field.throttle,
+                      placeholder: field.placeholder,
+                      prompt: Map.get(field, :prompt),
+                      readonly: Map.get(field, :readonly),
+                      display_field_form: Map.get(field, :display_field_form),
+                      options_query: Map.get(field, :options_query),
+                      format: Map.get(field, :format),
+                      rows: Map.get(field, :rows),
                       options: field.options || field.attribute |> maybe_derive_options.(module),
                       display_field: field.display_field,
                       live_resource: field.live_resource,
@@ -479,13 +623,55 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
 
         @filters Spark.Dsl.Extension.get_entities(__MODULE__, [:backpex, :filters])
                  |> Enum.reduce([], fn filter, acc ->
+                   derived_module = filter.attribute |> derive_filter_module.()
+                   module = filter.module || derived_module
+
+                   # Raise compile-time error if filter module cannot be derived
+                   # and no explicit module was provided
+                   if is_nil(module) do
+                     att = inspect(filter.attribute)
+                     type = derive_type.(filter.attribute)
+
+                     module_shortname =
+                       __MODULE__ |> Atom.to_string() |> String.split(".") |> List.last()
+
+                     raise Spark.Error.DslError,
+                       module: __MODULE__,
+                       message: """
+                       Unable to derive the filter module for the #{att} filter in #{module_shortname}.
+
+                       The Ash type #{inspect(type)} cannot be automatically mapped to a filter module.
+
+                       To fix this, specify an explicit filter module:
+
+                         filters do
+                           filter #{att} do
+                             module AshBackpex.Filters.Text  # or another appropriate filter
+                           end
+                         end
+
+                       Supported automatic derivations:
+                         • Boolean types → AshBackpex.Filters.Boolean
+                         • Atom/String with one_of constraints → AshBackpex.Filters.Select
+                         • Integer/Float/Decimal → AshBackpex.Filters.Range
+                         • Date/DateTime types → AshBackpex.Filters.Range
+                       """
+                   end
+
                    Keyword.put(
                      acc,
                      filter.attribute,
                      %{
-                       module: filter.module,
-                       label: filter.label || filter.attribute |> atom_to_title_case.()
+                       module: module,
+                       label: filter.label || filter.attribute |> atom_to_title_case.(),
+                       type: filter.type || filter.attribute |> derive_filter_type.(),
+                       options:
+                         filter.options || filter.attribute |> derive_filter_options.(module),
+                       prompt: filter.prompt
                      }
+                     |> Map.to_list()
+                     |> Enum.reject(fn {k, v} -> is_nil(v) end)
+                     |> Map.new()
                    )
                  end)
 
@@ -511,6 +697,8 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                                       [:backpex, :item_actions],
                                       :strip_default
                                     ) || []
+
+        @backpex_layout Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :layout)
 
         use Backpex.LiveResource,
             [
@@ -543,7 +731,6 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                   nil -> %{by: primary_key.(), direction: :asc}
                   order -> order
                 end,
-              layout: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :layout),
               pubsub: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :pubsub),
               per_page_options:
                 Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :per_page_options),
@@ -560,6 +747,9 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
 
         @impl Backpex.LiveResource
         def fields, do: @fields
+
+        @impl Backpex.LiveResource
+        def layout(_assigns), do: @backpex_layout
 
         @impl Backpex.LiveResource
         def filters, do: @filters

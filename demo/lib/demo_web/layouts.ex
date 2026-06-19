@@ -24,8 +24,14 @@ defmodule DemoWeb.Layouts do
         <:sidebar>
           <Backpex.HTML.Layout.sidebar_section id="blog">
             <:label>Blog</:label>
+            <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate="/authors">
+              <Backpex.HTML.CoreComponents.icon name="hero-users" class="size-5" /> Authors
+            </Backpex.HTML.Layout.sidebar_item>
             <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate="/posts">
               <Backpex.HTML.CoreComponents.icon name="hero-document-text" class="size-5" /> Posts
+            </Backpex.HTML.Layout.sidebar_item>
+            <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate="/comments">
+              <Backpex.HTML.CoreComponents.icon name="hero-chat-bubble-left-right" class="size-5" /> Comments
             </Backpex.HTML.Layout.sidebar_item>
           </Backpex.HTML.Layout.sidebar_section>
         </:sidebar>

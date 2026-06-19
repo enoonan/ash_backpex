@@ -1,0 +1,245 @@
+defmodule AshBackpex.Filters.MultiSelect do
+  @moduledoc """
+  A MultiSelect filter for AshBackpex that renders checkboxes for multi-value filtering.
+
+  This module provides both the UI rendering (via `Backpex.Filters.MultiSelect`) and
+  the Ash.Expr generation (via `AshBackpex.Filters.Filter` behavior) for filtering
+  attributes where the field value should match any of the selected values.
+
+  ## Usage
+
+  The MultiSelect filter is automatically derived for array-type attributes with `one_of`
+  constraints when using `AshBackpex.LiveResource`. You can also use it directly:
+
+      defmodule MyApp.Filters.Tags do
+        use AshBackpex.Filters.MultiSelect
+
+        @impl Backpex.Filter
+        def label, do: "Tags"
+
+        @impl Backpex.Filters.MultiSelect
+        def prompt, do: "Select tags..."
+
+        @impl Backpex.Filters.MultiSelect
+        def options(_assigns) do
+          [
+            {"Bug", "bug"},
+            {"Feature", "feature"},
+            {"Enhancement", "enhancement"}
+          ]
+        end
+      end
+
+  ## Filter Values
+
+  The filter receives values as a list of strings:
+  - `["value1", "value2"]` - Filter for records where field IN ("value1", "value2")
+  - `[]` - No filter applied (none selected)
+  - `nil` - No filter applied
+
+  ## Options
+
+  You must implement the `options/1` and `prompt/0` callbacks to define the
+  available options and the default prompt text:
+
+      @impl Backpex.Filters.MultiSelect
+      def prompt, do: "Select..."
+
+      @impl Backpex.Filters.MultiSelect
+      def options(_assigns) do
+        [
+          {"Label 1", "value1"},
+          {"Label 2", "value2"}
+        ]
+      end
+
+  Note: Unlike Backpex's Ecto-based filtering which uses the `query/3` callback,
+  AshBackpex uses `to_ash_expr/3` to generate Ash expressions for filtering.
+  """
+
+  use Backpex.Filters.MultiSelect
+
+  @behaviour AshBackpex.Filters.Filter
+
+  @impl Backpex.Filter
+  def label, do: "Multi Select"
+
+  @impl Backpex.Filters.Select
+  def prompt, do: "Select..."
+
+  @impl Backpex.Filters.Select
+  def options(assigns), do: options_for(assigns, Map.get(assigns, :field))
+
+  @impl Backpex.Filter
+  def changeset(changeset, field, assigns) do
+    Backpex.Filters.MultiSelect.changeset(changeset, field, options_for(assigns, field))
+  end
+
+  @impl Backpex.Filter
+  def render_form(assigns) do
+    field = Map.get(assigns, :field)
+
+    assigns
+    |> Phoenix.Component.assign(:options, options_for(assigns, field))
+    |> Phoenix.Component.assign(:prompt, prompt_for(assigns, field))
+    |> Backpex.Filters.MultiSelect.render_form()
+  end
+
+  defmacro __using__(_opts) do
+    quote do
+      use Backpex.Filters.MultiSelect
+
+      @behaviour AshBackpex.Filters.Filter
+
+      @impl Backpex.Filter
+      def label, do: "Multi Select"
+
+      @impl AshBackpex.Filters.Filter
+      defdelegate to_ash_expr(field, value, assigns), to: AshBackpex.Filters.MultiSelect
+
+      defoverridable label: 0, to_ash_expr: 3
+    end
+  end
+
+  @doc """
+  Converts a multi-select filter value to an Ash.Expr expression.
+
+  ## Parameters
+
+  - `field` - The atom name of the attribute being filtered
+  - `value` - The filter value (list of strings from checkbox selections)
+  - `assigns` - The LiveView assigns (unused by this filter)
+
+  ## Returns
+
+  - `Ash.Expr.t()` - When one or more values are selected (field IN [...])
+  - `nil` - When no filter should be applied (empty list, nil)
+
+  ## Examples
+
+      iex> MultiSelect.to_ash_expr(:status, ["active", "pending"], %{})
+      #Ash.Expr<status in ["active", "pending"]>
+
+      iex> MultiSelect.to_ash_expr(:status, ["active"], %{})
+      #Ash.Expr<status in ["active"]>
+
+      iex> MultiSelect.to_ash_expr(:status, [], %{})
+      nil
+
+      iex> MultiSelect.to_ash_expr(:status, nil, %{})
+      nil
+  """
+  @impl AshBackpex.Filters.Filter
+  def to_ash_expr(_field, nil, _assigns), do: nil
+  def to_ash_expr(_field, [], _assigns), do: nil
+
+  def to_ash_expr(field, values, assigns) when is_list(values) do
+    values = Enum.reject(values, &(&1 in [nil, ""]))
+
+    cond do
+      values == [] ->
+        nil
+
+      sqlite_array_attribute?(field, assigns) ->
+        sqlite_array_overlap_expr(field, values)
+
+      true ->
+        scalar_in_expr(field, values)
+    end
+  end
+
+  def to_ash_expr(_field, _value, _assigns), do: nil
+
+  defp scalar_in_expr(field, values) do
+    require Ash.Expr
+    Ash.Expr.expr(^Ash.Expr.ref(field) in ^values)
+  end
+
+  defp sqlite_array_overlap_expr(field, values) do
+    values
+    |> Enum.map(fn value ->
+      require Ash.Expr
+
+      Ash.Expr.expr(
+        fragment(
+          "EXISTS (SELECT 1 FROM json_each(?) WHERE value = ?)",
+          ^Ash.Expr.ref(field),
+          ^to_string(value)
+        )
+      )
+    end)
+    |> Enum.reduce(fn expr, acc ->
+      require Ash.Expr
+      Ash.Expr.expr(^acc or ^expr)
+    end)
+  end
+
+  defp sqlite_array_attribute?(field, assigns) do
+    case {resource_from_assigns(assigns), attribute_type(field, assigns)} do
+      {resource, {:array, _}} when is_atom(resource) and not is_nil(resource) ->
+        Ash.Resource.Info.data_layer(resource) == AshSqlite.DataLayer
+
+      _ ->
+        false
+    end
+  end
+
+  defp attribute_type(field, assigns) do
+    case resource_from_assigns(assigns) do
+      resource when is_atom(resource) and not is_nil(resource) ->
+        case Ash.Resource.Info.attribute(resource, field) do
+          %{type: type} -> type
+          _ -> nil
+        end
+
+      _ ->
+        nil
+    end
+  end
+
+  defp resource_from_assigns(%{live_resource: live_resource}) when is_atom(live_resource) do
+    cond do
+      function_exported?(live_resource, :adapter_config, 1) ->
+        live_resource.adapter_config(:resource)
+
+      function_exported?(live_resource, :config, 1) ->
+        case live_resource.config(:adapter_config) do
+          config when is_list(config) -> config[:resource]
+          _ -> nil
+        end
+
+      true ->
+        nil
+    end
+  end
+
+  defp resource_from_assigns(_assigns), do: nil
+
+  defp options_for(%{filters: filters}, field) when is_atom(field) do
+    filters
+    |> Keyword.get(field, %{})
+    |> Map.get(:options, [])
+  end
+
+  defp options_for(%{live_resource: live_resource} = assigns, field) when is_atom(field) do
+    live_resource.filters(assigns)
+    |> Keyword.get(field, %{})
+    |> Map.get(:options, [])
+  end
+
+  defp options_for(_assigns, _field), do: []
+
+  defp prompt_for(%{filters: filters}, field) when is_atom(field) do
+    filters
+    |> Keyword.get(field, %{})
+    |> Map.get(:prompt, prompt())
+  end
+
+  defp prompt_for(%{live_resource: live_resource} = assigns, field) when is_atom(field) do
+    live_resource.filters(assigns)
+    |> Keyword.get(field, %{})
+    |> Map.get(:prompt, prompt())
+  end
+
+  defp prompt_for(_assigns, _field), do: prompt()
+end

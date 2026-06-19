@@ -44,6 +44,7 @@ defmodule AshBackpex.DataCase do
       view_count INTEGER NOT NULL DEFAULT 0,
       rating REAL,
       tags TEXT,
+      keywords TEXT,
       metadata TEXT,
       status TEXT,
       author_id TEXT REFERENCES users(id),

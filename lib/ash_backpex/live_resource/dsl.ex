@@ -124,29 +124,83 @@ defmodule AshBackpex.LiveResource.Dsl do
 
   ## filters Section
 
-  Add filters to the index view:
+  Add filters to the index view. Filter modules are auto-derived from Ash attribute types,
+  so you only need to declare which attributes to filter on.
+
+  ### Auto-Derivation Mapping
+
+  | Ash Type | Filter Module | Notes |
+  |----------|---------------|-------|
+  | `Ash.Type.Boolean` | `AshBackpex.Filters.Boolean` | Checkboxes for true/false |
+  | `Ash.Type.Atom` with `one_of` | `AshBackpex.Filters.Select` | Dropdown from constraint values |
+  | `Ash.Type.String` with `one_of` | `AshBackpex.Filters.Select` | Dropdown from constraint values |
+  | `Ash.Type.Integer` | `AshBackpex.Filters.Range` | Min/max number inputs |
+  | `Ash.Type.Float` | `AshBackpex.Filters.Range` | Min/max number inputs |
+  | `Ash.Type.Decimal` | `AshBackpex.Filters.Range` | Min/max number inputs |
+  | `Ash.Type.Date` | `AshBackpex.Filters.Range` | Date range picker |
+  | `Ash.Type.DateTime` | `AshBackpex.Filters.Range` | Datetime range picker |
+  | `Ash.Type.UtcDatetime` | `AshBackpex.Filters.Range` | Datetime range picker |
+  | `Ash.Type.NaiveDateTime` | `AshBackpex.Filters.Range` | Datetime range picker |
+  | `{:array, Ash.Type.Atom}` with `one_of` | `AshBackpex.Filters.MultiSelect` | Checkboxes for multi-value |
+  | `{:array, Ash.Type.String}` with `one_of` | `AshBackpex.Filters.MultiSelect` | Checkboxes for multi-value |
+
+  ### Usage Examples
 
   ```elixir
   filters do
-    filter :published do
-      module Backpex.Filters.Boolean
-    end
+    # Boolean filter - renders true/false checkboxes
+    filter :published
 
+    # Select filter - auto-derived for atom/string with one_of constraint
     filter :status do
-      module Backpex.Filters.Select
       label "Post Status"
     end
 
-    filter :created_after do
-      module MyApp.Filters.DateRange
+    # Range filter - auto-derived for numeric types
+    filter :view_count
+
+    # Range filter - auto-derived for date/datetime types
+    filter :inserted_at
+
+    # MultiSelect filter - auto-derived for array types with one_of constraint
+    filter :tags
+
+    # Explicit module override for custom filters
+    filter :custom_field do
+      module MyApp.Filters.CustomFilter
     end
   end
   ```
 
+  ### Filter Types
+
+  #### Boolean Filter
+
+  Renders checkboxes for filtering true/false values. When both are selected,
+  no filter is applied.
+
+  #### Select Filter
+
+  Renders a dropdown for single-value filtering. Options are auto-derived from
+  `one_of` constraints, or can be provided via the `options` option.
+
+  #### Range Filter
+
+  Renders min/max input fields for range filtering. The input type (number, date,
+  or datetime) is auto-derived from the Ash attribute type.
+
+  #### MultiSelect Filter
+
+  Renders checkboxes for multi-value filtering using `IN` queries. Useful for
+  filtering records where a field matches any of the selected values.
+
   ### Filter Options
 
-  - `module` (required) - The Backpex.Filters.* module or custom filter module
+  - `module` - The filter module (optional, auto-derived from Ash attribute type if not specified)
   - `label` - Custom label (defaults to title-cased attribute name)
+  - `options` - List of options for Select/MultiSelect filters (optional, auto-derived from `one_of` constraints)
+  - `prompt` - Prompt text for empty selection (optional, string)
+  - `type` - Type hint for Range filter: `:number`, `:date`, `:datetime` (optional, auto-derived)
 
   ## item_actions Section
 
@@ -224,13 +278,20 @@ defmodule AshBackpex.LiveResource.Dsl do
       end
 
       filters do
-        filter :status do
-          module Backpex.Filters.Select
-        end
+        # Select filter - auto-derived from atom with one_of constraint
+        filter :status
 
-        filter :published_at do
-          module Backpex.Filters.Date
-        end
+        # Range filter - auto-derived from datetime attribute
+        filter :published_at
+
+        # Boolean filter - auto-derived from boolean attribute
+        filter :featured
+
+        # Range filter - auto-derived from integer attribute
+        filter :view_count
+
+        # MultiSelect filter - auto-derived from {:array, :atom} with one_of
+        filter :tags
       end
 
       item_actions do
@@ -279,7 +340,8 @@ defmodule AshBackpex.LiveResource.Dsl do
       :placeholder,
       :options,
       :display_field,
-      :live_resource
+      :live_resource,
+      __spark_metadata__: nil
     ]
   end
 
@@ -415,9 +477,18 @@ defmodule AshBackpex.LiveResource.Dsl do
     This struct holds the configuration for a single filter in the `filters`
     section of a `backpex` block.
 
+    ## Fields
+
+    - `:attribute` - The Ash attribute to filter on (required)
+    - `:module` - Filter module implementing the filter behavior (optional, auto-derived)
+    - `:label` - Display label for the filter (optional, defaults to title-cased attribute)
+    - `:options` - Options for Select/MultiSelect filters (optional, list or 1-arity function)
+    - `:prompt` - Prompt text for empty selection (optional, string)
+    - `:type` - Type hint for Range filter: `:number`, `:date`, `:datetime` (optional, auto-derived)
+
     See `AshBackpex.LiveResource.Dsl` for filter configuration options.
     """
-    defstruct [:attribute, :module, :label]
+    defstruct [:attribute, :module, :label, :options, :prompt, :type, __spark_metadata__: nil]
   end
 
   @filter %Spark.Dsl.Entity{
@@ -430,13 +501,31 @@ defmodule AshBackpex.LiveResource.Dsl do
       {:module,
        [
          type: :module,
-         required: true,
-         doc: "The module to use for the filter. You must create the module"
+         required: false,
+         doc:
+           "The filter module to use. If not provided, will be auto-derived from the Ash attribute type (e.g., Boolean → AshBackpex.Filters.Boolean, atom with one_of → AshBackpex.Filters.Select)."
        ]},
       {:label,
        [
          type: :string,
          doc: "The label for the filter. Defaults to the attribute name, title_cased"
+       ]},
+      {:options,
+       [
+         type: {:or, [{:list, :any}, {:fun, 1}]},
+         doc:
+           "Options for Select/MultiSelect filters. List of options or 1-arity function receiving assigns."
+       ]},
+      {:prompt,
+       [
+         type: :string,
+         doc: "Prompt text displayed when no option is selected. Defaults to \"Select...\""
+       ]},
+      {:type,
+       [
+         type: {:in, [:number, :date, :datetime]},
+         doc:
+           "Type hint for Range filter: :number, :date, or :datetime. Auto-derived from attribute type if not specified."
        ]}
     ]
   }
@@ -455,7 +544,7 @@ defmodule AshBackpex.LiveResource.Dsl do
 
     See `AshBackpex.LiveResource.Dsl` for item action configuration options.
     """
-    defstruct [:name, :module, :only, :except]
+    defstruct [:name, :module, :only, :except, __spark_metadata__: nil]
   end
 
   @item_action %Spark.Dsl.Entity{

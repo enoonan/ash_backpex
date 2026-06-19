@@ -206,3 +206,140 @@ defmodule TestCustomItemActionLiveWithExcept do
     end
   end
 end
+
+# LiveResource with derived filters (no explicit module)
+defmodule TestDerivedFiltersLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.Post)
+    layout({TestLayout, :admin})
+
+    fields do
+      field(:title)
+      field(:published)
+      field(:status)
+    end
+
+    filters do
+      # Filter without module - should be derived from Ash attribute type
+      filter(:published)
+      filter(:status)
+    end
+  end
+end
+
+# LiveResource with explicit filter module override
+defmodule TestExplicitFilterModuleLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.Post)
+    layout({TestLayout, :admin})
+
+    fields do
+      field(:title)
+      field(:published)
+    end
+
+    filters do
+      # Explicit module should be preserved (uses Backpex filter, not AshBackpex)
+      filter :published do
+        module(Backpex.Filters.Boolean)
+      end
+    end
+  end
+end
+
+# LiveResource with explicit AshBackpex filter module override (different from derived)
+defmodule TestExplicitAshFilterModuleLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.Post)
+    layout({TestLayout, :admin})
+
+    fields do
+      field(:title)
+      field(:view_count)
+    end
+
+    filters do
+      # Explicit AshBackpex module should be preserved even when different from derived
+      # view_count is Integer which would normally derive to Range filter,
+      # but we explicitly override to use Boolean filter
+      filter :view_count do
+        module(AshBackpex.Filters.Boolean)
+      end
+    end
+  end
+end
+
+# LiveResource with date filter for testing filter type derivation
+defmodule TestDateFilterTypeLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.Item)
+    layout({TestLayout, :admin})
+
+    fields do
+      field(:name)
+      field(:birth_date)
+    end
+
+    filters do
+      # Date filter - module is auto-derived to AshBackpex.Filters.Range
+      # This tests that derive_filter_module returns Range and derive_filter_type returns :date
+      filter(:birth_date)
+    end
+  end
+end
+
+# LiveResource with datetime filter for testing filter type derivation
+defmodule TestDatetimeFilterTypeLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.Item)
+    layout({TestLayout, :admin})
+
+    fields do
+      field(:name)
+      field(:created_at)
+    end
+
+    filters do
+      # DateTime filter - module is auto-derived to AshBackpex.Filters.Range
+      # This tests that derive_filter_module returns Range and derive_filter_type returns :datetime
+      filter(:created_at)
+    end
+  end
+end
+
+# LiveResource with array filter for testing array type derivation
+defmodule TestArrayFilterTypeLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.Post)
+    layout({TestLayout, :admin})
+
+    fields do
+      field(:title)
+      field(:tags)
+    end
+
+    filters do
+      # Array filter - tags is {:array, :atom} with one_of constraints
+      # Should derive to AshBackpex.Filters.MultiSelect
+      filter(:tags)
+    end
+  end
+end

@@ -29,7 +29,17 @@ ash_backpex-*.tar
 .elixir_ls
 .expert
 
-/.claude/settings-local.json
+# Local agent / LLM tool files
+.claude/
+.codex/
+.openai/
+.cursor/
+.windsurf/
+.gemini/
+.continue/
+.aider*
+CLAUDE.md
+
 /.specify/
 .DS_Store
 .vscode

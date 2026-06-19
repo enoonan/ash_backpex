@@ -52,6 +52,225 @@ defmodule AshBackpex.AdapterTest do
       refute Enum.any?(posts, &(&1.view_count < 1))
     end
 
+    test "filter with module-based Boolean filter applies to_ash_expr/3" do
+      user = user()
+      published_post = post(actor: user, published: true)
+      _unpublished_post = post(actor: user, published: false)
+
+      assigns = %{current_user: user}
+
+      # Filter with module key triggers to_ash_expr/3 callback
+      filter = %{field: :published, value: ["true"], module: AshBackpex.Filters.Boolean}
+
+      assert {:ok, 1} == Adapter.count([filters: [filter]], [], assigns, TestPostLive)
+      {:ok, [post]} = Adapter.list([filters: [filter]], [], assigns, TestPostLive)
+      assert post.id == published_post.id
+    end
+
+    test "filter_values and filter_configs criteria from Backpex 0.18 apply filters" do
+      user = user()
+      published_post = post(actor: user, published: true)
+      _unpublished_post = post(actor: user, published: false)
+
+      assigns = %{current_user: user}
+
+      criteria = [
+        filter_values: %{published: ["true"]},
+        filter_configs: TestPostLive.filters()
+      ]
+
+      assert {:ok, 1} == Adapter.count(criteria, [], assigns, TestPostLive)
+      {:ok, [post]} = Adapter.list(criteria, [], assigns, TestPostLive)
+      assert post.id == published_post.id
+    end
+
+    test "filter_values and filter_configs apply MultiSelect filters to SQLite array attributes" do
+      user = user()
+      food_post = post(actor: user, tags: [:food])
+      entertainment_post = post(actor: user, tags: [:entertainment])
+      combo_post = post(actor: user, tags: [:food, :politics])
+
+      assigns = %{current_user: user}
+
+      criteria = [
+        filter_values: %{tags: ["food"]},
+        filter_configs: TestArrayFilterTypeLive.filters()
+      ]
+
+      assert {:ok, 2} == Adapter.count(criteria, [], assigns, TestArrayFilterTypeLive)
+      {:ok, posts} = Adapter.list(criteria, [], assigns, TestArrayFilterTypeLive)
+
+      post_ids = posts |> Enum.map(& &1.id) |> MapSet.new()
+      assert MapSet.member?(post_ids, food_post.id)
+      assert MapSet.member?(post_ids, combo_post.id)
+      refute MapSet.member?(post_ids, entertainment_post.id)
+    end
+
+    test "filter with module-based Boolean filter returns false records" do
+      user = user()
+      _published_post = post(actor: user, published: true)
+      unpublished_post = post(actor: user, published: false)
+
+      assigns = %{current_user: user}
+
+      filter = %{field: :published, value: ["false"], module: AshBackpex.Filters.Boolean}
+
+      assert {:ok, 1} == Adapter.count([filters: [filter]], [], assigns, TestPostLive)
+      {:ok, [post]} = Adapter.list([filters: [filter]], [], assigns, TestPostLive)
+      assert post.id == unpublished_post.id
+    end
+
+    test "filter with module-based Boolean filter returns all when both selected" do
+      user = user()
+      _published_post = post(actor: user, published: true)
+      _unpublished_post = post(actor: user, published: false)
+
+      assigns = %{current_user: user}
+
+      # Both selected means no filter applied - should return all
+      filter = %{field: :published, value: ["true", "false"], module: AshBackpex.Filters.Boolean}
+
+      assert {:ok, 2} == Adapter.count([filters: [filter]], [], assigns, TestPostLive)
+      {:ok, posts} = Adapter.list([filters: [filter]], [], assigns, TestPostLive)
+      assert length(posts) == 2
+    end
+
+    test "filter with module-based Select filter applies to_ash_expr/3" do
+      user = user()
+      draft_post = post(actor: user, status: :draft)
+      _published_post = post(actor: user, status: :published)
+      _archived_post = post(actor: user, status: :archived)
+
+      assigns = %{current_user: user}
+
+      filter = %{field: :status, value: :draft, module: AshBackpex.Filters.Select}
+
+      assert {:ok, 1} == Adapter.count([filters: [filter]], [], assigns, TestPostLive)
+      {:ok, [post]} = Adapter.list([filters: [filter]], [], assigns, TestPostLive)
+      assert post.id == draft_post.id
+    end
+
+    test "multiple module-based filters combine correctly" do
+      user = user()
+      # Create posts with different combinations
+      matching_post = post(actor: user, published: true, status: :published)
+      _wrong_published = post(actor: user, published: false, status: :published)
+      _wrong_status = post(actor: user, published: true, status: :draft)
+      _wrong_both = post(actor: user, published: false, status: :archived)
+
+      assigns = %{current_user: user}
+
+      filters = [
+        %{field: :published, value: ["true"], module: AshBackpex.Filters.Boolean},
+        %{field: :status, value: :published, module: AshBackpex.Filters.Select}
+      ]
+
+      assert {:ok, 1} == Adapter.count([filters: filters], [], assigns, TestPostLive)
+      {:ok, [post]} = Adapter.list([filters: filters], [], assigns, TestPostLive)
+      assert post.id == matching_post.id
+    end
+
+    test "module filter returning nil applies no filter" do
+      user = user()
+      _post1 = post(actor: user, published: true)
+      _post2 = post(actor: user, published: false)
+
+      assigns = %{current_user: user}
+
+      # Empty list value causes Boolean filter to return nil
+      filter = %{field: :published, value: [], module: AshBackpex.Filters.Boolean}
+
+      assert {:ok, 2} == Adapter.count([filters: [filter]], [], assigns, TestPostLive)
+      {:ok, posts} = Adapter.list([filters: [filter]], [], assigns, TestPostLive)
+      assert length(posts) == 2
+    end
+
+    test "filter with module-based Range filter - start only (>=)" do
+      user = user()
+      _low_post = post(actor: user, view_count: 5)
+      mid_post = post(actor: user, view_count: 15)
+      high_post = post(actor: user, view_count: 25)
+
+      assigns = %{current_user: user}
+
+      # Only start value - filters for view_count >= 10
+      filter = %{
+        field: :view_count,
+        value: %{"start" => "10", "end" => ""},
+        module: AshBackpex.Filters.Range
+      }
+
+      assert {:ok, 2} == Adapter.count([filters: [filter]], [], assigns, TestPostLive)
+      {:ok, posts} = Adapter.list([filters: [filter]], [], assigns, TestPostLive)
+      assert length(posts) == 2
+      post_ids = Enum.map(posts, & &1.id) |> MapSet.new()
+      assert MapSet.member?(post_ids, mid_post.id)
+      assert MapSet.member?(post_ids, high_post.id)
+    end
+
+    test "filter with module-based Range filter - end only (<=)" do
+      user = user()
+      low_post = post(actor: user, view_count: 5)
+      mid_post = post(actor: user, view_count: 15)
+      _high_post = post(actor: user, view_count: 25)
+
+      assigns = %{current_user: user}
+
+      # Only end value - filters for view_count <= 20
+      filter = %{
+        field: :view_count,
+        value: %{"start" => "", "end" => "20"},
+        module: AshBackpex.Filters.Range
+      }
+
+      assert {:ok, 2} == Adapter.count([filters: [filter]], [], assigns, TestPostLive)
+      {:ok, posts} = Adapter.list([filters: [filter]], [], assigns, TestPostLive)
+      assert length(posts) == 2
+      post_ids = Enum.map(posts, & &1.id) |> MapSet.new()
+      assert MapSet.member?(post_ids, low_post.id)
+      assert MapSet.member?(post_ids, mid_post.id)
+    end
+
+    test "filter with module-based Range filter - both start and end" do
+      user = user()
+      _low_post = post(actor: user, view_count: 5)
+      mid_post = post(actor: user, view_count: 15)
+      _high_post = post(actor: user, view_count: 25)
+
+      assigns = %{current_user: user}
+
+      # Both values - filters for 10 <= view_count <= 20
+      filter = %{
+        field: :view_count,
+        value: %{"start" => "10", "end" => "20"},
+        module: AshBackpex.Filters.Range
+      }
+
+      assert {:ok, 1} == Adapter.count([filters: [filter]], [], assigns, TestPostLive)
+      {:ok, [post]} = Adapter.list([filters: [filter]], [], assigns, TestPostLive)
+      assert post.id == mid_post.id
+    end
+
+    test "filter with module-based Range filter - empty values returns all" do
+      user = user()
+      _post1 = post(actor: user, view_count: 5)
+      _post2 = post(actor: user, view_count: 15)
+      _post3 = post(actor: user, view_count: 25)
+
+      assigns = %{current_user: user}
+
+      # Both empty - no filter applied
+      filter = %{
+        field: :view_count,
+        value: %{"start" => "", "end" => ""},
+        module: AshBackpex.Filters.Range
+      }
+
+      assert {:ok, 3} == Adapter.count([filters: [filter]], [], assigns, TestPostLive)
+      {:ok, posts} = Adapter.list([filters: [filter]], [], assigns, TestPostLive)
+      assert length(posts) == 3
+    end
+
     test "sort list/4" do
       user = user()
       post0 = post(actor: user, view_count: 0)

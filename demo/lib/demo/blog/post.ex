@@ -16,9 +16,34 @@ defmodule Demo.Blog.Post do
       public? true
     end
 
+    attribute :slug, :string do
+      allow_nil? false
+      default "untitled"
+      public? true
+    end
+
     attribute :content, :string do
       allow_nil? true
       public? true
+    end
+
+    attribute :excerpt, :string do
+      allow_nil? true
+      public? true
+    end
+
+    attribute :status, :atom do
+      allow_nil? false
+      default :draft
+      public? true
+      constraints one_of: [:draft, :review, :published, :archived]
+    end
+
+    attribute :tags, {:array, :atom} do
+      allow_nil? false
+      default []
+      public? true
+      constraints items: [one_of: [:ash, :backpex, :liveview, :sqlite, :tutorial]]
     end
 
     attribute :rating, :integer do
@@ -27,9 +52,19 @@ defmodule Demo.Blog.Post do
       constraints min: 1, max: 5
     end
 
+    attribute :featured, :boolean do
+      default false
+      allow_nil? false
+      public? true
+    end
+
     attribute :published, :boolean do
       default false
       allow_nil? false
+      public? true
+    end
+
+    attribute :published_on, :date do
       public? true
     end
 
@@ -37,7 +72,27 @@ defmodule Demo.Blog.Post do
     update_timestamp :updated_at
   end
 
+  relationships do
+    belongs_to :author, Demo.Blog.Author
+
+    has_many :comments, Demo.Blog.Comment
+  end
+
   calculations do
+    calculate :comment_count,
+              :integer,
+              fn records, _context ->
+                Enum.map(records, fn record ->
+                  case record.comments do
+                    %Ash.NotLoaded{} -> 0
+                    comments when is_list(comments) -> length(comments)
+                    _ -> 0
+                  end
+                end)
+              end,
+              load: [:comments],
+              public?: true
+
     calculate :word_count,
               :integer,
               expr(
@@ -57,7 +112,88 @@ defmodule Demo.Blog.Post do
   end
 
   actions do
-    default_accept [:title, :content, :published, :rating]
-    defaults [:create, :read, :update, :destroy]
+    default_accept [
+      :title,
+      :slug,
+      :content,
+      :excerpt,
+      :status,
+      :tags,
+      :published,
+      :published_on,
+      :featured,
+      :rating,
+      :author_id
+    ]
+
+    defaults [:read, :destroy]
+
+    create :create do
+      primary? true
+
+      accept [
+        :title,
+        :slug,
+        :content,
+        :excerpt,
+        :status,
+        :tags,
+        :published,
+        :published_on,
+        :featured,
+        :rating,
+        :author_id
+      ]
+    end
+
+    create :admin_create do
+      accept [
+        :title,
+        :slug,
+        :content,
+        :excerpt,
+        :status,
+        :tags,
+        :published,
+        :published_on,
+        :featured,
+        :rating,
+        :author_id
+      ]
+    end
+
+    update :update do
+      primary? true
+
+      accept [
+        :title,
+        :slug,
+        :content,
+        :excerpt,
+        :status,
+        :tags,
+        :published,
+        :published_on,
+        :featured,
+        :rating,
+        :author_id
+      ]
+    end
+
+    update :admin_update do
+      accept [
+        :title,
+        :slug,
+        :content,
+        :excerpt,
+        :status,
+        :tags,
+        :published,
+        :published_on,
+        :featured,
+        :rating,
+        :author_id
+      ]
+    end
   end
 end

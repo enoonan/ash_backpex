@@ -288,15 +288,15 @@ defmodule AshBackpex.LiveResource.ErrorCasesTest do
           layout({TestLayout, :admin})
 
           fields do
-            # tags is {:array, Ash.Type.String}
-            field(:tags)
+            # keywords is {:array, Ash.Type.String} without constraints
+            field(:keywords)
           end
         end
       end
 
       # Verify the mapping was applied
       fields = ArrayMapMappingLive.fields()
-      assert Keyword.get(fields, :tags).module == Backpex.Fields.Text
+      assert Keyword.get(fields, :keywords).module == Backpex.Fields.Text
     end
 
     test "use scalar and array mappings independently" do
@@ -316,8 +316,8 @@ defmodule AshBackpex.LiveResource.ErrorCasesTest do
           fields do
             # title is Ash.Type.String (scalar)
             field(:title)
-            # tags is {:array, Ash.Type.String}
-            field(:tags)
+            # keywords is {:array, Ash.Type.String} without constraints
+            field(:keywords)
           end
         end
       end
@@ -326,7 +326,7 @@ defmodule AshBackpex.LiveResource.ErrorCasesTest do
       # Scalar string should use Textarea
       assert Keyword.get(fields, :title).module == Backpex.Fields.Textarea
       # Array string should use Text
-      assert Keyword.get(fields, :tags).module == Backpex.Fields.Text
+      assert Keyword.get(fields, :keywords).module == Backpex.Fields.Text
     end
 
     test "fall back to default when no array mapping configured" do
@@ -345,8 +345,8 @@ defmodule AshBackpex.LiveResource.ErrorCasesTest do
           fields do
             # title is Ash.Type.String (scalar) - should use custom mapping
             field(:title)
-            # tags is {:array, Ash.Type.String} - should use default MultiSelect
-            field(:tags)
+            # keywords is {:array, Ash.Type.String} - should use default MultiSelect for arrays
+            field(:keywords)
           end
         end
       end
@@ -355,7 +355,7 @@ defmodule AshBackpex.LiveResource.ErrorCasesTest do
       # Scalar string uses custom mapping
       assert Keyword.get(fields, :title).module == Backpex.Fields.Textarea
       # Array string falls back to default (MultiSelect for arrays)
-      assert Keyword.get(fields, :tags).module == Backpex.Fields.MultiSelect
+      assert Keyword.get(fields, :keywords).module == Backpex.Fields.MultiSelect
     end
 
     test "map {:array, Type} to custom field with function-based config" do
@@ -373,22 +373,22 @@ defmodule AshBackpex.LiveResource.ErrorCasesTest do
           layout({TestLayout, :admin})
 
           fields do
-            field(:tags)
+            field(:keywords)
           end
         end
       end
 
       fields = ArrayFunctionMappingLive.fields()
-      assert Keyword.get(fields, :tags).module == Backpex.Fields.Text
+      assert Keyword.get(fields, :keywords).module == Backpex.Fields.Text
     end
 
     test "function-based mapping can use constraints for array types" do
       # Function that uses constraints to decide field type
       Application.put_env(:ash_backpex, :field_type_mappings, fn
-        {:array, Ash.Type.String}, constraints ->
-          # Check if the array has items constraints
-          case Keyword.get(constraints, :items) do
-            items when is_list(items) -> Backpex.Fields.Text
+        {:array, Ash.Type.Atom}, constraints ->
+          # Check if the array has items constraints with one_of
+          case get_in(constraints, [:items, :one_of]) do
+            list when is_list(list) -> Backpex.Fields.Text
             _ -> nil
           end
 
@@ -404,7 +404,7 @@ defmodule AshBackpex.LiveResource.ErrorCasesTest do
           layout({TestLayout, :admin})
 
           fields do
-            # tags has items constraints
+            # tags has items constraints with one_of
             field(:tags)
           end
         end
@@ -431,7 +431,7 @@ defmodule AshBackpex.LiveResource.ErrorCasesTest do
                          layout({TestLayout, :admin})
 
                          fields do
-                           field(:tags)
+                           field(:keywords)
                          end
                        end
                      end
@@ -454,7 +454,7 @@ defmodule AshBackpex.LiveResource.ErrorCasesTest do
                          layout({TestLayout, :admin})
 
                          fields do
-                           field(:tags)
+                           field(:keywords)
                          end
                        end
                      end
