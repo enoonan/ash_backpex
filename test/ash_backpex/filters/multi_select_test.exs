@@ -10,6 +10,10 @@ defmodule AshBackpex.Filters.MultiSelectTest do
 
   alias AshBackpex.Filters.MultiSelect
 
+  test "implements Backpex label callback" do
+    assert MultiSelect.label() == "Multi Select"
+  end
+
   describe "to_ash_expr/3" do
     test "returns IN expression when multiple values are selected" do
       expr = MultiSelect.to_ash_expr(:status, ["active", "pending"], %{})

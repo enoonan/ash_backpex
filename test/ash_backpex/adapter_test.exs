@@ -67,6 +67,23 @@ defmodule AshBackpex.AdapterTest do
       assert post.id == published_post.id
     end
 
+    test "filter_values and filter_configs criteria from Backpex 0.18 apply filters" do
+      user = user()
+      published_post = post(actor: user, published: true)
+      _unpublished_post = post(actor: user, published: false)
+
+      assigns = %{current_user: user}
+
+      criteria = [
+        filter_values: %{published: ["true"]},
+        filter_configs: TestPostLive.filters()
+      ]
+
+      assert {:ok, 1} == Adapter.count(criteria, [], assigns, TestPostLive)
+      {:ok, [post]} = Adapter.list(criteria, [], assigns, TestPostLive)
+      assert post.id == published_post.id
+    end
+
     test "filter with module-based Boolean filter returns false records" do
       user = user()
       _published_post = post(actor: user, published: true)
@@ -155,7 +172,11 @@ defmodule AshBackpex.AdapterTest do
       assigns = %{current_user: user}
 
       # Only start value - filters for view_count >= 10
-      filter = %{field: :view_count, value: %{"start" => "10", "end" => ""}, module: AshBackpex.Filters.Range}
+      filter = %{
+        field: :view_count,
+        value: %{"start" => "10", "end" => ""},
+        module: AshBackpex.Filters.Range
+      }
 
       assert {:ok, 2} == Adapter.count([filters: [filter]], [], assigns, TestPostLive)
       {:ok, posts} = Adapter.list([filters: [filter]], [], assigns, TestPostLive)
@@ -174,7 +195,11 @@ defmodule AshBackpex.AdapterTest do
       assigns = %{current_user: user}
 
       # Only end value - filters for view_count <= 20
-      filter = %{field: :view_count, value: %{"start" => "", "end" => "20"}, module: AshBackpex.Filters.Range}
+      filter = %{
+        field: :view_count,
+        value: %{"start" => "", "end" => "20"},
+        module: AshBackpex.Filters.Range
+      }
 
       assert {:ok, 2} == Adapter.count([filters: [filter]], [], assigns, TestPostLive)
       {:ok, posts} = Adapter.list([filters: [filter]], [], assigns, TestPostLive)
@@ -193,7 +218,11 @@ defmodule AshBackpex.AdapterTest do
       assigns = %{current_user: user}
 
       # Both values - filters for 10 <= view_count <= 20
-      filter = %{field: :view_count, value: %{"start" => "10", "end" => "20"}, module: AshBackpex.Filters.Range}
+      filter = %{
+        field: :view_count,
+        value: %{"start" => "10", "end" => "20"},
+        module: AshBackpex.Filters.Range
+      }
 
       assert {:ok, 1} == Adapter.count([filters: [filter]], [], assigns, TestPostLive)
       {:ok, [post]} = Adapter.list([filters: [filter]], [], assigns, TestPostLive)
@@ -209,7 +238,11 @@ defmodule AshBackpex.AdapterTest do
       assigns = %{current_user: user}
 
       # Both empty - no filter applied
-      filter = %{field: :view_count, value: %{"start" => "", "end" => ""}, module: AshBackpex.Filters.Range}
+      filter = %{
+        field: :view_count,
+        value: %{"start" => "", "end" => ""},
+        module: AshBackpex.Filters.Range
+      }
 
       assert {:ok, 3} == Adapter.count([filters: [filter]], [], assigns, TestPostLive)
       {:ok, posts} = Adapter.list([filters: [filter]], [], assigns, TestPostLive)

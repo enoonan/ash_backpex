@@ -2,6 +2,14 @@
 
 <!-- changelog -->
 
+## [v0.1.1]
+
+### Updates
+
+- Bump Backpex dependency to 0.18.0 and update AshBackpex for Backpex 0.18 filter and adapter compatibility.
+- Add usage rules to the package for LLM-assisted development workflows.
+- Expand the demo app with authors, comments, relationships, item actions, panels, filters, and richer sample data.
+
 ## [v0.1.0]
 
 ### Updates

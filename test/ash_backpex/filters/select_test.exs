@@ -11,6 +11,10 @@ defmodule AshBackpex.Filters.SelectTest do
   # The module under test - will be implemented in lib/ash_backpex/filters/select.ex
   alias AshBackpex.Filters.Select
 
+  test "implements Backpex label callback" do
+    assert Select.label() == "Select"
+  end
+
   describe "to_ash_expr/3" do
     test "returns equality expression when a value is selected" do
       expr = Select.to_ash_expr(:status, "active", %{})

@@ -10,6 +10,10 @@ defmodule AshBackpex.Filters.BooleanTest do
   # The module under test - will be implemented in lib/ash_backpex/filters/boolean.ex
   alias AshBackpex.Filters.Boolean
 
+  test "implements Backpex label callback" do
+    assert Boolean.label() == "Boolean"
+  end
+
   describe "to_ash_expr/3" do
     test "returns equality expression when only 'true' is selected" do
       expr = Boolean.to_ash_expr(:published, ["true"], %{})

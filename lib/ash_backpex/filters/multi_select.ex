@@ -57,7 +57,33 @@ defmodule AshBackpex.Filters.MultiSelect do
   AshBackpex uses `to_ash_expr/3` to generate Ash expressions for filtering.
   """
 
+  use Backpex.Filters.MultiSelect
+
   @behaviour AshBackpex.Filters.Filter
+
+  @impl Backpex.Filter
+  def label, do: "Multi Select"
+
+  @impl Backpex.Filters.Select
+  def prompt, do: "Select..."
+
+  @impl Backpex.Filters.Select
+  def options(assigns), do: options_for(assigns, Map.get(assigns, :field))
+
+  @impl Backpex.Filter
+  def changeset(changeset, field, assigns) do
+    Backpex.Filters.MultiSelect.changeset(changeset, field, options_for(assigns, field))
+  end
+
+  @impl Backpex.Filter
+  def render_form(assigns) do
+    field = Map.get(assigns, :field)
+
+    assigns
+    |> Phoenix.Component.assign(:options, options_for(assigns, field))
+    |> Phoenix.Component.assign(:prompt, prompt_for(assigns, field))
+    |> Backpex.Filters.MultiSelect.render_form()
+  end
 
   defmacro __using__(_opts) do
     quote do
@@ -65,10 +91,13 @@ defmodule AshBackpex.Filters.MultiSelect do
 
       @behaviour AshBackpex.Filters.Filter
 
+      @impl Backpex.Filter
+      def label, do: "Multi Select"
+
       @impl AshBackpex.Filters.Filter
       defdelegate to_ash_expr(field, value, assigns), to: AshBackpex.Filters.MultiSelect
 
-      defoverridable to_ash_expr: 3
+      defoverridable label: 0, to_ash_expr: 3
     end
   end
 
@@ -110,4 +139,32 @@ defmodule AshBackpex.Filters.MultiSelect do
   end
 
   def to_ash_expr(_field, _value, _assigns), do: nil
+
+  defp options_for(%{filters: filters}, field) when is_atom(field) do
+    filters
+    |> Keyword.get(field, %{})
+    |> Map.get(:options, [])
+  end
+
+  defp options_for(%{live_resource: live_resource} = assigns, field) when is_atom(field) do
+    live_resource.filters(assigns)
+    |> Keyword.get(field, %{})
+    |> Map.get(:options, [])
+  end
+
+  defp options_for(_assigns, _field), do: []
+
+  defp prompt_for(%{filters: filters}, field) when is_atom(field) do
+    filters
+    |> Keyword.get(field, %{})
+    |> Map.get(:prompt, prompt())
+  end
+
+  defp prompt_for(%{live_resource: live_resource} = assigns, field) when is_atom(field) do
+    live_resource.filters(assigns)
+    |> Keyword.get(field, %{})
+    |> Map.get(:prompt, prompt())
+  end
+
+  defp prompt_for(_assigns, _field), do: prompt()
 end

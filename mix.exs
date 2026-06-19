@@ -1,7 +1,7 @@
 defmodule AshBackpex.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.1.1"
   @source_url "https://github.com/enoonan/ash_backpex"
 
   def project do
@@ -65,10 +65,10 @@ defmodule AshBackpex.MixProject do
     [
       {:ash, "~> 3.0"},
       {:ash_phoenix, "~> 2.3.14"},
-      {:backpex, "~> 0.17.0"},
+      {:backpex, "~> 0.18.0"},
       {:spark, "~> 2.0"},
       {:phoenix_html, "~> 3.0 or ~> 4.0"},
-      {:igniter, "~> 0.7.0", override: true},
+      {:igniter, "~> 0.7.0"},
 
       # Dev/Test dependencies
       {:faker, "~> 0.19.0-alpha.1", only: :test},
@@ -86,7 +86,7 @@ defmodule AshBackpex.MixProject do
   defp package do
     [
       name: "ash_backpex",
-      files: ~w(lib mix.exs README.md LICENSE usage-rules.md),
+      files: ~w(lib guides mix.exs README.md CHANGELOG.md LICENSE usage-rules.md),
       licenses: ["MIT"],
       links: %{
         "GitHub" => @source_url,

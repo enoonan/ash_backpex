@@ -340,7 +340,8 @@ defmodule AshBackpex.LiveResource.Dsl do
       :placeholder,
       :options,
       :display_field,
-      :live_resource
+      :live_resource,
+      __spark_metadata__: nil
     ]
   end
 
@@ -487,7 +488,7 @@ defmodule AshBackpex.LiveResource.Dsl do
 
     See `AshBackpex.LiveResource.Dsl` for filter configuration options.
     """
-    defstruct [:attribute, :module, :label, :options, :prompt, :type]
+    defstruct [:attribute, :module, :label, :options, :prompt, :type, __spark_metadata__: nil]
   end
 
   @filter %Spark.Dsl.Entity{
@@ -543,7 +544,7 @@ defmodule AshBackpex.LiveResource.Dsl do
 
     See `AshBackpex.LiveResource.Dsl` for item action configuration options.
     """
-    defstruct [:name, :module, :only, :except]
+    defstruct [:name, :module, :only, :except, __spark_metadata__: nil]
   end
 
   @item_action %Spark.Dsl.Entity{

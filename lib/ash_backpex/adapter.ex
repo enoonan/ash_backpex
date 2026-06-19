@@ -303,9 +303,9 @@ defmodule AshBackpex.Adapter do
     query =
       config[:resource]
       |> Ash.Query.new()
-      |> apply_filters(Keyword.get(criteria, :filters), assigns)
-      |> BasicSearch.apply(Map.get(assigns, :params), live_resource)
-      |> Ash.Query.sort(resolve_sort(assigns, live_resource.config(:init_order)))
+      |> apply_criteria_filters(criteria, assigns)
+      |> BasicSearch.apply(search_params(criteria, assigns), live_resource)
+      |> Ash.Query.sort(resolve_sort(criteria, assigns, live_resource.config(:init_order)))
       |> Ash.Query.page(limit: page_size, offset: (page_num - 1) * page_size)
       |> Ash.Query.select(select)
       |> Ash.Query.load(default_loads ++ load)
@@ -325,7 +325,8 @@ defmodule AshBackpex.Adapter do
 
     config[:resource]
     |> Ash.Query.new()
-    |> apply_filters(Keyword.get(criteria, :filters), assigns)
+    |> apply_criteria_filters(criteria, assigns)
+    |> BasicSearch.apply(search_params(criteria, assigns), live_resource)
     |> Ash.count(actor: assigns.current_user)
   end
 
@@ -437,6 +438,49 @@ defmodule AshBackpex.Adapter do
     end)
   end
 
+  defp apply_criteria_filters(query, criteria, assigns) do
+    if Keyword.has_key?(criteria, :filter_values) or Keyword.has_key?(criteria, :filter_configs) do
+      filter_values = Keyword.get(criteria, :filter_values, %{})
+      filter_configs = Keyword.get(criteria, :filter_configs, [])
+
+      apply_filter_values(query, filter_values, filter_configs, assigns)
+    else
+      apply_filters(query, Keyword.get(criteria, :filters), assigns)
+    end
+  end
+
+  defp apply_filter_values(query, filter_values, filter_configs, assigns)
+       when is_map(filter_values) do
+    Enum.reduce(filter_values, query, fn {field, value}, query ->
+      field = normalize_filter_field(field)
+      filter_config = Keyword.get(filter_configs, field, %{})
+
+      case Map.get(filter_config, :module) do
+        module when not is_nil(module) ->
+          apply_filter_with_module(query, field, value, module, assigns)
+
+        nil when is_list(value) ->
+          apply_raw_filter(query, field, value)
+
+        nil ->
+          apply_raw_filter(query, field, value)
+      end
+    end)
+  end
+
+  defp apply_filter_values(query, _filter_values, _filter_configs, _assigns), do: query
+
+  defp normalize_filter_field(field) when is_atom(field), do: field
+  defp normalize_filter_field(field) when is_binary(field), do: String.to_existing_atom(field)
+
+  defp search_params(criteria, assigns) do
+    case Keyword.get(criteria, :search) do
+      {search, _search_options} when is_binary(search) -> %{"search" => search}
+      search when is_binary(search) -> %{"search" => search}
+      _other -> Map.get(assigns, :params)
+    end
+  end
+
   @doc """
   Applies a filter to the query using a filter module's `to_ash_expr/3` callback.
 
@@ -465,9 +509,45 @@ defmodule AshBackpex.Adapter do
   """
   @spec apply_filter_with_module(Ash.Query.t(), atom(), any(), module(), map()) :: Ash.Query.t()
   def apply_filter_with_module(query, field, value, module, assigns) do
-    case module.to_ash_expr(field, value, assigns) do
-      nil -> query
-      expr -> Ash.Query.filter(query, ^expr)
+    case ash_filter_module(module) do
+      nil ->
+        apply_raw_filter(query, field, value)
+
+      module ->
+        case module.to_ash_expr(field, value, assigns) do
+          nil -> query
+          expr -> Ash.Query.filter(query, ^expr)
+        end
+    end
+  end
+
+  defp apply_raw_filter(query, field, value) when is_list(value) do
+    Ash.Query.filter(query, ^Ash.Expr.ref(field) in ^value)
+  end
+
+  defp apply_raw_filter(query, field, value) do
+    Ash.Query.filter(query, ^Ash.Expr.ref(field) == ^value)
+  end
+
+  defp ash_filter_module(module) do
+    cond do
+      Code.ensure_loaded?(module) and function_exported?(module, :to_ash_expr, 3) ->
+        module
+
+      module == Backpex.Filters.Boolean ->
+        AshBackpex.Filters.Boolean
+
+      module == Backpex.Filters.Select ->
+        AshBackpex.Filters.Select
+
+      module == Backpex.Filters.MultiSelect ->
+        AshBackpex.Filters.MultiSelect
+
+      module == Backpex.Filters.Range ->
+        AshBackpex.Filters.Range
+
+      true ->
+        nil
     end
   end
 
@@ -495,19 +575,32 @@ defmodule AshBackpex.Adapter do
     end
   end
 
-  defp resolve_sort(%{params: %{"order_by" => field, "order_direction" => dir}}, _init) do
+  defp resolve_sort(criteria, assigns, init) do
+    case Keyword.get(criteria, :order) do
+      %{by: field, direction: direction} when is_atom(field) and is_atom(direction) ->
+        Keyword.put([], field, direction)
+
+      _order ->
+        resolve_sort_from_assigns(assigns, init)
+    end
+  end
+
+  defp resolve_sort_from_assigns(
+         %{params: %{"order_by" => field, "order_direction" => dir}},
+         _init
+       ) do
     Keyword.put([], String.to_existing_atom(field), String.to_existing_atom(dir))
   end
 
-  defp resolve_sort(assigns, fun) when is_function(fun, 1) do
+  defp resolve_sort_from_assigns(assigns, fun) when is_function(fun, 1) do
     fun.(assigns)
   end
 
-  defp resolve_sort(_assigns, %{by: field, direction: :asc}),
+  defp resolve_sort_from_assigns(_assigns, %{by: field, direction: :asc}),
     do: Keyword.put([], field, :asc)
 
-  defp resolve_sort(_assigns, %{by: field, direction: :desc}),
+  defp resolve_sort_from_assigns(_assigns, %{by: field, direction: :desc}),
     do: Keyword.put([], field, :desc)
 
-  defp resolve_sort(_assigns, _), do: [id: :asc]
+  defp resolve_sort_from_assigns(_assigns, _), do: [id: :asc]
 end

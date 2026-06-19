@@ -350,6 +350,83 @@
       inset: auto auto var(--tt-tail) 50%;
     }
   }
+  .tab {
+    position: relative;
+    display: inline-flex;
+    cursor: pointer;
+    appearance: none;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    webkit-user-select: none;
+    user-select: none;
+    &:hover {
+      @media (hover: hover) {
+        color: var(--color-base-content);
+      }
+    }
+    --tab-p: 1rem;
+    --tab-bg: var(--color-base-100);
+    --tab-border-color: var(--color-base-300);
+    --tab-radius-ss: 0;
+    --tab-radius-se: 0;
+    --tab-radius-es: 0;
+    --tab-radius-ee: 0;
+    --tab-order: 0;
+    --tab-radius-min: calc(0.75rem - var(--border));
+    border-color: #0000;
+    order: var(--tab-order);
+    height: calc(var(--size-field, 0.25rem) * 10);
+    font-size: 0.875rem;
+    padding-inline-start: var(--tab-p);
+    padding-inline-end: var(--tab-p);
+    &:is(input[type="radio"]) {
+      min-width: fit-content;
+      &:after {
+        content: attr(aria-label);
+      }
+    }
+    &:is(label) {
+      position: relative;
+      input {
+        position: absolute;
+        inset: calc(0.25rem * 0);
+        cursor: pointer;
+        appearance: none;
+        opacity: 0%;
+      }
+    }
+    &:checked, &:is(label:has(:checked)), &:is(.tab-active, [aria-selected="true"]) {
+      & + .tab-content {
+        display: block;
+        height: 100%;
+      }
+    }
+    &:not(:checked, label:has(:checked), :hover, .tab-active, [aria-selected="true"]) {
+      color: color-mix(in oklab, var(--color-base-content) 50%, transparent);
+    }
+    &:not(input):empty {
+      flex-grow: 1;
+      cursor: default;
+    }
+    &:focus {
+      --tw-outline-style: none;
+      outline-style: none;
+      @media (forced-colors: active) {
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+      }
+    }
+    &:focus-visible, &:is(label:has(:checked:focus-visible)) {
+      outline: 2px solid currentColor;
+      outline-offset: -5px;
+    }
+    &[disabled] {
+      pointer-events: none;
+      opacity: 40%;
+    }
+  }
   .menu {
     display: flex;
     width: fit-content;
@@ -2101,6 +2178,17 @@
     width: 1.5rem;
     height: 1.5rem;
   }
+  .hero-chat-bubble-left-right {
+    --hero-chat-bubble-left-right: url('data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%221.5%22%20stroke%3D%22currentColor%22%20aria-hidden%3D%22true%22%20data-slot%3D%22icon%22%3E%20%20%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M20.25%208.511c.884.284%201.5%201.128%201.5%202.097v4.286c0%201.136-.847%202.1-1.98%202.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354%200-2.694-.055-4.02-.163a2.115%202.115%200%200%201-.825-.242m9.345-8.334a2.126%202.126%200%200%200-.476-.095%2048.64%2048.64%200%200%200-8.048%200c-1.131.094-1.976%201.057-1.976%202.192v4.286c0%20.837.46%201.58%201.155%201.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455%2048.455%200%200%200%2011.25%203c-2.115%200-4.198.137-6.24.402-1.608.209-2.76%201.614-2.76%203.235v6.226c0%201.621%201.152%203.026%202.76%203.235.577.075%201.157.14%201.74.194V21l4.155-4.155%22%2F%3E%3C%2Fsvg%3E');
+    -webkit-mask: var(--hero-chat-bubble-left-right);
+    mask: var(--hero-chat-bubble-left-right);
+    mask-repeat: no-repeat;
+    background-color: currentColor;
+    vertical-align: middle;
+    display: inline-block;
+    width: 1.5rem;
+    height: 1.5rem;
+  }
   .hero-check-circle {
     --hero-check-circle: url('data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%221.5%22%20stroke%3D%22currentColor%22%20aria-hidden%3D%22true%22%20data-slot%3D%22icon%22%3E%20%20%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M9%2012.75%2011.25%2015%2015%209.75M21%2012a9%209%200%201%201-18%200%209%209%200%200%201%2018%200Z%22%2F%3E%3C%2Fsvg%3E');
     -webkit-mask: var(--hero-check-circle);
@@ -2226,6 +2314,17 @@
     --hero-information-circle: url('data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%221.5%22%20stroke%3D%22currentColor%22%20aria-hidden%3D%22true%22%20data-slot%3D%22icon%22%3E%20%20%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22m11.25%2011.25.041-.02a.75.75%200%200%201%201.063.852l-.708%202.836a.75.75%200%200%200%201.063.853l.041-.021M21%2012a9%209%200%201%201-18%200%209%209%200%200%201%2018%200Zm-9-3.75h.008v.008H12V8.25Z%22%2F%3E%3C%2Fsvg%3E');
     -webkit-mask: var(--hero-information-circle);
     mask: var(--hero-information-circle);
+    mask-repeat: no-repeat;
+    background-color: currentColor;
+    vertical-align: middle;
+    display: inline-block;
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  .hero-megaphone {
+    --hero-megaphone: url('data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%221.5%22%20stroke%3D%22currentColor%22%20aria-hidden%3D%22true%22%20data-slot%3D%22icon%22%3E%20%20%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M10.34%2015.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5%204.5%200%201%201%200-9h.75c.704%200%201.402-.03%202.09-.09m0%209.18c.253.962.584%201.892.985%202.783.247.55.06%201.21-.463%201.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845%2020.845%200%200%201-1.44-4.282m3.102.069a18.03%2018.03%200%200%201-.59-4.59c0-1.586.205-3.124.59-4.59m0%209.18a23.848%2023.848%200%200%201%208.835%202.535M10.34%206.66a23.847%2023.847%200%200%200%208.835-2.535m0%200A23.74%2023.74%200%200%200%2018.795%203m.38%201.125a23.91%2023.91%200%200%201%201.014%205.395m-1.014%208.855c-.118.38-.245.754-.38%201.125m.38-1.125a23.91%2023.91%200%200%200%201.014-5.395m0-3.46c.495.413.811%201.035.811%201.73%200%20.695-.316%201.317-.811%201.73m0-3.46a24.347%2024.347%200%200%201%200%203.46%22%2F%3E%3C%2Fsvg%3E');
+    -webkit-mask: var(--hero-megaphone);
+    mask: var(--hero-megaphone);
     mask-repeat: no-repeat;
     background-color: currentColor;
     vertical-align: middle;

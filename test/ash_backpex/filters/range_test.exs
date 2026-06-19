@@ -10,6 +10,10 @@ defmodule AshBackpex.Filters.RangeTest do
 
   alias AshBackpex.Filters.Range
 
+  test "implements Backpex label callback" do
+    assert Range.label() == "Range"
+  end
+
   describe "to_ash_expr/3 with number type" do
     test "returns >= expression when only start is provided" do
       expr = Range.to_ash_expr(:price, %{"start" => "10", "end" => ""}, %{})

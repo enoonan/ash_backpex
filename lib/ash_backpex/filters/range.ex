@@ -51,7 +51,29 @@ defmodule AshBackpex.Filters.Range do
   AshBackpex uses `to_ash_expr/3` to generate Ash expressions for filtering.
   """
 
+  use Backpex.Filters.Range
+
   @behaviour AshBackpex.Filters.Filter
+
+  @impl Backpex.Filter
+  def label, do: "Range"
+
+  @impl Backpex.Filters.Range
+  def type, do: :number
+
+  @impl Backpex.Filter
+  def changeset(changeset, field, assigns) do
+    Backpex.Filters.Range.changeset(changeset, field, range_type(assigns, field))
+  end
+
+  @impl Backpex.Filter
+  def render_form(assigns) do
+    type = assigns |> range_type(Map.get(assigns, :field)) |> Backpex.Filters.Range.render_type()
+
+    assigns
+    |> Phoenix.Component.assign(:type, type)
+    |> Backpex.Filters.Range.render_form()
+  end
 
   defmacro __using__(_opts) do
     quote do
@@ -59,10 +81,13 @@ defmodule AshBackpex.Filters.Range do
 
       @behaviour AshBackpex.Filters.Filter
 
+      @impl Backpex.Filter
+      def label, do: "Range"
+
       @impl AshBackpex.Filters.Filter
       defdelegate to_ash_expr(field, value, assigns), to: AshBackpex.Filters.Range
 
-      defoverridable to_ash_expr: 3
+      defoverridable label: 0, to_ash_expr: 3
     end
   end
 
@@ -181,4 +206,18 @@ defmodule AshBackpex.Filters.Range do
     require Ash.Expr
     Ash.Expr.expr(^Ash.Expr.ref(field) >= ^start_val and ^Ash.Expr.ref(field) <= ^end_val)
   end
+
+  defp range_type(%{filters: filters}, field) when is_atom(field) do
+    filters
+    |> Keyword.get(field, %{})
+    |> Map.get(:type, :number)
+  end
+
+  defp range_type(%{live_resource: live_resource} = assigns, field) when is_atom(field) do
+    live_resource.filters(assigns)
+    |> Keyword.get(field, %{})
+    |> Map.get(:type, :number)
+  end
+
+  defp range_type(_assigns, _field), do: :number
 end

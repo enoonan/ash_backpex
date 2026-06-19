@@ -581,6 +581,27 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                       only: field.only,
                       except: field.except,
                       default: field.default,
+                      render: field.render,
+                      render_form: field.render_form,
+                      custom_alias: field.custom_alias,
+                      align: field.align,
+                      align_label: field.align_label,
+                      orderable: field.orderable,
+                      visible: field.visible,
+                      can?: field.can?,
+                      index_editable: field.index_editable,
+                      index_column_class: field.index_column_class,
+                      translate_error: field.translate_error,
+                      help_text: field.help_text,
+                      debounce: field.debounce,
+                      throttle: field.throttle,
+                      placeholder: field.placeholder,
+                      prompt: Map.get(field, :prompt),
+                      readonly: Map.get(field, :readonly),
+                      display_field_form: Map.get(field, :display_field_form),
+                      options_query: Map.get(field, :options_query),
+                      format: Map.get(field, :format),
+                      rows: Map.get(field, :rows),
                       options: field.options || field.attribute |> maybe_derive_options.(module),
                       display_field: field.display_field,
                       live_resource: field.live_resource,
@@ -643,8 +664,10 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                      %{
                        module: module,
                        label: filter.label || filter.attribute |> atom_to_title_case.(),
-                       type: filter.attribute |> derive_filter_type.(),
-                       options: filter.attribute |> derive_filter_options.(module)
+                       type: filter.type || filter.attribute |> derive_filter_type.(),
+                       options:
+                         filter.options || filter.attribute |> derive_filter_options.(module),
+                       prompt: filter.prompt
                      }
                      |> Map.to_list()
                      |> Enum.reject(fn {k, v} -> is_nil(v) end)
@@ -674,6 +697,8 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                                       [:backpex, :item_actions],
                                       :strip_default
                                     ) || []
+
+        @backpex_layout Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :layout)
 
         use Backpex.LiveResource,
             [
@@ -706,7 +731,6 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                   nil -> %{by: primary_key.(), direction: :asc}
                   order -> order
                 end,
-              layout: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :layout),
               pubsub: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :pubsub),
               per_page_options:
                 Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :per_page_options),
@@ -723,6 +747,9 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
 
         @impl Backpex.LiveResource
         def fields, do: @fields
+
+        @impl Backpex.LiveResource
+        def layout(_assigns), do: @backpex_layout
 
         @impl Backpex.LiveResource
         def filters, do: @filters
