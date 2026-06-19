@@ -2,6 +2,12 @@
 
 <!-- changelog -->
 
+## [v0.1.2]
+
+### Fixes
+
+- Fix MultiSelect filters for SQLite-backed Ash array attributes.
+
 ## [v0.1.1]
 
 ### Updates

@@ -303,7 +303,7 @@ defmodule AshBackpex.Adapter do
     query =
       config[:resource]
       |> Ash.Query.new()
-      |> apply_criteria_filters(criteria, assigns)
+      |> apply_criteria_filters(criteria, put_live_resource(assigns, live_resource))
       |> BasicSearch.apply(search_params(criteria, assigns), live_resource)
       |> Ash.Query.sort(resolve_sort(criteria, assigns, live_resource.config(:init_order)))
       |> Ash.Query.page(limit: page_size, offset: (page_num - 1) * page_size)
@@ -325,7 +325,7 @@ defmodule AshBackpex.Adapter do
 
     config[:resource]
     |> Ash.Query.new()
-    |> apply_criteria_filters(criteria, assigns)
+    |> apply_criteria_filters(criteria, put_live_resource(assigns, live_resource))
     |> BasicSearch.apply(search_params(criteria, assigns), live_resource)
     |> Ash.count(actor: assigns.current_user)
   end
@@ -469,6 +469,9 @@ defmodule AshBackpex.Adapter do
   end
 
   defp apply_filter_values(query, _filter_values, _filter_configs, _assigns), do: query
+
+  defp put_live_resource(assigns, live_resource),
+    do: Map.put(assigns, :live_resource, live_resource)
 
   defp normalize_filter_field(field) when is_atom(field), do: field
   defp normalize_filter_field(field) when is_binary(field), do: String.to_existing_atom(field)

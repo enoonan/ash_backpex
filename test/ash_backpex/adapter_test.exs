@@ -84,6 +84,28 @@ defmodule AshBackpex.AdapterTest do
       assert post.id == published_post.id
     end
 
+    test "filter_values and filter_configs apply MultiSelect filters to SQLite array attributes" do
+      user = user()
+      food_post = post(actor: user, tags: [:food])
+      entertainment_post = post(actor: user, tags: [:entertainment])
+      combo_post = post(actor: user, tags: [:food, :politics])
+
+      assigns = %{current_user: user}
+
+      criteria = [
+        filter_values: %{tags: ["food"]},
+        filter_configs: TestArrayFilterTypeLive.filters()
+      ]
+
+      assert {:ok, 2} == Adapter.count(criteria, [], assigns, TestArrayFilterTypeLive)
+      {:ok, posts} = Adapter.list(criteria, [], assigns, TestArrayFilterTypeLive)
+
+      post_ids = posts |> Enum.map(& &1.id) |> MapSet.new()
+      assert MapSet.member?(post_ids, food_post.id)
+      assert MapSet.member?(post_ids, combo_post.id)
+      refute MapSet.member?(post_ids, entertainment_post.id)
+    end
+
     test "filter with module-based Boolean filter returns false records" do
       user = user()
       _published_post = post(actor: user, published: true)

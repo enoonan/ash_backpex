@@ -133,12 +133,87 @@ defmodule AshBackpex.Filters.MultiSelect do
   def to_ash_expr(_field, nil, _assigns), do: nil
   def to_ash_expr(_field, [], _assigns), do: nil
 
-  def to_ash_expr(field, values, _assigns) when is_list(values) do
+  def to_ash_expr(field, values, assigns) when is_list(values) do
+    values = Enum.reject(values, &(&1 in [nil, ""]))
+
+    cond do
+      values == [] ->
+        nil
+
+      sqlite_array_attribute?(field, assigns) ->
+        sqlite_array_overlap_expr(field, values)
+
+      true ->
+        scalar_in_expr(field, values)
+    end
+  end
+
+  def to_ash_expr(_field, _value, _assigns), do: nil
+
+  defp scalar_in_expr(field, values) do
     require Ash.Expr
     Ash.Expr.expr(^Ash.Expr.ref(field) in ^values)
   end
 
-  def to_ash_expr(_field, _value, _assigns), do: nil
+  defp sqlite_array_overlap_expr(field, values) do
+    values
+    |> Enum.map(fn value ->
+      require Ash.Expr
+
+      Ash.Expr.expr(
+        fragment(
+          "EXISTS (SELECT 1 FROM json_each(?) WHERE value = ?)",
+          ^Ash.Expr.ref(field),
+          ^to_string(value)
+        )
+      )
+    end)
+    |> Enum.reduce(fn expr, acc ->
+      require Ash.Expr
+      Ash.Expr.expr(^acc or ^expr)
+    end)
+  end
+
+  defp sqlite_array_attribute?(field, assigns) do
+    case {resource_from_assigns(assigns), attribute_type(field, assigns)} do
+      {resource, {:array, _}} when is_atom(resource) and not is_nil(resource) ->
+        Ash.Resource.Info.data_layer(resource) == AshSqlite.DataLayer
+
+      _ ->
+        false
+    end
+  end
+
+  defp attribute_type(field, assigns) do
+    case resource_from_assigns(assigns) do
+      resource when is_atom(resource) and not is_nil(resource) ->
+        case Ash.Resource.Info.attribute(resource, field) do
+          %{type: type} -> type
+          _ -> nil
+        end
+
+      _ ->
+        nil
+    end
+  end
+
+  defp resource_from_assigns(%{live_resource: live_resource}) when is_atom(live_resource) do
+    cond do
+      function_exported?(live_resource, :adapter_config, 1) ->
+        live_resource.adapter_config(:resource)
+
+      function_exported?(live_resource, :config, 1) ->
+        case live_resource.config(:adapter_config) do
+          config when is_list(config) -> config[:resource]
+          _ -> nil
+        end
+
+      true ->
+        nil
+    end
+  end
+
+  defp resource_from_assigns(_assigns), do: nil
 
   defp options_for(%{filters: filters}, field) when is_atom(field) do
     filters
