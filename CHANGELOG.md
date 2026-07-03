@@ -2,6 +2,12 @@
 
 <!-- changelog -->
 
+## [v0.1.3]
+
+### Updates
+
+- Bump Backpex dependency to 0.19.0.
+
 ## [v0.1.2]
 
 ### Fixes
