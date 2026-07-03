@@ -202,8 +202,52 @@ defmodule AshBackpex.TestDomain.Item do
     belongs_to(:user, AshBackpex.TestDomain.User)
   end
 
+  calculations do
+    calculate :name_note, :string, expr(name <> " " <> note)
+  end
+end
+
+defmodule AshBackpex.TestDomain.AggregateItem do
+  @moduledoc false
+  use Ash.Resource,
+    domain: AshBackpex.TestDomain,
+    data_layer: Ash.DataLayer.Ets
+
+  ets do
+    private?(true)
+  end
+
+  actions do
+    defaults [:read]
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :name, :string do
+      public? true
+    end
+
+    attribute :note, :string do
+      public? true
+    end
+
+    attribute :user_id, :uuid do
+      public? true
+    end
+  end
+
+  relationships do
+    belongs_to(:user, AshBackpex.TestDomain.User, define_attribute?: false)
+
+    has_many(:related_items, AshBackpex.TestDomain.AggregateItem,
+      source_attribute: :user_id,
+      destination_attribute: :user_id
+    )
+  end
+
   aggregates do
-    max :most_viewed, AshBackpex.TestDomain.Item, :view_count
+    count :most_viewed, :related_items
   end
 
   calculations do

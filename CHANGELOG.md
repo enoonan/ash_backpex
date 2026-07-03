@@ -2,6 +2,17 @@
 
 <!-- changelog -->
 
+## [v0.1.4]
+
+### Updates
+
+- Add `mix_audit` and run dependency auditing as part of `mix ci`.
+- Refresh locked Ash dependencies and override Decimal to 3.x so dependency audits pass.
+
+### Fixes
+
+- Normalize blank list form values submitted by Backpex `HasMany` and `MultiSelect` fields before passing params into Ash changesets.
+
 ## [v0.1.3]
 
 ### Updates

@@ -394,9 +394,10 @@ defmodule AshBackpex.Adapter do
   Applies a change to a given item.
   """
   @impl Backpex.Adapter
-  def change(item, attrs, _fields, assigns, live_resource, opts) do
+  def change(item, attrs, fields, assigns, live_resource, opts) do
     target = Keyword.get(opts, :target)
     metadata = Backpex.Resource.build_changeset_metadata(assigns, target)
+    attrs = normalize_list_field_params(attrs, fields)
 
     assigns
     |> changeset_function(live_resource, opts)
@@ -444,6 +445,28 @@ defmodule AshBackpex.Adapter do
 
   defp changeset_config_key(action) when action in [:new, :create, :insert], do: :create_changeset
   defp changeset_config_key(action) when action in [:edit, :index, :update], do: :update_changeset
+
+  defp normalize_list_field_params(attrs, fields) do
+    Enum.reduce(fields, attrs, fn
+      {field, %{module: module}}, attrs
+      when module in [Backpex.Fields.HasMany, Backpex.Fields.MultiSelect] ->
+        normalize_list_field_param(attrs, to_string(field))
+
+      _field, attrs ->
+        attrs
+    end)
+  end
+
+  defp normalize_list_field_param(attrs, field) do
+    case Map.fetch(attrs, field) do
+      {:ok, value} -> Map.put(attrs, field, remove_blank_list_values(value))
+      :error -> attrs
+    end
+  end
+
+  defp remove_blank_list_values(values) when is_list(values), do: Enum.reject(values, &(&1 == ""))
+  defp remove_blank_list_values(""), do: []
+  defp remove_blank_list_values(value), do: value
 
   defp apply_filters(query, nil, _assigns), do: query
 

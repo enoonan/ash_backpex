@@ -207,6 +207,30 @@ defmodule TestCustomItemActionLiveWithExcept do
   end
 end
 
+defmodule TestParamCaptureLive do
+  @moduledoc false
+
+  def adapter_config(:create_changeset), do: &__MODULE__.create_changeset/3
+  def adapter_config(:update_changeset), do: &__MODULE__.update_changeset/3
+
+  def create_changeset(item, params, metadata) do
+    send_captured_params(params, metadata)
+    Ash.Changeset.for_create(item.__struct__, :create, params)
+  end
+
+  def update_changeset(item, params, metadata) do
+    send_captured_params(params, metadata)
+    Ash.Changeset.for_update(item, :update, params)
+  end
+
+  defp send_captured_params(params, metadata) do
+    metadata
+    |> Keyword.fetch!(:assigns)
+    |> Map.fetch!(:test_pid)
+    |> send({:captured_params, params})
+  end
+end
+
 # LiveResource with derived filters (no explicit module)
 defmodule TestDerivedFiltersLive do
   @moduledoc false

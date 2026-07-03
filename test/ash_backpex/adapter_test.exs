@@ -41,6 +41,39 @@ defmodule AshBackpex.AdapterTest do
 
       assert %Ash.Changeset{action_type: :update, data: ^post} = changeset
     end
+
+    test "removes blank form values from has_many and multiselect list fields" do
+      user = user()
+      post = post(actor: user)
+
+      fields = [
+        comments: %{module: Backpex.Fields.HasMany},
+        tags: %{module: Backpex.Fields.MultiSelect},
+        keywords: %{module: Backpex.Fields.Text}
+      ]
+
+      Adapter.change(
+        post,
+        %{
+          "comments" => [""],
+          "tags" => ["", "food", "politics"],
+          "keywords" => ["", "keep-me"],
+          atom_tags: ["", "keep-me-too"]
+        },
+        fields,
+        %{current_user: user, live_resource: TestParamCaptureLive, test_pid: self()},
+        TestParamCaptureLive,
+        action: :update
+      )
+
+      assert_receive {:captured_params,
+                      %{
+                        "comments" => [],
+                        "tags" => ["food", "politics"],
+                        "keywords" => ["", "keep-me"],
+                        atom_tags: ["", "keep-me-too"]
+                      }}
+    end
   end
 
   describe "AshBackpex.Adapter filtering :: it can" do

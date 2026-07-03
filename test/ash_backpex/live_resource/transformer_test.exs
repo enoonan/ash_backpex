@@ -311,7 +311,12 @@ defmodule AshBackpex.LiveResource.TransformerTest do
       # The tags attribute has one_of: [:food, :entertainment, :politics]
       # Should generate options list with title-cased labels
       tags_filter = Keyword.get(filters, :tags)
-      assert tags_filter.options == [{"Food", :food}, {"Entertainment", :entertainment}, {"Politics", :politics}]
+
+      assert tags_filter.options == [
+               {"Food", :food},
+               {"Entertainment", :entertainment},
+               {"Politics", :politics}
+             ]
     end
   end
 

@@ -128,25 +128,31 @@ defmodule AshBackpex.ConfigTest do
     test "raises for function with wrong arity (arity 1)" do
       fun = fn _type -> Backpex.Fields.Text end
 
-      assert_raise ArgumentError, ~r/Expected a function with arity 2.*got a function with arity 1/s, fn ->
-        Config.validate_field_type_mappings!(fun)
-      end
+      assert_raise ArgumentError,
+                   ~r/Expected a function with arity 2.*got a function with arity 1/s,
+                   fn ->
+                     Config.validate_field_type_mappings!(fun)
+                   end
     end
 
     test "raises for function with wrong arity (arity 3)" do
       fun = fn _type, _constraints, _extra -> Backpex.Fields.Text end
 
-      assert_raise ArgumentError, ~r/Expected a function with arity 2.*got a function with arity 3/s, fn ->
-        Config.validate_field_type_mappings!(fun)
-      end
+      assert_raise ArgumentError,
+                   ~r/Expected a function with arity 2.*got a function with arity 3/s,
+                   fn ->
+                     Config.validate_field_type_mappings!(fun)
+                   end
     end
 
     test "raises for function with wrong arity (arity 0)" do
       fun = fn -> Backpex.Fields.Text end
 
-      assert_raise ArgumentError, ~r/Expected a function with arity 2.*got a function with arity 0/s, fn ->
-        Config.validate_field_type_mappings!(fun)
-      end
+      assert_raise ArgumentError,
+                   ~r/Expected a function with arity 2.*got a function with arity 0/s,
+                   fn ->
+                     Config.validate_field_type_mappings!(fun)
+                   end
     end
 
     test "raises for map with invalid string key" do

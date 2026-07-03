@@ -185,7 +185,8 @@ defmodule AshBackpex.Filters.RangeTest do
     end
 
     test "returns combined >= and <= expression when both start and end dates are provided" do
-      expr = Range.to_ash_expr(:birth_date, %{"start" => "2024-01-01", "end" => "2024-12-31"}, %{})
+      expr =
+        Range.to_ash_expr(:birth_date, %{"start" => "2024-01-01", "end" => "2024-12-31"}, %{})
 
       assert expr != nil
       assert Ash.Expr.expr?(expr)
@@ -209,7 +210,8 @@ defmodule AshBackpex.Filters.RangeTest do
     end
 
     test "returns nil for invalid date strings" do
-      expr = Range.to_ash_expr(:birth_date, %{"start" => "not-a-date", "end" => "also-invalid"}, %{})
+      expr =
+        Range.to_ash_expr(:birth_date, %{"start" => "not-a-date", "end" => "also-invalid"}, %{})
 
       assert expr == nil
     end
@@ -233,14 +235,16 @@ defmodule AshBackpex.Filters.RangeTest do
 
   describe "to_ash_expr/3 with datetime type" do
     test "returns >= expression when only start datetime is provided" do
-      expr = Range.to_ash_expr(:created_at, %{"start" => "2024-01-15T10:30:00Z", "end" => ""}, %{})
+      expr =
+        Range.to_ash_expr(:created_at, %{"start" => "2024-01-15T10:30:00Z", "end" => ""}, %{})
 
       assert expr != nil
       assert Ash.Expr.expr?(expr)
     end
 
     test "returns <= expression when only end datetime is provided" do
-      expr = Range.to_ash_expr(:created_at, %{"start" => "", "end" => "2024-12-31T23:59:59Z"}, %{})
+      expr =
+        Range.to_ash_expr(:created_at, %{"start" => "", "end" => "2024-12-31T23:59:59Z"}, %{})
 
       assert expr != nil
       assert Ash.Expr.expr?(expr)
@@ -278,20 +282,32 @@ defmodule AshBackpex.Filters.RangeTest do
 
     test "handles mixed string and DateTime values" do
       {:ok, end_dt, _} = DateTime.from_iso8601("2024-12-31T23:59:59Z")
-      expr = Range.to_ash_expr(:created_at, %{"start" => "2024-01-01T00:00:00Z", "end" => end_dt}, %{})
+
+      expr =
+        Range.to_ash_expr(:created_at, %{"start" => "2024-01-01T00:00:00Z", "end" => end_dt}, %{})
 
       assert expr != nil
       assert Ash.Expr.expr?(expr)
     end
 
     test "returns nil for invalid datetime strings" do
-      expr = Range.to_ash_expr(:created_at, %{"start" => "not-a-datetime", "end" => "also-invalid"}, %{})
+      expr =
+        Range.to_ash_expr(
+          :created_at,
+          %{"start" => "not-a-datetime", "end" => "also-invalid"},
+          %{}
+        )
 
       assert expr == nil
     end
 
     test "handles valid start with invalid end datetime" do
-      expr = Range.to_ash_expr(:created_at, %{"start" => "2024-01-15T10:30:00Z", "end" => "invalid"}, %{})
+      expr =
+        Range.to_ash_expr(
+          :created_at,
+          %{"start" => "2024-01-15T10:30:00Z", "end" => "invalid"},
+          %{}
+        )
 
       # Should still produce >= expression for valid start
       assert expr != nil
@@ -299,7 +315,12 @@ defmodule AshBackpex.Filters.RangeTest do
     end
 
     test "handles invalid start with valid end datetime" do
-      expr = Range.to_ash_expr(:created_at, %{"start" => "invalid", "end" => "2024-12-31T23:59:59Z"}, %{})
+      expr =
+        Range.to_ash_expr(
+          :created_at,
+          %{"start" => "invalid", "end" => "2024-12-31T23:59:59Z"},
+          %{}
+        )
 
       # Should still produce <= expression for valid end
       assert expr != nil
