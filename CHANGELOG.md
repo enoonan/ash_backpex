@@ -2,6 +2,12 @@
 
 <!-- changelog -->
 
+## [v0.1.5]
+
+### Fixes
+
+- Add a Decimal 3 override to the demo app so its top-level dependency resolution matches the library audit fix.
+
 ## [v0.1.4]
 
 ### Updates

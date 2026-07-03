@@ -25,6 +25,7 @@ defmodule Demo.MixProject do
 
   defp deps do
     [
+      {:decimal, "~> 3.0", override: true},
       {:tidewave, "~> 0.5", only: [:dev]},
       {:ash_backpex, path: "../"},
       {:igniter, "~> 0.8.2"},
