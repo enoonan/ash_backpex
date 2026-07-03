@@ -57,6 +57,7 @@ AshBackpex automatically maps Ash types to Backpex fields:
 - `Ash.Type.DateTime` / `UtcDatetime` → `Backpex.Fields.DateTime`
 - `:belongs_to` → `Backpex.Fields.BelongsTo`
 - `:has_many` → `Backpex.Fields.HasMany`
+- `:many_to_many` → `Backpex.Fields.HasMany`
 - Atom with `one_of` constraint → `Backpex.Fields.Select`
 - Array with `one_of` constraint → `Backpex.Fields.MultiSelect`
 

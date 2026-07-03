@@ -2,7 +2,7 @@
 #
 #     mix run priv/repo/seeds.exs
 
-alias Demo.Blog.{Author, Comment, Post}
+alias Demo.Blog.{Author, Comment, Post, Tag}
 
 slugify = fn title ->
   title
@@ -48,6 +48,37 @@ authors =
 
 author_by_name = Map.new(authors, &{&1.name, &1})
 
+tags =
+  [
+    %{
+      name: "Ash",
+      description: "Resource modeling, actions, policies, and Ash Framework patterns."
+    },
+    %{
+      name: "Backpex",
+      description: "Admin interfaces, fields, filters, and operational tooling."
+    },
+    %{
+      name: "LiveView",
+      description: "Phoenix LiveView interaction patterns and server-rendered UI."
+    },
+    %{
+      name: "SQLite",
+      description: "Small, local-first database workflows for demos and development."
+    },
+    %{
+      name: "Tutorial",
+      description: "Step-by-step guides for learning a topic."
+    }
+  ]
+  |> Enum.map(fn attrs ->
+    attrs
+    |> Map.put(:slug, slugify.(attrs.name))
+    |> then(&create!.(Tag, :create, &1))
+  end)
+
+tag_by_name = Map.new(tags, &{&1.name, &1})
+
 posts =
   [
     %{
@@ -56,7 +87,7 @@ posts =
         "Ash is a declarative, resource-based framework for building Elixir applications. It provides a powerful DSL for defining your domain model and automatically generates APIs, queries, and mutations.",
       excerpt: "A first look at resource-driven Elixir apps.",
       status: :published,
-      tags: [:ash, :tutorial],
+      tags: ["Ash", "Tutorial"],
       published: true,
       published_on: ~D[2026-01-10],
       featured: true,
@@ -69,7 +100,7 @@ posts =
         "Backpex is a highly customizable admin panel for Phoenix LiveView applications. Combined with Ash, it provides a seamless way to manage your resources through an intuitive interface.",
       excerpt: "How the generated admin surfaces map to your resources.",
       status: :published,
-      tags: [:backpex, :liveview],
+      tags: ["Backpex", "LiveView"],
       published: true,
       published_on: ~D[2026-02-04],
       featured: true,
@@ -82,7 +113,7 @@ posts =
         "SQLite is an excellent choice for development and small-scale applications. It requires no separate server process and stores the entire database in a single file.",
       excerpt: "A practical local database setup for demos and tests.",
       status: :review,
-      tags: [:sqlite, :tutorial],
+      tags: ["SQLite", "Tutorial"],
       published: false,
       published_on: nil,
       featured: false,
@@ -95,7 +126,7 @@ posts =
         "LiveView enables rich, real-time user experiences with server-rendered HTML. Learn about common patterns like live navigation, form handling, and real-time updates.",
       excerpt: "Common patterns for responsive server-rendered interfaces.",
       status: :published,
-      tags: [:liveview, :tutorial],
+      tags: ["LiveView", "Tutorial"],
       published: true,
       published_on: ~D[2026-03-19],
       featured: false,
@@ -108,7 +139,7 @@ posts =
         "This is a draft post about upcoming features we're planning to add. Stay tuned for more updates!",
       excerpt: "An intentionally unfinished article for filtering demos.",
       status: :draft,
-      tags: [:ash, :backpex],
+      tags: ["Ash", "Backpex"],
       published: false,
       published_on: nil,
       featured: false,
@@ -121,7 +152,7 @@ posts =
         "A short archive entry kept around to demonstrate enum filters and custom item actions.",
       excerpt: "An archived row for status filtering.",
       status: :archived,
-      tags: [:backpex],
+      tags: ["Backpex"],
       published: false,
       published_on: ~D[2025-09-01],
       featured: false,
@@ -131,11 +162,13 @@ posts =
   ]
   |> Enum.map(fn attrs ->
     {author_name, attrs} = Map.pop!(attrs, :author)
+    {tag_names, attrs} = Map.pop!(attrs, :tags)
 
     attrs =
       attrs
       |> Map.put(:slug, slugify.(attrs.title))
       |> Map.put(:author_id, Map.fetch!(author_by_name, author_name).id)
+      |> Map.put(:tags, Enum.map(tag_names, &Map.fetch!(tag_by_name, &1).id))
 
     create!.(Post, :create, attrs)
   end)
@@ -186,5 +219,5 @@ Enum.each(comments, fn attrs ->
 end)
 
 IO.puts(
-  "Created #{length(authors)} authors, #{length(posts)} posts, and #{length(comments)} comments"
+  "Created #{length(authors)} authors, #{length(tags)} tags, #{length(posts)} posts, and #{length(comments)} comments"
 )

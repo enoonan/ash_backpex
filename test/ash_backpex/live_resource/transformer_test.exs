@@ -103,6 +103,14 @@ defmodule AshBackpex.LiveResource.TransformerTest do
       assert Keyword.get(fields, :author).module == Backpex.Fields.BelongsTo
     end
 
+    test "derive many_to_many relationships as HasMany fields" do
+      fields = TestManyToManyLive.fields()
+
+      assert Keyword.get(fields, :categories).module == Backpex.Fields.HasMany
+      assert Keyword.get(fields, :categories).display_field == :name
+      assert Keyword.get(fields, :categories).link_assocs == true
+    end
+
     test "derive default and non-default primary key with init_order" do
       assert TestPostLive.config(:primary_key) == :id
 

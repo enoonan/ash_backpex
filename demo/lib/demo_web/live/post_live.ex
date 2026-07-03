@@ -15,7 +15,7 @@ defmodule DemoWeb.PostLive do
     update_action(:admin_update)
     create_changeset(&DemoWeb.PostLive.admin_create_changeset/3)
     update_changeset(&DemoWeb.PostLive.admin_update_changeset/3)
-    load([:author, :comments, :word_count, :comment_count])
+    load([:author, :comments, :tags, :word_count, :comment_count])
 
     panels(
       content: "Content",
@@ -31,11 +31,6 @@ defmodule DemoWeb.PostLive do
       # Select filter - auto-derived from :atom one_of constraints
       filter :status do
         prompt("Any status")
-      end
-
-      # MultiSelect filter - auto-derived from array one_of constraints
-      filter :tags do
-        prompt("Any topic")
       end
 
       # Range filter - auto-derived from :integer attribute
@@ -69,6 +64,13 @@ defmodule DemoWeb.PostLive do
         panel(:relationships)
       end
 
+      field :tags do
+        display_field(:name)
+        live_resource(DemoWeb.TagLive)
+        panel(:relationships)
+        prompt("Choose tags...")
+      end
+
       field :content do
         module(Backpex.Fields.Textarea)
         searchable(true)
@@ -85,10 +87,6 @@ defmodule DemoWeb.PostLive do
       end
 
       field :status do
-        panel(:publishing)
-      end
-
-      field :tags do
         panel(:publishing)
       end
 

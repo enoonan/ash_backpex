@@ -30,6 +30,9 @@ defmodule DemoWeb.Layouts do
             <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate="/posts">
               <Backpex.HTML.CoreComponents.icon name="hero-document-text" class="size-5" /> Posts
             </Backpex.HTML.Layout.sidebar_item>
+            <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate="/tags">
+              <Backpex.HTML.CoreComponents.icon name="hero-tag" class="size-5" /> Tags
+            </Backpex.HTML.Layout.sidebar_item>
             <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate="/comments">
               <Backpex.HTML.CoreComponents.icon name="hero-chat-bubble-left-right" class="size-5" /> Comments
             </Backpex.HTML.Layout.sidebar_item>

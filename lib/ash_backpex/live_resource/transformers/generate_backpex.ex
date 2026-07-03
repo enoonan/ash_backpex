@@ -56,6 +56,7 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
   | `Ash.Type.DateTime` | `Backpex.Fields.DateTime` |
   | `:belongs_to` | `Backpex.Fields.BelongsTo` |
   | `:has_many` | `Backpex.Fields.HasMany` |
+  | `:many_to_many` | `Backpex.Fields.HasMany` |
   | `{:array, _}` | `Backpex.Fields.MultiSelect` |
   | Aggregates (`:count`, `:sum`, etc.) | `Backpex.Fields.Number` or `Boolean` |
 
@@ -378,6 +379,9 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                   Backpex.Fields.BelongsTo
 
                 :has_many ->
+                  Backpex.Fields.HasMany
+
+                :many_to_many ->
                   Backpex.Fields.HasMany
 
                 :count ->

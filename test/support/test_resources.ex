@@ -304,3 +304,89 @@ defmodule AshBackpex.TestDomain.NonDefaultPrimaryKeyName do
     defaults [:read, :create, :update, :destroy]
   end
 end
+
+defmodule AshBackpex.TestDomain.ManyToManyPost do
+  @moduledoc false
+  use Ash.Resource,
+    domain: AshBackpex.TestDomain,
+    data_layer: AshSqlite.DataLayer
+
+  sqlite do
+    table "many_to_many_posts"
+    repo(AshBackpex.TestRepo)
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :title, :string do
+      allow_nil? false
+      public? true
+    end
+  end
+
+  relationships do
+    many_to_many :categories, AshBackpex.TestDomain.ManyToManyCategory do
+      through AshBackpex.TestDomain.ManyToManyPostCategory
+      source_attribute_on_join_resource :post_id
+      destination_attribute_on_join_resource :category_id
+    end
+  end
+
+  actions do
+    defaults [:read]
+  end
+end
+
+defmodule AshBackpex.TestDomain.ManyToManyCategory do
+  @moduledoc false
+  use Ash.Resource,
+    domain: AshBackpex.TestDomain,
+    data_layer: AshSqlite.DataLayer
+
+  sqlite do
+    table "many_to_many_categories"
+    repo(AshBackpex.TestRepo)
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :name, :string do
+      allow_nil? false
+      public? true
+    end
+  end
+
+  actions do
+    defaults [:read]
+  end
+end
+
+defmodule AshBackpex.TestDomain.ManyToManyPostCategory do
+  @moduledoc false
+  use Ash.Resource,
+    domain: AshBackpex.TestDomain,
+    data_layer: AshSqlite.DataLayer
+
+  sqlite do
+    table "many_to_many_post_categories"
+    repo(AshBackpex.TestRepo)
+  end
+
+  relationships do
+    belongs_to :post, AshBackpex.TestDomain.ManyToManyPost do
+      primary_key? true
+      allow_nil? false
+    end
+
+    belongs_to :category, AshBackpex.TestDomain.ManyToManyCategory do
+      primary_key? true
+      allow_nil? false
+    end
+  end
+
+  actions do
+    defaults [:read]
+  end
+end

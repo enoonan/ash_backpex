@@ -171,6 +171,24 @@ defmodule TestNonDefaultPrimaryKeyNameLive do
   end
 end
 
+defmodule TestManyToManyLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource AshBackpex.TestDomain.ManyToManyPost
+    layout({TestLayout, :admin})
+
+    fields do
+      field :title
+
+      field :categories do
+        display_field(:name)
+      end
+    end
+  end
+end
+
 defmodule TestCustomItemActionLiveWithOnly do
   @moduledoc false
   use AshBackpex.LiveResource

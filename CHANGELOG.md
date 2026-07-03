@@ -2,6 +2,13 @@
 
 <!-- changelog -->
 
+## [v0.1.7]
+
+### Updates
+
+- Add automatic `:many_to_many` relationship field derivation using `Backpex.Fields.HasMany`.
+- Update the demo with article tags modeled as an Ash `many_to_many` relationship generated through Ash migrations.
+
 ## [v0.1.6]
 
 ### Fixes

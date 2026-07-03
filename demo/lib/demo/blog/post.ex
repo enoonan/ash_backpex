@@ -39,13 +39,6 @@ defmodule Demo.Blog.Post do
       constraints one_of: [:draft, :review, :published, :archived]
     end
 
-    attribute :tags, {:array, :atom} do
-      allow_nil? false
-      default []
-      public? true
-      constraints items: [one_of: [:ash, :backpex, :liveview, :sqlite, :tutorial]]
-    end
-
     attribute :rating, :integer do
       default 5
       public? true
@@ -76,6 +69,12 @@ defmodule Demo.Blog.Post do
     belongs_to :author, Demo.Blog.Author
 
     has_many :comments, Demo.Blog.Comment
+
+    many_to_many :tags, Demo.Blog.Tag do
+      through Demo.Blog.PostTag
+      source_attribute_on_join_resource :post_id
+      destination_attribute_on_join_resource :tag_id
+    end
   end
 
   calculations do
@@ -118,7 +117,6 @@ defmodule Demo.Blog.Post do
       :content,
       :excerpt,
       :status,
-      :tags,
       :published,
       :published_on,
       :featured,
@@ -137,13 +135,16 @@ defmodule Demo.Blog.Post do
         :content,
         :excerpt,
         :status,
-        :tags,
         :published,
         :published_on,
         :featured,
         :rating,
         :author_id
       ]
+
+      argument :tags, {:array, :uuid}, allow_nil?: true
+
+      change manage_relationship(:tags, type: :append_and_remove)
     end
 
     create :admin_create do
@@ -153,13 +154,16 @@ defmodule Demo.Blog.Post do
         :content,
         :excerpt,
         :status,
-        :tags,
         :published,
         :published_on,
         :featured,
         :rating,
         :author_id
       ]
+
+      argument :tags, {:array, :uuid}, allow_nil?: true
+
+      change manage_relationship(:tags, type: :append_and_remove)
     end
 
     update :update do
@@ -171,13 +175,17 @@ defmodule Demo.Blog.Post do
         :content,
         :excerpt,
         :status,
-        :tags,
         :published,
         :published_on,
         :featured,
         :rating,
         :author_id
       ]
+
+      require_atomic? false
+      argument :tags, {:array, :uuid}, allow_nil?: true
+
+      change manage_relationship(:tags, type: :append_and_remove)
     end
 
     update :admin_update do
@@ -187,13 +195,17 @@ defmodule Demo.Blog.Post do
         :content,
         :excerpt,
         :status,
-        :tags,
         :published,
         :published_on,
         :featured,
         :rating,
         :author_id
       ]
+
+      require_atomic? false
+      argument :tags, {:array, :uuid}, allow_nil?: true
+
+      change manage_relationship(:tags, type: :append_and_remove)
     end
   end
 end
