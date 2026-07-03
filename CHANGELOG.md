@@ -2,6 +2,13 @@
 
 <!-- changelog -->
 
+## [v0.1.6]
+
+### Fixes
+
+- Remove the root Decimal override/dependency so the package can be published and consumers can resolve Decimal at the application level.
+- Remove `mix_audit` because the current Backpex/number dependency graph requires top-level applications to own the Decimal 3 override.
+
 ## [v0.1.5]
 
 ### Fixes

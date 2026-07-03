@@ -1,7 +1,7 @@
 defmodule AshBackpex.MixProject do
   use Mix.Project
 
-  @version "0.1.5"
+  @version "0.1.6"
   @source_url "https://github.com/enoonan/ash_backpex"
 
   def project do
@@ -69,7 +69,6 @@ defmodule AshBackpex.MixProject do
       {:spark, "~> 2.0"},
       {:phoenix_html, "~> 3.0 or ~> 4.0"},
       {:igniter, "~> 0.8.2"},
-      {:decimal, "~> 3.0", override: true},
 
       # Dev/Test dependencies
       {:faker, "~> 0.19.0-alpha.1", only: :test},
@@ -77,7 +76,6 @@ defmodule AshBackpex.MixProject do
       {:ash_sqlite, "~> 0.1", only: :test},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:usage_rules, "~> 0.1", only: :dev, runtime: false},
-      {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:ex_check, "~> 0.14", only: [:dev, :test]},
       {:credo, ">= 0.0.0", only: [:dev, :test], runtime: false},
@@ -115,7 +113,7 @@ defmodule AshBackpex.MixProject do
   defp aliases do
     [
       credo: "credo --strict",
-      ci: ["deps.audit", "credo --strict", "sobelow", "test"]
+      ci: ["credo --strict", "sobelow", "test"]
     ]
   end
 end
