@@ -8,6 +8,10 @@
 
 - Bump Backpex dependency to 0.19.0.
 
+### Fixes
+
+- Fix index-editable fields by routing Backpex index updates through the configured AshBackpex changeset.
+
 ## [v0.1.2]
 
 ### Fixes

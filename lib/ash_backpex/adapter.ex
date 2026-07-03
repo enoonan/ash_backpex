@@ -394,23 +394,56 @@ defmodule AshBackpex.Adapter do
   Applies a change to a given item.
   """
   @impl Backpex.Adapter
-  def change(item, attrs, _fields, assigns, _live_resource, _opts) do
-    action = assigns.form.source.action
+  def change(item, attrs, _fields, assigns, live_resource, opts) do
+    target = Keyword.get(opts, :target)
+    metadata = Backpex.Resource.build_changeset_metadata(assigns, target)
 
-    case assigns.form.source do
-      %{action_type: :create} ->
-        Ash.Changeset.for_create(item.__struct__, action, attrs)
-
-      %{type: :create} ->
-        Ash.Changeset.for_create(item.__struct__, action, attrs)
-
-      %{action_type: :update} ->
-        Ash.Changeset.for_update(item, action, attrs)
-
-      %{type: :update} ->
-        Ash.Changeset.for_update(item, action, attrs)
-    end
+    assigns
+    |> changeset_function(live_resource, opts)
+    |> then(& &1.(item, attrs, metadata))
   end
+
+  defp changeset_function(
+         %{live_action: :resource_action, changeset_function: changeset_function},
+         _live_resource,
+         _opts
+       )
+       when is_function(changeset_function, 3) do
+    changeset_function
+  end
+
+  defp changeset_function(%{live_action: live_action}, live_resource, _opts)
+       when live_action in [:new, :edit, :index] do
+    changeset_function_for(live_action, live_resource)
+  end
+
+  defp changeset_function(%{type: type}, live_resource, _opts)
+       when type in [:new, :edit, :index] do
+    changeset_function_for(type, live_resource)
+  end
+
+  defp changeset_function(%{form: %{source: %{action_type: action_type}}}, live_resource, _opts)
+       when action_type in [:create, :update] do
+    changeset_function_for(action_type, live_resource)
+  end
+
+  defp changeset_function(%{form: %{source: %{type: type}}}, live_resource, _opts)
+       when type in [:create, :update] do
+    changeset_function_for(type, live_resource)
+  end
+
+  defp changeset_function(_assigns, live_resource, opts) do
+    opts
+    |> Keyword.fetch!(:action)
+    |> changeset_function_for(live_resource)
+  end
+
+  defp changeset_function_for(action, live_resource) do
+    live_resource.adapter_config(changeset_config_key(action))
+  end
+
+  defp changeset_config_key(action) when action in [:new, :create, :insert], do: :create_changeset
+  defp changeset_config_key(action) when action in [:edit, :index, :update], do: :update_changeset
 
   defp apply_filters(query, nil, _assigns), do: query
 

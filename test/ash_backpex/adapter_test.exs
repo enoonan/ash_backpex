@@ -24,6 +24,25 @@ defmodule AshBackpex.AdapterTest do
     end
   end
 
+  describe "AshBackpex.Adapter change :: it can" do
+    test "build update changesets for index-editable fields without a form assign" do
+      user = user()
+      post = post(actor: user)
+
+      changeset =
+        Adapter.change(
+          post,
+          %{title: "Updated title"},
+          TestPostLive.fields(),
+          %{current_user: user, live_resource: TestPostLive},
+          TestPostLive,
+          action: :update
+        )
+
+      assert %Ash.Changeset{action_type: :update, data: ^post} = changeset
+    end
+  end
+
   describe "AshBackpex.Adapter filtering :: it can" do
     test "filter list/4 and count/4" do
       user = user()
