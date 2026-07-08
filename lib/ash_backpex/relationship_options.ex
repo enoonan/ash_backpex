@@ -93,7 +93,9 @@ defmodule AshBackpex.RelationshipOptions do
     ash_sql_query = Module.concat(AshSql, Query)
 
     if Code.ensure_loaded?(ash_sql_query) && function_exported?(ash_sql_query, :return_query, 2) do
-      apply(ash_sql_query, :return_query, [query, destination])
+      ash_sql_query
+      |> Function.capture(:return_query, 2)
+      |> then(& &1.(query, destination))
     else
       {:ok, query}
     end
