@@ -21,6 +21,13 @@ defmodule Demo.Blog.Tag do
       public? true
     end
 
+    attribute :type, :atom do
+      allow_nil? false
+      default :topic
+      public? true
+      constraints one_of: [:topic, :audience]
+    end
+
     attribute :description, :string do
       public? true
     end
@@ -42,12 +49,12 @@ defmodule Demo.Blog.Tag do
 
     create :create do
       primary? true
-      accept [:name, :slug, :description]
+      accept [:name, :slug, :type, :description]
     end
 
     update :update do
       primary? true
-      accept [:name, :slug, :description]
+      accept [:name, :slug, :type, :description]
     end
   end
 end

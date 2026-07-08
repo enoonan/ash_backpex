@@ -330,6 +330,8 @@ defmodule AshBackpex.TestDomain.ManyToManyPost do
       through AshBackpex.TestDomain.ManyToManyPostCategory
       source_attribute_on_join_resource :post_id
       destination_attribute_on_join_resource :category_id
+      filter expr(type == :assignable)
+      sort name: :asc
     end
   end
 
@@ -355,6 +357,12 @@ defmodule AshBackpex.TestDomain.ManyToManyCategory do
     attribute :name, :string do
       allow_nil? false
       public? true
+    end
+
+    attribute :type, :atom do
+      allow_nil? false
+      public? true
+      constraints one_of: [:assignable, :internal]
     end
   end
 

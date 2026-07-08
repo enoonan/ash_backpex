@@ -55,7 +55,7 @@ defimpl Phoenix.HTML.FormData, for: Ash.Changeset do
     {action, opts} = Keyword.pop(opts, :action, nil)
     id = Keyword.get(opts, :id) || name
 
-    unless is_binary(id) or is_nil(id) do
+    if not is_binary(id) and not is_nil(id) do
       raise ArgumentError, ":id option in form_for must be a binary/string, got: #{inspect(id)}"
     end
 

@@ -2,6 +2,17 @@
 
 <!-- changelog -->
 
+## [v0.1.8]
+
+### Updates
+
+- Derive Backpex relationship option queries from Ash relationship filters and sorts.
+- Add a demo proof of concept with filtered topic and audience tag relationships.
+
+### Fixes
+
+- Handle Backpex option queries that already carry an Ecto root binding alias.
+
 ## [v0.1.7]
 
 ### Updates

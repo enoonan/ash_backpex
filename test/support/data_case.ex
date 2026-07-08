@@ -63,5 +63,28 @@ defmodule AshBackpex.DataCase do
       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
     """)
+
+    Ecto.Adapters.SQL.query!(AshBackpex.TestRepo, """
+    CREATE TABLE IF NOT EXISTS many_to_many_posts (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL
+    )
+    """)
+
+    Ecto.Adapters.SQL.query!(AshBackpex.TestRepo, """
+    CREATE TABLE IF NOT EXISTS many_to_many_categories (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      type TEXT NOT NULL
+    )
+    """)
+
+    Ecto.Adapters.SQL.query!(AshBackpex.TestRepo, """
+    CREATE TABLE IF NOT EXISTS many_to_many_post_categories (
+      post_id TEXT NOT NULL REFERENCES many_to_many_posts(id),
+      category_id TEXT NOT NULL REFERENCES many_to_many_categories(id),
+      PRIMARY KEY (post_id, category_id)
+    )
+    """)
   end
 end

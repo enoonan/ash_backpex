@@ -48,29 +48,55 @@ authors =
 
 author_by_name = Map.new(authors, &{&1.name, &1})
 
+tag_attrs = [
+  %{
+    name: "Ash",
+    type: :topic,
+    description: "Resource modeling, actions, policies, and Ash Framework patterns."
+  },
+  %{
+    name: "Backpex",
+    type: :topic,
+    description: "Admin interfaces, fields, filters, and operational tooling."
+  },
+  %{
+    name: "LiveView",
+    type: :topic,
+    description: "Phoenix LiveView interaction patterns and server-rendered UI."
+  },
+  %{
+    name: "SQLite",
+    type: :topic,
+    description: "Small, local-first database workflows for demos and development."
+  },
+  %{
+    name: "Beginners",
+    type: :audience,
+    description: "Introductory articles for readers learning the stack."
+  },
+  %{
+    name: "Admins",
+    type: :audience,
+    description: "Operational guidance for people maintaining admin interfaces."
+  },
+  %{
+    name: "Editors",
+    type: :audience,
+    description: "Publishing and workflow guidance for editorial users."
+  }
+]
+
+# When migrating an existing demo database, the migration defaults existing tags to "topic".
+# Normalize known demo tags so rerunning seeds gives the relationship filter POC useful data.
+Enum.each(tag_attrs ++ [%{name: "Tutorial", type: :audience}], fn attrs ->
+  Demo.Repo.query!(
+    "UPDATE tags SET type = ? WHERE slug = ?",
+    [Atom.to_string(attrs.type), slugify.(attrs.name)]
+  )
+end)
+
 tags =
-  [
-    %{
-      name: "Ash",
-      description: "Resource modeling, actions, policies, and Ash Framework patterns."
-    },
-    %{
-      name: "Backpex",
-      description: "Admin interfaces, fields, filters, and operational tooling."
-    },
-    %{
-      name: "LiveView",
-      description: "Phoenix LiveView interaction patterns and server-rendered UI."
-    },
-    %{
-      name: "SQLite",
-      description: "Small, local-first database workflows for demos and development."
-    },
-    %{
-      name: "Tutorial",
-      description: "Step-by-step guides for learning a topic."
-    }
-  ]
+  tag_attrs
   |> Enum.map(fn attrs ->
     attrs
     |> Map.put(:slug, slugify.(attrs.name))
@@ -87,7 +113,8 @@ posts =
         "Ash is a declarative, resource-based framework for building Elixir applications. It provides a powerful DSL for defining your domain model and automatically generates APIs, queries, and mutations.",
       excerpt: "A first look at resource-driven Elixir apps.",
       status: :published,
-      tags: ["Ash", "Tutorial"],
+      topic_tags: ["Ash"],
+      audience_tags: ["Beginners"],
       published: true,
       published_on: ~D[2026-01-10],
       featured: true,
@@ -100,7 +127,8 @@ posts =
         "Backpex is a highly customizable admin panel for Phoenix LiveView applications. Combined with Ash, it provides a seamless way to manage your resources through an intuitive interface.",
       excerpt: "How the generated admin surfaces map to your resources.",
       status: :published,
-      tags: ["Backpex", "LiveView"],
+      topic_tags: ["Backpex", "LiveView"],
+      audience_tags: ["Admins"],
       published: true,
       published_on: ~D[2026-02-04],
       featured: true,
@@ -113,7 +141,8 @@ posts =
         "SQLite is an excellent choice for development and small-scale applications. It requires no separate server process and stores the entire database in a single file.",
       excerpt: "A practical local database setup for demos and tests.",
       status: :review,
-      tags: ["SQLite", "Tutorial"],
+      topic_tags: ["SQLite"],
+      audience_tags: ["Beginners", "Admins"],
       published: false,
       published_on: nil,
       featured: false,
@@ -126,7 +155,8 @@ posts =
         "LiveView enables rich, real-time user experiences with server-rendered HTML. Learn about common patterns like live navigation, form handling, and real-time updates.",
       excerpt: "Common patterns for responsive server-rendered interfaces.",
       status: :published,
-      tags: ["LiveView", "Tutorial"],
+      topic_tags: ["LiveView"],
+      audience_tags: ["Editors"],
       published: true,
       published_on: ~D[2026-03-19],
       featured: false,
@@ -139,7 +169,8 @@ posts =
         "This is a draft post about upcoming features we're planning to add. Stay tuned for more updates!",
       excerpt: "An intentionally unfinished article for filtering demos.",
       status: :draft,
-      tags: ["Ash", "Backpex"],
+      topic_tags: ["Ash", "Backpex"],
+      audience_tags: ["Admins", "Editors"],
       published: false,
       published_on: nil,
       featured: false,
@@ -152,7 +183,8 @@ posts =
         "A short archive entry kept around to demonstrate enum filters and custom item actions.",
       excerpt: "An archived row for status filtering.",
       status: :archived,
-      tags: ["Backpex"],
+      topic_tags: ["Backpex"],
+      audience_tags: ["Admins"],
       published: false,
       published_on: ~D[2025-09-01],
       featured: false,
@@ -162,13 +194,15 @@ posts =
   ]
   |> Enum.map(fn attrs ->
     {author_name, attrs} = Map.pop!(attrs, :author)
-    {tag_names, attrs} = Map.pop!(attrs, :tags)
+    {topic_tag_names, attrs} = Map.pop!(attrs, :topic_tags)
+    {audience_tag_names, attrs} = Map.pop!(attrs, :audience_tags)
 
     attrs =
       attrs
       |> Map.put(:slug, slugify.(attrs.title))
       |> Map.put(:author_id, Map.fetch!(author_by_name, author_name).id)
-      |> Map.put(:tags, Enum.map(tag_names, &Map.fetch!(tag_by_name, &1).id))
+      |> Map.put(:topic_tags, Enum.map(topic_tag_names, &Map.fetch!(tag_by_name, &1).id))
+      |> Map.put(:audience_tags, Enum.map(audience_tag_names, &Map.fetch!(tag_by_name, &1).id))
 
     create!.(Post, :create, attrs)
   end)

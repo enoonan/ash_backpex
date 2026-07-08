@@ -54,6 +54,11 @@ defmodule AshBackpex.LiveResource do
   | `{:array, _}` with `one_of` | `Backpex.Fields.MultiSelect` |
   | Atom with `one_of` constraint | `Backpex.Fields.Select` |
 
+  Relationship fields automatically derive a Backpex `options_query` from Ash
+  relationship `filter`, `sort`, and `default_sort` configuration. This keeps
+  selectable related records aligned with the relationship itself. You can still
+  override this by setting `options_query` explicitly on the field.
+
   You can always override the derived module by specifying it explicitly:
 
   ```elixir
@@ -215,6 +220,10 @@ defmodule AshBackpex.LiveResource do
     end
   end
   ```
+
+  If a relationship limits relatable records, for example with
+  `filter expr(type == :public)`, the generated relationship field uses that
+  filter when Backpex builds the available options.
 
   ### Search
 

@@ -65,6 +65,7 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
   - Attributes with `one_of` constraints automatically use `Backpex.Fields.Select`
   - Array attributes with `one_of` constraints use `Backpex.Fields.MultiSelect`
   - Options are auto-derived from constraint values with title-cased labels
+  - Relationship filters and sorts are auto-derived into Backpex `options_query`
 
   ## Error Handling
 
@@ -448,6 +449,19 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
           end
         end
 
+        maybe_derive_options_query = fn attribute_name, module ->
+          case module do
+            relationship_module
+            when relationship_module in [Backpex.Fields.BelongsTo, Backpex.Fields.HasMany] ->
+              if AshBackpex.RelationshipOptions.options_query?(@resource, attribute_name) do
+                attribute_name
+              end
+
+            _ ->
+              nil
+          end
+        end
+
         # Derive the appropriate AshBackpex filter module from an Ash attribute type
         derive_filter_module = fn attribute_name ->
           type = derive_type.(attribute_name)
@@ -604,6 +618,12 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                       readonly: Map.get(field, :readonly),
                       display_field_form: Map.get(field, :display_field_form),
                       options_query: Map.get(field, :options_query),
+                      __ash_backpex_options_query__:
+                        if Map.get(field, :options_query) do
+                          nil
+                        else
+                          maybe_derive_options_query.(field.attribute, module)
+                        end,
                       format: Map.get(field, :format),
                       rows: Map.get(field, :rows),
                       options: field.options || field.attribute |> maybe_derive_options.(module),
@@ -750,7 +770,27 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
             |> Keyword.reject(&(&1 |> elem(1) |> is_nil))
 
         @impl Backpex.LiveResource
-        def fields, do: @fields
+        def fields do
+          Enum.map(@fields, fn
+            {attribute, %{__ash_backpex_options_query__: relationship_name} = config} ->
+              config =
+                config
+                |> Map.delete(:__ash_backpex_options_query__)
+                |> Map.put(:options_query, fn query, assigns ->
+                  AshBackpex.RelationshipOptions.apply_options_query(
+                    @resource,
+                    relationship_name,
+                    query,
+                    assigns
+                  )
+                end)
+
+              {attribute, config}
+
+            field ->
+              field
+          end)
+        end
 
         @impl Backpex.LiveResource
         def layout(_assigns), do: @backpex_layout

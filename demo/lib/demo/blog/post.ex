@@ -75,6 +75,22 @@ defmodule Demo.Blog.Post do
       source_attribute_on_join_resource :post_id
       destination_attribute_on_join_resource :tag_id
     end
+
+    many_to_many :topic_tags, Demo.Blog.Tag do
+      through Demo.Blog.PostTag
+      source_attribute_on_join_resource :post_id
+      destination_attribute_on_join_resource :tag_id
+      filter expr(type == :topic)
+      sort name: :asc
+    end
+
+    many_to_many :audience_tags, Demo.Blog.Tag do
+      through Demo.Blog.PostTag
+      source_attribute_on_join_resource :post_id
+      destination_attribute_on_join_resource :tag_id
+      filter expr(type == :audience)
+      sort name: :asc
+    end
   end
 
   calculations do
@@ -142,9 +158,11 @@ defmodule Demo.Blog.Post do
         :author_id
       ]
 
-      argument :tags, {:array, :uuid}, allow_nil?: true
+      argument :topic_tags, {:array, :uuid}, allow_nil?: true
+      argument :audience_tags, {:array, :uuid}, allow_nil?: true
 
-      change manage_relationship(:tags, type: :append_and_remove)
+      change manage_relationship(:topic_tags, type: :append_and_remove)
+      change manage_relationship(:audience_tags, type: :append_and_remove)
     end
 
     create :admin_create do
@@ -161,9 +179,11 @@ defmodule Demo.Blog.Post do
         :author_id
       ]
 
-      argument :tags, {:array, :uuid}, allow_nil?: true
+      argument :topic_tags, {:array, :uuid}, allow_nil?: true
+      argument :audience_tags, {:array, :uuid}, allow_nil?: true
 
-      change manage_relationship(:tags, type: :append_and_remove)
+      change manage_relationship(:topic_tags, type: :append_and_remove)
+      change manage_relationship(:audience_tags, type: :append_and_remove)
     end
 
     update :update do
@@ -183,9 +203,11 @@ defmodule Demo.Blog.Post do
       ]
 
       require_atomic? false
-      argument :tags, {:array, :uuid}, allow_nil?: true
+      argument :topic_tags, {:array, :uuid}, allow_nil?: true
+      argument :audience_tags, {:array, :uuid}, allow_nil?: true
 
-      change manage_relationship(:tags, type: :append_and_remove)
+      change manage_relationship(:topic_tags, type: :append_and_remove)
+      change manage_relationship(:audience_tags, type: :append_and_remove)
     end
 
     update :admin_update do
@@ -203,9 +225,11 @@ defmodule Demo.Blog.Post do
       ]
 
       require_atomic? false
-      argument :tags, {:array, :uuid}, allow_nil?: true
+      argument :topic_tags, {:array, :uuid}, allow_nil?: true
+      argument :audience_tags, {:array, :uuid}, allow_nil?: true
 
-      change manage_relationship(:tags, type: :append_and_remove)
+      change manage_relationship(:topic_tags, type: :append_and_remove)
+      change manage_relationship(:audience_tags, type: :append_and_remove)
     end
   end
 end

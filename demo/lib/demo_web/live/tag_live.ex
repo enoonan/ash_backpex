@@ -27,6 +27,10 @@ defmodule DemoWeb.TagLive do
         placeholder("ash")
       end
 
+      field :type do
+        panel(:details)
+      end
+
       field :description do
         module(Backpex.Fields.Textarea)
         panel(:details)

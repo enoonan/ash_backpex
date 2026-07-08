@@ -82,6 +82,11 @@ field :author do
 end
 ```
 
+Relationship fields derive Backpex `options_query` from Ash relationship
+`filter`, `sort`, and `default_sort` settings. If a relationship only allows
+records with `filter expr(type == :public)`, the generated options list will use
+the same filter. Set `options_query` on the field to override this behavior.
+
 ### Searchable Fields
 
 Enable search on string fields:

@@ -15,7 +15,7 @@ defmodule DemoWeb.PostLive do
     update_action(:admin_update)
     create_changeset(&DemoWeb.PostLive.admin_create_changeset/3)
     update_changeset(&DemoWeb.PostLive.admin_update_changeset/3)
-    load([:author, :comments, :tags, :word_count, :comment_count])
+    load([:author, :comments, :topic_tags, :audience_tags, :word_count, :comment_count])
 
     panels(
       content: "Content",
@@ -64,11 +64,20 @@ defmodule DemoWeb.PostLive do
         panel(:relationships)
       end
 
-      field :tags do
+      field :topic_tags do
+        label("Topic Tags")
         display_field(:name)
         live_resource(DemoWeb.TagLive)
         panel(:relationships)
-        prompt("Choose tags...")
+        prompt("Choose topic tags...")
+      end
+
+      field :audience_tags do
+        label("Audience Tags")
+        display_field(:name)
+        live_resource(DemoWeb.TagLive)
+        panel(:relationships)
+        prompt("Choose audience tags...")
       end
 
       field :content do

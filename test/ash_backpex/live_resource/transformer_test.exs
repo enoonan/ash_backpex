@@ -109,6 +109,7 @@ defmodule AshBackpex.LiveResource.TransformerTest do
       assert Keyword.get(fields, :categories).module == Backpex.Fields.HasMany
       assert Keyword.get(fields, :categories).display_field == :name
       assert Keyword.get(fields, :categories).link_assocs == true
+      assert is_function(Keyword.get(fields, :categories).options_query, 2)
     end
 
     test "derive default and non-default primary key with init_order" do
