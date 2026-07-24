@@ -87,6 +87,37 @@ Relationship fields derive Backpex `options_query` from Ash relationship
 records with `filter expr(type == :public)`, the generated options list will use
 the same filter. Set `options_query` on the field to override this behavior.
 
+### Repeating Child Forms
+
+`has_many` relationships continue to use the selection-oriented
+`Backpex.Fields.HasMany` by default. Opt into repeated child forms with
+`Backpex.Fields.InlineCRUD` and configure its child fields:
+
+```elixir
+field :rows do
+  module Backpex.Fields.InlineCRUD
+  except [:index]
+
+  child_fields do
+    field :title, Backpex.Fields.Text
+    field :position, Backpex.Fields.Number
+  end
+end
+```
+
+AshBackpex derives `type: :assoc` for a `has_many`, adds move-up and move-down
+controls, normalizes InlineCRUD's order and delete parameters to an ordered
+list, and includes existing child primary keys in hidden inputs. The parent
+create/update action must accept an `{:array, :map}` argument and connect it to
+the relationship:
+
+```elixir
+argument :rows, {:array, :map}, allow_nil?: false, default: []
+change manage_relationship(:rows, type: :direct_control)
+```
+
+Backpex does not support nesting an InlineCRUD child inside another InlineCRUD.
+
 ### Searchable Fields
 
 Enable search on string fields:

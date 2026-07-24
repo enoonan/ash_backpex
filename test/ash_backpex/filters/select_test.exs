@@ -71,15 +71,12 @@ defmodule AshBackpex.Filters.SelectTest do
       # Some selects may pass atom values
       expr = Select.to_ash_expr(:status, :active, %{})
 
-      assert expr != nil
       assert Ash.Expr.expr?(expr)
     end
   end
 
   describe "to_ash_expr/3 expression correctness" do
     test "produces correct equality expression structure" do
-      require Ash.Expr
-
       expr = Select.to_ash_expr(:status, "active", %{})
 
       # The expression should be equivalent to: status == "active"
@@ -87,8 +84,6 @@ defmodule AshBackpex.Filters.SelectTest do
     end
 
     test "produces expression for atom value" do
-      require Ash.Expr
-
       expr = Select.to_ash_expr(:status, :draft, %{})
 
       # The expression should be equivalent to: status == :draft

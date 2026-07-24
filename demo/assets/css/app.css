@@ -105,3 +105,11 @@
 }
 
 /* This file is for your main application CSS */
+
+.flex:has(> .inline-crud-comment-body) {
+    flex-wrap: wrap;
+}
+
+.inline-crud-comment-body {
+    flex: 0 0 100%;
+}

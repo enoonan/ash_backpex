@@ -105,7 +105,7 @@ defmodule AshBackpex.LiveResource.Dsl do
 
   - `rows` - Number of visible text lines (default: `2`)
 
-  #### Relationship Field Options (BelongsTo, HasMany)
+  #### Relationship Field Options (BelongsTo, HasMany, InlineCRUD)
 
   - `display_field` - Field to display from related record (e.g., `:name`)
   - `display_field_form` - Field to display in form select
@@ -113,6 +113,9 @@ defmodule AshBackpex.LiveResource.Dsl do
   - `link_assocs` - Auto-generate links to associations (default: `true` for HasMany)
   - `options_query` - Function to filter available options `fn query, field -> query end`
   - `prompt` - Text when no option selected (string or function)
+  - `type` - InlineCRUD storage type (`:assoc` or `:embed`). Defaults to `:assoc`
+    when InlineCRUD is used for an Ash `has_many` relationship.
+  - `child_fields` - Nested field definitions rendered in each InlineCRUD child form.
 
   #### Date/Time Field Options
 
@@ -314,6 +317,8 @@ defmodule AshBackpex.LiveResource.Dsl do
 
     See `AshBackpex.LiveResource.Dsl` for field configuration options.
     """
+    # Mirrors Backpex's field configuration schema.
+    # credo:disable-for-next-line Credo.Check.Warning.StructFieldAmount
     defstruct [
       :attribute,
       :default,
@@ -334,16 +339,164 @@ defmodule AshBackpex.LiveResource.Dsl do
       :translate_error,
       :module,
       :label,
+      :class,
       :help_text,
       :debounce,
       :throttle,
+      :readonly,
       :placeholder,
       :options,
+      :prompt,
       :display_field,
+      :display_field_form,
       :live_resource,
+      :link_assocs,
+      :options_query,
+      :type,
+      :format,
+      :rows,
+      :child_fields,
       __spark_metadata__: nil
     ]
   end
+
+  defmodule ChildFields do
+    @moduledoc false
+    defstruct fields: [], __spark_metadata__: nil
+  end
+
+  @field_schema Keyword.new([
+                  {:attribute,
+                   [
+                     type: :atom,
+                     required: true,
+                     doc:
+                       "The attribute, relation, calculation, or aggregate on the Ash Resource that this field corresponds to."
+                   ]}
+                ])
+                |> Keyword.merge(Backpex.Field.default_config_schema())
+                |> Keyword.merge(
+                  module: [
+                    type: :module,
+                    required: false,
+                    doc:
+                      "The Backpex module that should be used to display and load the field. Will attempt to provide a sensible default based on the attribute's configured field type."
+                  ],
+                  label: [
+                    type: :string,
+                    required: false,
+                    doc:
+                      "The label that should appear on the field in the admin. Will default to a capitalized version of the attribute atom, e.g., \"inserted_at\" will become \"Inserted At\""
+                  ],
+                  help_text: [
+                    type: {:or, [:string, {:literal, :description}]},
+                    required: false,
+                    doc:
+                      "Optional text to be displayed below the input on form views. Pass `:description` to use the attribute's configured description."
+                  ],
+                  debounce: [
+                    doc:
+                      "Timeout value (in milliseconds), \"blur\" or function that receives the assigns.",
+                    type: {:or, [:pos_integer, :string, {:fun, 1}]}
+                  ],
+                  throttle: [
+                    doc: "Timeout value (in milliseconds) or function that receives the assigns.",
+                    type: {:or, [:pos_integer, {:fun, 1}]}
+                  ],
+                  readonly: [
+                    doc:
+                      "Sets the field to readonly. Also see the [panels](/guides/fields/readonly.md) guide.",
+                    type: {:or, [:boolean, {:fun, 1}]}
+                  ],
+                  panel: [
+                    doc:
+                      "The panel key this field belongs to. Must match a key defined in the panels configuration.",
+                    type: :atom
+                  ],
+                  # TEXT FIELDS
+                  placeholder: [
+                    doc: "Placeholder value or function that receives the assigns.",
+                    type: {:or, [:string, {:fun, 1}]}
+                  ],
+                  # RELATIONSHIP FIELDS
+                  display_field: [
+                    doc:
+                      "The field of the relation to be used for searching, ordering and displaying values.",
+                    type: :atom
+                    # required: true
+                  ],
+                  display_field_form: [
+                    doc: "Field to be used to display form values.",
+                    type: :atom
+                  ],
+                  live_resource: [
+                    doc:
+                      "The live resource of the association. Used to generate links navigating to the association.",
+                    type: :module
+                  ],
+                  link_assocs: [
+                    doc:
+                      "Whether to automatically generate links to the association items. The default value is true.",
+                    type: :boolean,
+                    required: false
+                  ],
+                  options_query: [
+                    doc: """
+                    Manipulates the list of available options in the select.
+
+                    Defaults to `fn (query, _field) -> query end` which returns all entries.
+                    """,
+                    type: {:fun, 2}
+                  ],
+                  prompt: [
+                    doc:
+                      "The text to be displayed when no option is selected or function that receives the assigns.",
+                    type: {:or, [:string, {:fun, 1}]}
+                  ],
+                  type: [
+                    doc:
+                      "The InlineCRUD field type. Defaults to `:assoc` for Ash `has_many` relationships.",
+                    type: {:in, [:assoc, :embed]}
+                  ],
+                  # TIME FIELDS (e.g. Date, Time, DateTime)
+                  format: [
+                    doc: """
+                    Format string which will be used to format the date time value or function that formats the date time.
+
+                    Can also be a function wich receives a `DateTime` and must return a string.
+                    """,
+                    type: {:or, [:string, {:fun, 1}]}
+                  ],
+                  # SELECTABLE FIELDS
+                  options: [
+                    doc: "List of options or function that receives the assigns.",
+                    type: {:or, [{:list, :any}, {:fun, 1}]}
+                    # required: true
+                  ],
+                  # TEXTAREA
+                  rows: [
+                    doc: "Number of visible text lines for the control.",
+                    type: :non_neg_integer
+                  ]
+                )
+                |> Keyword.drop([:select])
+
+  @child_field %Spark.Dsl.Entity{
+    name: :field,
+    args: [:attribute, :module],
+    target: AshBackpex.LiveResource.Dsl.Field,
+    describe: "Configures a field rendered inside an InlineCRUD child form.",
+    schema:
+      Keyword.update!(@field_schema, :module, fn options ->
+        Keyword.put(options, :required, true)
+      end)
+  }
+
+  @child_fields %Spark.Dsl.Entity{
+    name: :child_fields,
+    target: AshBackpex.LiveResource.Dsl.ChildFields,
+    entities: [fields: [@child_field]]
+  }
 
   @field %Spark.Dsl.Entity{
     name: :field,
@@ -351,118 +504,9 @@ defmodule AshBackpex.LiveResource.Dsl do
     target: AshBackpex.LiveResource.Dsl.Field,
     describe:
       "Configures an Ash Resource attribute, relation, calculation or aggregate as a field to display in Backpex.",
-    schema:
-      Keyword.new([
-        {:attribute,
-         [
-           type: :atom,
-           required: true,
-           doc:
-             "The attribute, relation, calculation, or aggregate on the Ash Resource that this field corresponds to."
-         ]}
-      ])
-      |> Keyword.merge(Backpex.Field.default_config_schema())
-      |> Keyword.merge(
-        module: [
-          type: :module,
-          required: false,
-          doc:
-            "The Backpex module that should be used to display and load the field. Will attempt to provide a sensible default based on the attribute's configured field type."
-        ],
-        label: [
-          type: :string,
-          required: false,
-          doc:
-            "The label that should appear on the field in the admin. Will default to a capitalized version of the attribute atom, e.g., \"inserted_at\" will become \"Inserted At\""
-        ],
-        help_text: [
-          type: {:or, [:string, {:literal, :description}]},
-          required: false,
-          doc:
-            "Optional text to be displayed below the input on form views. Pass `:description` to use the attribute's configured description."
-        ],
-        debounce: [
-          doc: "Timeout value (in milliseconds), \"blur\" or function that receives the assigns.",
-          type: {:or, [:pos_integer, :string, {:fun, 1}]}
-        ],
-        throttle: [
-          doc: "Timeout value (in milliseconds) or function that receives the assigns.",
-          type: {:or, [:pos_integer, {:fun, 1}]}
-        ],
-        readonly: [
-          doc:
-            "Sets the field to readonly. Also see the [panels](/guides/fields/readonly.md) guide.",
-          type: {:or, [:boolean, {:fun, 1}]}
-        ],
-        panel: [
-          doc:
-            "The panel key this field belongs to. Must match a key defined in the panels configuration.",
-          type: :atom
-        ],
-        # TEXT FIELDS
-        placeholder: [
-          doc: "Placeholder value or function that receives the assigns.",
-          type: {:or, [:string, {:fun, 1}]}
-        ],
-        # RELATIONSHIP FIELDS
-        display_field: [
-          doc:
-            "The field of the relation to be used for searching, ordering and displaying values.",
-          type: :atom
-          # required: true
-        ],
-        display_field_form: [
-          doc: "Field to be used to display form values.",
-          type: :atom
-        ],
-        live_resource: [
-          doc:
-            "The live resource of the association. Used to generate links navigating to the association.",
-          type: :module
-        ],
-        link_assocs: [
-          doc:
-            "Whether to automatically generate links to the association items. The default value is true.",
-          type: :boolean,
-          required: false
-        ],
-        options_query: [
-          doc: """
-          Manipulates the list of available options in the select.
-
-          Defaults to `fn (query, _field) -> query end` which returns all entries.
-          """,
-          type: {:fun, 2}
-        ],
-        prompt: [
-          doc:
-            "The text to be displayed when no option is selected or function that receives the assigns.",
-          type: {:or, [:string, {:fun, 1}]}
-        ],
-        # TIME FIELDS (e.g. Date, Time, DateTime)
-        format: [
-          doc: """
-          Format string which will be used to format the date time value or function that formats the date time.
-
-          Can also be a function wich receives a `DateTime` and must return a string.
-          """,
-          type: {:or, [:string, {:fun, 1}]},
-          default: "%Y-%m-%d"
-        ],
-        # SELECTABLE FIELDS
-        options: [
-          doc: "List of options or function that receives the assigns.",
-          type: {:or, [{:list, :any}, {:fun, 1}]}
-          # required: true
-        ],
-        # TEXTAREA
-        rows: [
-          doc: "Number of visible text lines for the control.",
-          type: :non_neg_integer,
-          default: 2
-        ]
-      )
-      |> Keyword.drop([:select])
+    schema: @field_schema,
+    entities: [child_fields: [@child_fields]],
+    singleton_entity_keys: [:child_fields]
   }
 
   @fields %Spark.Dsl.Section{

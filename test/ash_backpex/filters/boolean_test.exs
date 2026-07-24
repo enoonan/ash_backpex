@@ -90,8 +90,6 @@ defmodule AshBackpex.Filters.BooleanTest do
 
   describe "to_ash_expr/3 expression correctness" do
     test "true filter produces correct expression structure" do
-      require Ash.Expr
-
       expr = Boolean.to_ash_expr(:published, ["true"], %{})
 
       # The expression should be equivalent to: published == true
@@ -100,8 +98,6 @@ defmodule AshBackpex.Filters.BooleanTest do
     end
 
     test "false filter produces correct expression structure" do
-      require Ash.Expr
-
       expr = Boolean.to_ash_expr(:published, ["false"], %{})
 
       # The expression should be equivalent to: published == false

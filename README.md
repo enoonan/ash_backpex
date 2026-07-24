@@ -6,7 +6,10 @@ An integration library that brings together Ash Framework's powerful resource sy
 
 > ## Warning! {: .error}
 >
-> Backpex itself is pre-1.0 so expect the API to change in a breaking way! Also, it cannot currently take full advantage of Ash authorization policies. For now I would only recommend using it in a high-trust environment such as internal tooling.
+> Backpex itself is pre-1.0, so expect its API to change. AshBackpex passes the
+> current actor through normal reads, creates, and updates, but Backpex's bulk
+> delete adapter callback does not provide the actor. For now, use AshBackpex
+> in a high-trust environment such as internal tooling.
 
 This is a partial implementation - feel free to open a github issue to request additional features or submit a PR if you're into that kind of thing ;)
 
@@ -17,7 +20,7 @@ Add `ash_backpex` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:ash_backpex, "~> 0.1.7"}
+    {:ash_backpex, "~> 0.1.9"}
   ]
 end
 ```
@@ -82,6 +85,34 @@ Field type resolution follows this order:
 4. Default Ash type mappings
 
 See `AshBackpex.LiveResource` module docs for more examples and details.
+
+## Repeating Child Forms
+
+Opt a `has_many` relationship into Backpex's `InlineCRUD` field to edit child
+records directly in the parent form:
+
+```elixir
+field :rows do
+  module Backpex.Fields.InlineCRUD
+  except [:index]
+
+  child_fields do
+    field :title, Backpex.Fields.Text
+    field :config, Backpex.Fields.Textarea do
+      label "Configuration"
+    end
+  end
+end
+```
+
+AshBackpex derives `type: :assoc`, adds move-up and move-down controls,
+translates the add/delete/order form parameters to an ordered list for Ash,
+and preserves child primary keys for updates. The parent Ash actions must
+expose an array-of-maps argument and use `manage_relationship`, typically with
+`type: :direct_control`.
+
+See the [Inline CRUD guide](guides/inline-crud.md) for the complete resource and
+LiveResource setup.
 
 ## Filters and Actions
 

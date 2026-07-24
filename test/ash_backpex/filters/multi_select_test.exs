@@ -80,8 +80,6 @@ defmodule AshBackpex.Filters.MultiSelectTest do
 
   describe "to_ash_expr/3 expression correctness" do
     test "produces correct IN expression structure for multiple values" do
-      require Ash.Expr
-
       expr = MultiSelect.to_ash_expr(:status, ["active", "pending"], %{})
 
       # The expression should be equivalent to: status in ["active", "pending"]
@@ -89,8 +87,6 @@ defmodule AshBackpex.Filters.MultiSelectTest do
     end
 
     test "produces correct IN expression structure for single value" do
-      require Ash.Expr
-
       expr = MultiSelect.to_ash_expr(:status, ["draft"], %{})
 
       # The expression should be equivalent to: status in ["draft"]

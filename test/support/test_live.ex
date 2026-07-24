@@ -189,6 +189,50 @@ defmodule TestManyToManyLive do
   end
 end
 
+defmodule TestAuthorizedRelationshipLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource AshBackpex.TestDomain.User
+    layout({TestLayout, :admin})
+
+    fields do
+      field :published_posts do
+        display_field(:title)
+      end
+    end
+  end
+end
+
+defmodule TestInlineCrudLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource AshBackpex.TestDomain.Post
+    layout({TestLayout, :admin})
+
+    fields do
+      field :title
+
+      field :comments do
+        module Backpex.Fields.InlineCRUD
+        except [:index]
+
+        child_fields do
+          field :body, Backpex.Fields.Textarea do
+            rows(4)
+            class("flex-1")
+          end
+
+          field :approved, Backpex.Fields.Boolean
+        end
+      end
+    end
+  end
+end
+
 defmodule TestCustomItemActionLiveWithOnly do
   @moduledoc false
   use AshBackpex.LiveResource

@@ -590,11 +590,44 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                 |> Enum.reduce([], fn field, acc ->
                   module = field.module || field.attribute |> try_derive_module.()
 
+                  inline_crud? =
+                    module in [AshBackpex.Fields.InlineCRUD, Backpex.Fields.InlineCRUD]
+
+                  type =
+                    Map.get(field, :type) ||
+                      if inline_crud? && derive_type.(field.attribute) == :has_many,
+                        do: :assoc
+
+                  child_fields =
+                    case field.child_fields do
+                      nil ->
+                        nil
+
+                      %{fields: child_fields} ->
+                        Enum.map(child_fields, fn child ->
+                          options =
+                            child
+                            |> Map.from_struct()
+                            |> Map.drop([:attribute, :child_fields, :__spark_metadata__])
+                            |> Map.put(
+                              :label,
+                              child.label || atom_to_title_case.(child.attribute)
+                            )
+                            |> Map.reject(fn {_key, value} -> is_nil(value) end)
+
+                          {child.attribute, options}
+                        end)
+                    end
+
                   Keyword.put(
                     acc,
                     field.attribute,
                     %{
-                      module: module,
+                      module:
+                        if(inline_crud?,
+                          do: AshBackpex.Fields.InlineCRUD,
+                          else: module
+                        ),
                       label: field.label || field.attribute |> atom_to_title_case.(),
                       only: field.only,
                       except: field.except,
@@ -629,6 +662,8 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                       options: field.options || field.attribute |> maybe_derive_options.(module),
                       display_field: field.display_field,
                       live_resource: field.live_resource,
+                      type: type,
+                      child_fields: child_fields,
                       panel: field.panel,
                       searchable: field.searchable,
                       link_assocs:

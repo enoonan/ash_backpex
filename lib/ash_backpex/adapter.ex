@@ -140,9 +140,13 @@ defmodule AshBackpex.Adapter do
 
   ### Authorization
 
-  The adapter respects Ash authorization by passing the `actor` option
-  (from `assigns.current_user`) to all Ash operations. This integrates
-  with your Ash policies automatically.
+  Reads use `assigns.current_user` as the Ash actor. Creates and updates use the
+  actor stored in their Ash changesets, so policies are enforced when the
+  changeset is persisted.
+
+  Backpex's `delete_all/2` adapter callback does not provide assigns, so bulk
+  deletion cannot currently receive the actor and continues to bypass Ash
+  authorization.
 
   ### Custom Actions
 
@@ -358,7 +362,7 @@ defmodule AshBackpex.Adapter do
   @impl Backpex.Adapter
   def insert(changeset, _live_resource) do
     if changeset.valid? do
-      case changeset |> Ash.create(authorize?: false) do
+      case Ash.create(changeset) do
         {:ok, item} -> {:ok, item}
         {:error, error} -> {:error, changeset |> Ash.Changeset.add_error(error)}
       end
@@ -373,7 +377,7 @@ defmodule AshBackpex.Adapter do
   @impl Backpex.Adapter
   def update(changeset, _live_resource) do
     if changeset.valid? do
-      case changeset |> Ash.update(authorize?: false) do
+      case Ash.update(changeset) do
         {:ok, item} -> {:ok, item}
         {:error, error} -> {:error, changeset |> Ash.Changeset.add_error(error)}
       end
@@ -397,7 +401,7 @@ defmodule AshBackpex.Adapter do
   def change(item, attrs, fields, assigns, live_resource, opts) do
     target = Keyword.get(opts, :target)
     metadata = Backpex.Resource.build_changeset_metadata(assigns, target)
-    attrs = normalize_list_field_params(attrs, fields)
+    attrs = normalize_field_params(attrs, fields)
 
     assigns
     |> changeset_function(live_resource, opts)
@@ -446,11 +450,15 @@ defmodule AshBackpex.Adapter do
   defp changeset_config_key(action) when action in [:new, :create, :insert], do: :create_changeset
   defp changeset_config_key(action) when action in [:edit, :index, :update], do: :update_changeset
 
-  defp normalize_list_field_params(attrs, fields) do
+  defp normalize_field_params(attrs, fields) do
     Enum.reduce(fields, attrs, fn
       {field, %{module: module}}, attrs
       when module in [Backpex.Fields.HasMany, Backpex.Fields.MultiSelect] ->
         normalize_list_field_param(attrs, to_string(field))
+
+      {field, %{module: module}}, attrs
+      when module in [AshBackpex.Fields.InlineCRUD, Backpex.Fields.InlineCRUD] ->
+        normalize_inline_crud_params(attrs, field)
 
       _field, attrs ->
         attrs
@@ -467,6 +475,53 @@ defmodule AshBackpex.Adapter do
   defp remove_blank_list_values(values) when is_list(values), do: Enum.reject(values, &(&1 == ""))
   defp remove_blank_list_values(""), do: []
   defp remove_blank_list_values(value), do: value
+
+  defp normalize_inline_crud_params(attrs, field) do
+    field = to_string(field)
+    order_key = "#{field}_order"
+    delete_key = "#{field}_delete"
+    move_up_key = "#{field}_move_up"
+    move_down_key = "#{field}_move_down"
+
+    if Enum.any?(
+         [field, order_key, delete_key, move_up_key, move_down_key],
+         &Map.has_key?(attrs, &1)
+       ) do
+      entries = Map.get(attrs, field, %{})
+      deleted = Map.get(attrs, delete_key, [])
+
+      order =
+        attrs
+        |> Map.get(order_key, Map.keys(entries))
+        |> move_inline_crud_entry(Map.get(attrs, move_up_key), -1)
+        |> move_inline_crud_entry(Map.get(attrs, move_down_key), 1)
+
+      children =
+        for index <- order,
+            index not in deleted do
+          Map.get(entries, index, %{})
+        end
+
+      attrs
+      |> Map.put(field, children)
+      |> Map.drop([order_key, delete_key, move_up_key, move_down_key])
+    else
+      attrs
+    end
+  end
+
+  defp move_inline_crud_entry(order, indexes, offset) do
+    with index when not is_nil(index) <- Enum.find(List.wrap(indexes), &(&1 not in [nil, ""])),
+         position when not is_nil(position) <- Enum.find_index(order, &(&1 == index)),
+         target = position + offset,
+         true <- target >= 0 and target < length(order) do
+      order
+      |> List.replace_at(position, Enum.at(order, target))
+      |> List.replace_at(target, index)
+    else
+      _ -> order
+    end
+  end
 
   defp apply_filters(query, nil, _assigns), do: query
 

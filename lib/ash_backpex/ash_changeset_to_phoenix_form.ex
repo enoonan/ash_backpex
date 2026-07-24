@@ -76,7 +76,8 @@ defimpl Phoenix.HTML.FormData, for: Ash.Changeset do
   end
 
   def to_form(changeset, form, field, opts) when is_atom(field) or is_binary(field) do
-    {default, opts} = Keyword.pop(opts, :default, %{})
+    {default, opts} = Keyword.pop_lazy(opts, :default, fn -> nested_default(changeset, field) end)
+
     {prepend, opts} = Keyword.pop(opts, :prepend, [])
     {append, opts} = Keyword.pop(opts, :append, [])
     {name, opts} = Keyword.pop(opts, :as)
@@ -102,21 +103,14 @@ defimpl Phoenix.HTML.FormData, for: Ash.Changeset do
             data: default,
             action: action,
             params: params || %{},
-            hidden: hidden,
+            hidden: merge_hidden(changeset, field, default, params, hidden),
             options: opts
           }
         ]
 
       # cardinality: many
       is_list(default) ->
-        entries =
-          if params do
-            params
-            |> Enum.sort_by(&elem(&1, 0))
-            |> Enum.map(&{nil, elem(&1, 1)})
-          else
-            Enum.map(prepend ++ default ++ append, &{&1, %{}})
-          end
+        entries = nested_entries(params, prepend ++ default ++ append)
 
         for {{data, params}, index} <- Enum.with_index(entries) do
           index_string = Integer.to_string(index)
@@ -130,10 +124,20 @@ defimpl Phoenix.HTML.FormData, for: Ash.Changeset do
             name: name <> "[" <> index_string <> "]",
             data: data,
             params: params,
-            hidden: hidden,
+            hidden: merge_hidden(changeset, field, data, params, hidden),
             options: opts
           }
         end
+    end
+  end
+
+  def input_value(_changeset, %{index: index, data: data, params: params}, field)
+      when not is_nil(index) and (is_atom(field) or is_binary(field)) do
+    key = field_to_string(field)
+
+    case params do
+      %{^key => value} -> value
+      %{} -> data && Map.get(data, field)
     end
   end
 
@@ -161,6 +165,34 @@ defimpl Phoenix.HTML.FormData, for: Ash.Changeset do
   end
 
   # Private helper functions
+
+  defp nested_entries(nil, default), do: Enum.map(default, &{&1, %{}})
+  defp nested_entries(params, _default), do: Enum.map(params, &{nil, &1})
+
+  defp merge_hidden(changeset, field, data, params, hidden) do
+    case Ash.Resource.Info.relationship(changeset.resource, field) do
+      %{destination: destination} ->
+        Enum.reduce(Ash.Resource.Info.primary_key(destination), hidden, fn key, hidden ->
+          value =
+            (is_map(data) && Map.get(data, key)) ||
+              (is_map(params) && (Map.get(params, key) || Map.get(params, to_string(key))))
+
+          if is_nil(value), do: hidden, else: Keyword.put_new(hidden, key, value)
+        end)
+
+      _other ->
+        hidden
+    end
+  end
+
+  defp nested_default(changeset, field) do
+    value = get_changeset_value(changeset, field)
+
+    case Ash.Resource.Info.relationship(changeset.resource, field) do
+      %{cardinality: :many} when is_nil(value) or is_struct(value, Ash.NotLoaded) -> []
+      _relationship -> value || %{}
+    end
+  end
 
   defp name_params_and_opts(changeset, opts) do
     case Keyword.pop(opts, :as) do
@@ -228,11 +260,6 @@ defimpl Phoenix.HTML.FormData, for: Ash.Changeset do
 
   defp ash_error_to_form_error(%{fields: [field | _], message: message}) do
     {field, message}
-  end
-
-  defp ash_error_to_form_error(%{fields: fields, message: message})
-       when is_list(fields) and fields != [] do
-    {hd(fields), message}
   end
 
   defp ash_error_to_form_error(%{message: message}) do

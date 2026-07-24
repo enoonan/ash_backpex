@@ -74,6 +74,99 @@ defmodule AshBackpex.AdapterTest do
                         atom_tags: ["", "keep-me-too"]
                       }}
     end
+
+    test "normalizes InlineCRUD add, delete, and order params for manage_relationship" do
+      user = user()
+      post = post(actor: user)
+
+      fields = [
+        comments: %{module: Backpex.Fields.InlineCRUD}
+      ]
+
+      Adapter.change(
+        post,
+        %{
+          "comments" => %{
+            "0" => %{
+              "id" => "first-id",
+              "body" => "First",
+              "_persistent_id" => "0"
+            },
+            "1" => %{
+              "id" => "second-id",
+              "body" => "Second",
+              "_persistent_id" => "1"
+            }
+          },
+          "comments_order" => ["1", "0", "new"],
+          "comments_delete" => ["", "0"]
+        },
+        fields,
+        %{current_user: user, live_resource: TestParamCaptureLive, test_pid: self()},
+        TestParamCaptureLive,
+        action: :update
+      )
+
+      assert_receive {:captured_params, captured_params}
+
+      assert captured_params == %{
+               "comments" => [
+                 %{"id" => "second-id", "body" => "Second", "_persistent_id" => "1"},
+                 %{}
+               ]
+             }
+    end
+
+    test "moves InlineCRUD entries up and down" do
+      user = user()
+      post = post(actor: user)
+      fields = [comments: %{module: AshBackpex.Fields.InlineCRUD}]
+
+      entries = %{
+        "0" => %{"body" => "First", "_persistent_id" => "first"},
+        "1" => %{"body" => "Second", "_persistent_id" => "second"},
+        "2" => %{"body" => "Third", "_persistent_id" => "third"}
+      }
+
+      for {move, index, expected} <- [
+            {"comments_move_up", "2",
+             [{"First", "first"}, {"Third", "third"}, {"Second", "second"}]},
+            {"comments_move_down", "0",
+             [{"Second", "second"}, {"First", "first"}, {"Third", "third"}]}
+          ] do
+        Adapter.change(
+          post,
+          %{
+            "comments" => entries,
+            "comments_order" => ["0", "1", "2"],
+            move => [index]
+          },
+          fields,
+          %{current_user: user, live_resource: TestParamCaptureLive, test_pid: self()},
+          TestParamCaptureLive,
+          action: :update
+        )
+
+        assert_receive {:captured_params, %{"comments" => comments}}
+        assert Enum.map(comments, &{&1["body"], &1["_persistent_id"]}) == expected
+      end
+    end
+
+    test "leaves an InlineCRUD relationship absent when it was not submitted" do
+      user = user()
+      post = post(actor: user)
+
+      Adapter.change(
+        post,
+        %{"title" => "Updated"},
+        [comments: %{module: Backpex.Fields.InlineCRUD}],
+        %{current_user: user, live_resource: TestParamCaptureLive, test_pid: self()},
+        TestParamCaptureLive,
+        action: :update
+      )
+
+      assert_receive {:captured_params, %{"title" => "Updated"}}
+    end
   end
 
   describe "AshBackpex.Adapter filtering :: it can" do

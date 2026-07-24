@@ -15,12 +15,16 @@ Add `ash_backpex` to your dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:ash_backpex, "~> 0.1.7"}
+    {:ash_backpex, "~> 0.1.9"}
   ]
 end
 ```
 
 Run `mix deps.get` to install the dependency.
+
+AshBackpex 0.1.9 targets Backpex `~> 0.19.6` and declares that dependency
+itself. If your application pins Backpex directly, update its constraint to
+match.
 
 ## Creating Your First Admin LiveResource
 
@@ -272,9 +276,16 @@ end
 AshBackpex automatically integrates with Ash authorization policies. The admin will:
 
 - Check `Ash.can?/2` before showing create/edit/delete buttons
-- Use `assigns.current_user` as the actor for authorization checks
+- Use `assigns.current_user` as the actor for reads and relationship options
+- Persist create and update changesets with their configured actor
 
-Make sure your Ash resources have policies defined and that you're setting `current_user` in your LiveView assigns.
+Make sure your Ash resources have policies defined and that you're setting
+`current_user` in your LiveView assigns. If you provide custom create or update
+changeset functions, set that actor on the returned Ash changeset.
+
+Backpex's bulk delete adapter callback does not provide LiveView assigns, so it
+cannot currently pass the actor to Ash. Only enable bulk deletion in a
+high-trust admin environment.
 
 ## Next Steps
 

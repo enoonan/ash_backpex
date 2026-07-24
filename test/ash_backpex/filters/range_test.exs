@@ -118,8 +118,6 @@ defmodule AshBackpex.Filters.RangeTest do
 
   describe "to_ash_expr/3 expression correctness" do
     test "start-only filter produces >= expression" do
-      require Ash.Expr
-
       expr = Range.to_ash_expr(:price, %{"start" => "10", "end" => ""}, %{})
 
       # The expression should be equivalent to: price >= 10
@@ -127,8 +125,6 @@ defmodule AshBackpex.Filters.RangeTest do
     end
 
     test "end-only filter produces <= expression" do
-      require Ash.Expr
-
       expr = Range.to_ash_expr(:price, %{"start" => "", "end" => "100"}, %{})
 
       # The expression should be equivalent to: price <= 100
@@ -136,8 +132,6 @@ defmodule AshBackpex.Filters.RangeTest do
     end
 
     test "both start and end produces combined expression" do
-      require Ash.Expr
-
       expr = Range.to_ash_expr(:price, %{"start" => "10", "end" => "100"}, %{})
 
       # The expression should be equivalent to: price >= 10 and price <= 100

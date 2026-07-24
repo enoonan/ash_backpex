@@ -181,9 +181,11 @@ defmodule Demo.Blog.Post do
 
       argument :topic_tags, {:array, :uuid}, allow_nil?: true
       argument :audience_tags, {:array, :uuid}, allow_nil?: true
+      argument :comments, {:array, :map}, allow_nil?: true
 
       change manage_relationship(:topic_tags, type: :append_and_remove)
       change manage_relationship(:audience_tags, type: :append_and_remove)
+      change manage_relationship(:comments, type: :direct_control)
     end
 
     update :update do
@@ -227,9 +229,11 @@ defmodule Demo.Blog.Post do
       require_atomic? false
       argument :topic_tags, {:array, :uuid}, allow_nil?: true
       argument :audience_tags, {:array, :uuid}, allow_nil?: true
+      argument :comments, {:array, :map}, allow_nil?: true
 
       change manage_relationship(:topic_tags, type: :append_and_remove)
       change manage_relationship(:audience_tags, type: :append_and_remove)
+      change manage_relationship(:comments, type: :direct_control)
     end
   end
 end

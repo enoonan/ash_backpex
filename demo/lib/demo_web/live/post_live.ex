@@ -123,14 +123,40 @@ defmodule DemoWeb.PostLive do
       end
 
       field :comment_count do
-        except([:new, :edit])
+        only([:index])
         label("Comments")
       end
 
       field :comments do
-        except([:new, :edit])
-        display_field(:body)
+        module(Backpex.Fields.InlineCRUD)
+        except([:index])
         live_resource(DemoWeb.CommentLive)
+        panel(:relationships)
+
+        child_fields do
+          field :body, Backpex.Fields.Textarea do
+            label("Body")
+            rows(3)
+            class("inline-crud-comment-body")
+          end
+
+          field :author, Backpex.Fields.BelongsTo do
+            label("Author")
+            display_field(:name)
+            class("w-56")
+          end
+
+          field :sentiment, Backpex.Fields.Select do
+            label("Sentiment")
+            options(Positive: :positive, Neutral: :neutral, Critical: :critical)
+            class("w-40")
+          end
+
+          field :approved, Backpex.Fields.Boolean do
+            label("Approved")
+            class("w-28")
+          end
+        end
       end
 
       field :inserted_at do

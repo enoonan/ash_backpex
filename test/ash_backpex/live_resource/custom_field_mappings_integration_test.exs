@@ -382,7 +382,7 @@ defmodule AshBackpex.LiveResource.CustomFieldMappingsIntegrationTest do
         {:array, Ash.Type.Atom}, constraints ->
           # Check for items constraints with one_of (Post.tags has items with one_of constraint)
           case get_in(constraints, [:items, :one_of]) do
-            list when is_list(list) and length(list) > 0 -> Backpex.Fields.Text
+            [_ | _] -> Backpex.Fields.Text
             _ -> nil
           end
 

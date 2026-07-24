@@ -108,6 +108,12 @@ defmodule AshBackpex.TestDomain.User do
 
   relationships do
     has_many(:posts, AshBackpex.TestDomain.Post, destination_attribute: :author_id)
+
+    has_many :published_posts, AshBackpex.TestDomain.Post do
+      destination_attribute :author_id
+      filter expr(published == true)
+      sort title: :asc
+    end
   end
 
   actions do

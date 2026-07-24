@@ -112,6 +112,31 @@ defmodule AshBackpex.LiveResource.TransformerTest do
       assert is_function(Keyword.get(fields, :categories).options_query, 2)
     end
 
+    test "support InlineCRUD as an opt-in has_many field" do
+      field = TestInlineCrudLive.fields()[:comments]
+      validated_field = Backpex.LiveResource.fields(TestInlineCrudLive, :edit, %{})[:comments]
+
+      assert field.module == AshBackpex.Fields.InlineCRUD
+      assert field.type == :assoc
+      assert field.except == [:index]
+      assert validated_field.type == :assoc
+
+      assert field.child_fields == [
+               body: %{
+                 module: Backpex.Fields.Textarea,
+                 label: "Body",
+                 rows: 4,
+                 class: "flex-1"
+               },
+               approved: %{
+                 module: Backpex.Fields.Boolean,
+                 label: "Approved"
+               }
+             ]
+
+      assert TestPostLive.fields()[:author].module == Backpex.Fields.BelongsTo
+    end
+
     test "derive default and non-default primary key with init_order" do
       assert TestPostLive.config(:primary_key) == :id
 

@@ -2,6 +2,25 @@
 
 <!-- changelog -->
 
+## [v0.1.9]
+
+### Updates
+
+- Update Backpex to 0.19.6.
+- Add opt-in `Backpex.Fields.InlineCRUD` support for `has_many`
+  relationships, including `type` and a nested `child_fields` DSL.
+- Add accessible move-up and move-down controls to InlineCRUD, repeat labels
+  for every child form, and keep unsaved rows stable while reordering.
+- Translate InlineCRUD add/delete/order parameters into ordered
+  `manage_relationship` input and preserve existing child primary keys.
+- Add a complete InlineCRUD demo and guide using article comments.
+
+### Fixes
+
+- Enforce Ash policies when the adapter persists create and update changesets.
+- Restrict derived Backpex relationship options through an authorized Ash read
+  when the destination resource has authorizers.
+
 ## [v0.1.8]
 
 ### Updates

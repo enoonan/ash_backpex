@@ -55,8 +55,6 @@ defmodule AshBackpex.BasicSearch do
   filtered_query = AshBackpex.BasicSearch.apply(query, params, MyAppWeb.Admin.PostLive)
   ```
   """
-  require Ash.Query
-
   @type query :: Ash.Query.t()
   @type params :: map()
   @type live_resource :: module()

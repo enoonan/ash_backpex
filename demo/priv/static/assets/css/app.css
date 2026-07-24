@@ -2712,14 +2712,23 @@
   .w-12 {
     width: calc(var(--spacing) * 12);
   }
+  .w-28 {
+    width: calc(var(--spacing) * 28);
+  }
   .w-32 {
     width: calc(var(--spacing) * 32);
+  }
+  .w-40 {
+    width: calc(var(--spacing) * 40);
   }
   .w-48 {
     width: calc(var(--spacing) * 48);
   }
   .w-52 {
     width: calc(var(--spacing) * 52);
+  }
+  .w-56 {
+    width: calc(var(--spacing) * 56);
   }
   .w-64 {
     width: calc(var(--spacing) * 64);
@@ -3942,6 +3951,12 @@
 }
 [data-phx-session] {
   display: contents;
+}
+.flex:has(> .inline-crud-comment-body) {
+  flex-wrap: wrap;
+}
+.inline-crud-comment-body {
+  flex: 0 0 100%;
 }
 @layer base {
   @property --radialprogress {

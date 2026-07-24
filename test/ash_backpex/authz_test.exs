@@ -76,4 +76,31 @@ defmodule AshBackpex.AuthzTest do
       assert Adapter.count([], [], %{current_user: user2}, TestPostLive) == {:ok, 0}
     end
   end
+
+  describe "AshBackpex.Adapter mutations" do
+    test "insert/2 enforces create policies from the changeset actor" do
+      inactive_user = user(active: false)
+
+      changeset =
+        Ash.Changeset.for_create(
+          AshBackpex.TestDomain.Post,
+          :create,
+          %{title: "Unauthorized", author_id: inactive_user.id},
+          actor: inactive_user
+        )
+
+      assert {:error, %Ash.Changeset{}} = Adapter.insert(changeset, TestPostLive)
+    end
+
+    test "update/2 enforces update policies from the changeset actor" do
+      owner = user()
+      other_user = user()
+      post = post(actor: owner)
+
+      changeset =
+        Ash.Changeset.for_update(post, :update, %{title: "Unauthorized"}, actor: other_user)
+
+      assert {:error, %Ash.Changeset{}} = Adapter.update(changeset, TestPostLive)
+    end
+  end
 end

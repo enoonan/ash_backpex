@@ -1,6 +1,8 @@
 defmodule AshBackpex.RelationshipOptions do
   @moduledoc false
 
+  import Ecto.Query
+
   @relationship_types [:belongs_to, :has_one, :has_many, :many_to_many]
 
   @doc false
@@ -26,11 +28,12 @@ defmodule AshBackpex.RelationshipOptions do
 
   defp apply_options_query(query, %{type: type} = relationship, assigns)
        when type in @relationship_types do
+    ash_query = relationship_query(relationship, assigns)
+
     with {:ok, query} <-
-           relationship
-           |> relationship_query(assigns)
-           |> Ash.Query.data_layer_query(initial_query: remove_root_alias(query)),
-         {:ok, query} <- finalize_query(query, relationship.destination) do
+           Ash.Query.data_layer_query(ash_query, initial_query: remove_root_alias(query)),
+         {:ok, query} <- finalize_query(query, relationship.destination),
+         {:ok, query} <- restrict_to_authorized_records(query, ash_query) do
       Map.delete(query, :__ash_bindings__)
     else
       {:error, error} -> raise ArgumentError, Exception.message(Ash.Error.to_error_class(error))
@@ -45,7 +48,6 @@ defmodule AshBackpex.RelationshipOptions do
     relationship.destination
     |> Ash.Query.for_read(read_action, %{},
       actor: actor(assigns),
-      authorize?: false,
       context: relationship.context || %{},
       domain: relationship.domain,
       tenant: tenant(assigns)
@@ -53,6 +55,26 @@ defmodule AshBackpex.RelationshipOptions do
     |> Ash.Query.do_filter(relationship.filter, parent_stack: [relationship.source])
     |> Ash.Query.sort(relationship.sort)
     |> Ash.Query.default_sort(relationship.default_sort)
+  end
+
+  defp restrict_to_authorized_records(query, ash_query) do
+    if Ash.Resource.Info.authorizers(ash_query.resource) == [] do
+      {:ok, query}
+    else
+      with {:ok, records} <- Ash.read(ash_query, page: false) do
+        case Ash.Resource.Info.primary_key(ash_query.resource) do
+          [primary_key] ->
+            ids = Enum.map(records, &Map.fetch!(&1, primary_key))
+            {:ok, where(query, [record], field(record, ^primary_key) in ^ids)}
+
+          primary_key ->
+            {:error,
+             ArgumentError.exception(
+               "Backpex relationship fields require a single primary key, got: #{inspect(primary_key)}"
+             )}
+        end
+      end
+    end
   end
 
   defp actor(assigns), do: assign(assigns, :actor) || assign(assigns, :current_user)
