@@ -452,7 +452,11 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
         maybe_derive_options_query = fn attribute_name, module ->
           case module do
             relationship_module
-            when relationship_module in [Backpex.Fields.BelongsTo, Backpex.Fields.HasMany] ->
+            when relationship_module in [
+                   AshBackpex.Fields.BelongsTo,
+                   Backpex.Fields.BelongsTo,
+                   Backpex.Fields.HasMany
+                 ] ->
               if AshBackpex.RelationshipOptions.options_query?(@resource, attribute_name) do
                 attribute_name
               end
@@ -593,6 +597,17 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                   inline_crud? =
                     module in [AshBackpex.Fields.InlineCRUD, Backpex.Fields.InlineCRUD]
 
+                  can_typeahead? =
+                    field.typeahead == true &&
+                      module in [AshBackpex.Fields.BelongsTo, Backpex.Fields.BelongsTo]
+
+                  if field.typeahead == true && not can_typeahead? do
+                    raise Spark.Error.DslError,
+                      module: __MODULE__,
+                      message:
+                        "`typeahead true` is only supported on belongs_to fields using Backpex.Fields.BelongsTo or AshBackpex.Fields.BelongsTo"
+                  end
+
                   type =
                     Map.get(field, :type) ||
                       if inline_crud? && derive_type.(field.attribute) == :has_many,
@@ -624,10 +639,11 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                     field.attribute,
                     %{
                       module:
-                        if(inline_crud?,
-                          do: AshBackpex.Fields.InlineCRUD,
-                          else: module
-                        ),
+                        cond do
+                          inline_crud? -> AshBackpex.Fields.InlineCRUD
+                          can_typeahead? -> AshBackpex.Fields.BelongsTo
+                          true -> module
+                        end,
                       label: field.label || field.attribute |> atom_to_title_case.(),
                       only: field.only,
                       except: field.except,
@@ -651,11 +667,17 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                       readonly: Map.get(field, :readonly),
                       display_field_form: Map.get(field, :display_field_form),
                       options_query: Map.get(field, :options_query),
+                      typeahead: if(can_typeahead?, do: true),
+                      typeahead_limit: if(can_typeahead?, do: Map.get(field, :typeahead_limit)),
                       __ash_backpex_options_query__:
                         if Map.get(field, :options_query) do
                           nil
                         else
-                          maybe_derive_options_query.(field.attribute, module)
+                          if can_typeahead? do
+                            field.attribute
+                          else
+                            maybe_derive_options_query.(field.attribute, module)
+                          end
                         end,
                       format: Map.get(field, :format),
                       rows: Map.get(field, :rows),

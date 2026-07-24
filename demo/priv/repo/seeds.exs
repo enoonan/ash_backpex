@@ -4,6 +4,8 @@
 
 alias Demo.Blog.{Author, Comment, Post, Tag}
 
+require Ash.Query
+
 slugify = fn title ->
   title
   |> String.downcase()
@@ -15,6 +17,20 @@ create! = fn resource, action, attrs ->
   resource
   |> Ash.Changeset.for_create(action, attrs)
   |> Ash.create!()
+end
+
+create_or_update_author! = fn attrs ->
+  case Author
+       |> Ash.Query.filter(email: attrs.email)
+       |> Ash.read!() do
+    [] ->
+      create!.(Author, :create, attrs)
+
+    [author | _duplicates] ->
+      author
+      |> Ash.Changeset.for_update(:update, attrs)
+      |> Ash.update!()
+  end
 end
 
 authors =
@@ -44,7 +60,7 @@ authors =
       joined_on: ~D[2023-11-20]
     }
   ]
-  |> Enum.map(fn attrs -> create!.(Author, :create, attrs) end)
+  |> Enum.map(create_or_update_author!)
 
 author_by_name = Map.new(authors, &{&1.name, &1})
 

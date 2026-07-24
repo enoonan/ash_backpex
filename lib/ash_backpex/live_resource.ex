@@ -59,6 +59,19 @@ defmodule AshBackpex.LiveResource do
   selectable related records aligned with the relationship itself. You can still
   override this by setting `options_query` explicitly on the field.
 
+  Large `belongs_to` relationships can opt into a server-backed single-select
+  typeahead:
+
+  ```elixir
+  field :author do
+    display_field :name
+    typeahead true
+    typeahead_limit 10
+    debounce 300
+    prompt "Choose an author"
+  end
+  ```
+
   You can always override the derived module by specifying it explicitly:
 
   ```elixir

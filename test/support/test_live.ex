@@ -70,6 +70,48 @@ defmodule TestMinimalLive do
   end
 end
 
+defmodule TestTypeaheadLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource AshBackpex.TestDomain.Post
+    layout({TestLayout, :admin})
+
+    fields do
+      field :title
+
+      field :author do
+        display_field(:name)
+        display_field_form(:name)
+        typeahead(true)
+        typeahead_limit(5)
+        debounce(250)
+        prompt("Choose an author")
+      end
+    end
+  end
+end
+
+defmodule TestTypeaheadCommentLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource AshBackpex.TestDomain.Comment
+    layout({TestLayout, :admin})
+
+    fields do
+      field :body
+
+      field :post do
+        display_field(:title)
+        typeahead(true)
+      end
+    end
+  end
+end
+
 # LiveResource with custom names
 defmodule TestCustomNamesLive do
   @moduledoc false

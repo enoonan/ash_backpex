@@ -112,6 +112,21 @@ defmodule AshBackpex.LiveResource.TransformerTest do
       assert is_function(Keyword.get(fields, :categories).options_query, 2)
     end
 
+    test "uses the AshBackpex belongs_to field when typeahead is enabled" do
+      field = TestTypeaheadLive.fields()[:author]
+      validated_field = Backpex.LiveResource.fields(TestTypeaheadLive, :edit, %{})[:author]
+
+      assert field.module == AshBackpex.Fields.BelongsTo
+      assert field.typeahead
+      assert field.typeahead_limit == 5
+      assert field.debounce == 250
+      assert field.prompt == "Choose an author"
+      assert is_function(field.options_query, 2)
+
+      assert validated_field.module == AshBackpex.Fields.BelongsTo
+      assert validated_field.typeahead
+    end
+
     test "support InlineCRUD as an opt-in has_many field" do
       field = TestInlineCrudLive.fields()[:comments]
       validated_field = Backpex.LiveResource.fields(TestInlineCrudLive, :edit, %{})[:comments]

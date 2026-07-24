@@ -20,7 +20,7 @@ Add `ash_backpex` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:ash_backpex, "~> 0.1.9"}
+    {:ash_backpex, "~> 0.1.10"}
   ]
 end
 ```
@@ -113,6 +113,27 @@ expose an array-of-maps argument and use `manage_relationship`, typically with
 
 See the [Inline CRUD guide](guides/inline-crud.md) for the complete resource and
 LiveResource setup.
+
+## Typeahead Relationship Fields
+
+Large `belongs_to` relationships can use a server-backed, single-select
+typeahead without loading every related record into the form:
+
+```elixir
+field :author do
+  display_field :name
+  typeahead true
+  typeahead_limit 10
+  debounce 300
+  prompt "Choose an author"
+end
+```
+
+The search uses `display_field` and preserves the relationship's Ash filter,
+sort, read action, context, actor, tenant, and authorization through the
+generated `options_query`. Opening the dropdown
+preloads up to `typeahead_limit` options from that query; typing replaces them
+with matching results.
 
 ## Filters and Actions
 

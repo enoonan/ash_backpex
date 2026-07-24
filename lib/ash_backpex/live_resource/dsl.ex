@@ -113,6 +113,8 @@ defmodule AshBackpex.LiveResource.Dsl do
   - `link_assocs` - Auto-generate links to associations (default: `true` for HasMany)
   - `options_query` - Function to filter available options `fn query, field -> query end`
   - `prompt` - Text when no option selected (string or function)
+  - `typeahead` - Use a server-backed single-select typeahead for `belongs_to`
+  - `typeahead_limit` - Maximum results per query (default: `10`)
   - `type` - InlineCRUD storage type (`:assoc` or `:embed`). Defaults to `:assoc`
     when InlineCRUD is used for an Ash `has_many` relationship.
   - `child_fields` - Nested field definitions rendered in each InlineCRUD child form.
@@ -352,6 +354,8 @@ defmodule AshBackpex.LiveResource.Dsl do
       :live_resource,
       :link_assocs,
       :options_query,
+      :typeahead,
+      :typeahead_limit,
       :type,
       :format,
       :rows,
@@ -447,6 +451,16 @@ defmodule AshBackpex.LiveResource.Dsl do
                     Defaults to `fn (query, _field) -> query end` which returns all entries.
                     """,
                     type: {:fun, 2}
+                  ],
+                  typeahead: [
+                    doc:
+                      "Use a server-backed typeahead instead of loading every option for a belongs_to field.",
+                    type: :boolean,
+                    required: false
+                  ],
+                  typeahead_limit: [
+                    doc: "Maximum number of matching options returned by a belongs_to typeahead.",
+                    type: :pos_integer
                   ],
                   prompt: [
                     doc:

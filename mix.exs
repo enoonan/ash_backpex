@@ -1,7 +1,7 @@
 defmodule AshBackpex.MixProject do
   use Mix.Project
 
-  @version "0.1.9"
+  @version "0.1.10"
   @source_url "https://github.com/enoonan/ash_backpex"
 
   def project do
@@ -49,6 +49,7 @@ defmodule AshBackpex.MixProject do
         ],
         Internals: [
           AshBackpex.BasicSearch,
+          AshBackpex.Fields.BelongsTo,
           AshBackpex.Fields.InlineCRUD,
           AshBackpex.LoadSelectResolver,
           AshBackpex.LiveResource.Transformers.GenerateBackpex

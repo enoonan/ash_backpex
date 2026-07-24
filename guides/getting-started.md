@@ -15,14 +15,14 @@ Add `ash_backpex` to your dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:ash_backpex, "~> 0.1.9"}
+    {:ash_backpex, "~> 0.1.10"}
   ]
 end
 ```
 
 Run `mix deps.get` to install the dependency.
 
-AshBackpex 0.1.9 targets Backpex `~> 0.19.6` and declares that dependency
+AshBackpex 0.1.10 targets Backpex `~> 0.19.6` and declares that dependency
 itself. If your application pins Backpex directly, update its constraint to
 match.
 

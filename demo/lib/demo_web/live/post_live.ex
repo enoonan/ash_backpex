@@ -62,6 +62,10 @@ defmodule DemoWeb.PostLive do
         display_field(:name)
         live_resource(DemoWeb.AuthorLive)
         panel(:relationships)
+        typeahead(true)
+        typeahead_limit(10)
+        debounce(300)
+        prompt("Choose an author...")
       end
 
       field :topic_tags do

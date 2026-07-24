@@ -2,6 +2,14 @@
 
 <!-- changelog -->
 
+## [v0.1.10]
+
+### Updates
+
+- Add opt-in, server-backed `typeahead true` support for `belongs_to` fields,
+  including a configurable result limit, debouncing, and a Backpex-style
+  searchable single-select dropdown.
+
 ## [v0.1.9]
 
 ### Updates

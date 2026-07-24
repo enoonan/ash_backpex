@@ -87,6 +87,26 @@ Relationship fields derive Backpex `options_query` from Ash relationship
 records with `filter expr(type == :public)`, the generated options list will use
 the same filter. Set `options_query` on the field to override this behavior.
 
+For large `belongs_to` relationships, opt into a server-backed single-select
+typeahead instead of loading every option:
+
+```elixir
+field :author do
+  display_field :name
+  typeahead true
+  typeahead_limit 10
+  debounce 300
+  prompt "Choose an author"
+end
+```
+
+The typeahead searches `display_field`. The existing `debounce` option controls
+search debouncing.
+The dropdown initially shows up to `typeahead_limit` options from the normal
+relationship query, then replaces them with matching results as the user types.
+Relationship filters, sorts, read action, context, actor, tenant, and
+authorization continue to flow through the field's derived `options_query`.
+
 ### Repeating Child Forms
 
 `has_many` relationships continue to use the selection-oriented
