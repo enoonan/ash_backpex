@@ -167,6 +167,181 @@ defmodule AshBackpex.AdapterTest do
 
       assert_receive {:captured_params, %{"title" => "Updated"}}
     end
+
+    test "normalizes InlineCRUD controls independently at every repeated depth" do
+      user = user()
+      post = post(actor: user)
+
+      fields = [
+        sections: %{
+          module: AshBackpex.Fields.InlineCRUD,
+          child_fields: [
+            title: %{module: Backpex.Fields.Text},
+            columns: %{
+              module: AshBackpex.Fields.InlineCRUD,
+              child_fields: [heading: %{module: Backpex.Fields.Text}]
+            }
+          ]
+        }
+      ]
+
+      sections = %{
+        "0" => %{
+          "title" => "First",
+          "_persistent_id" => "section-0",
+          "columns" => %{
+            "0" => %{"heading" => "First column", "_persistent_id" => "column-0"},
+            "1" => %{"heading" => "Second column", "_persistent_id" => "column-1"}
+          },
+          "columns_order" => ["0", "1"]
+        },
+        "1" => %{
+          "title" => "Second",
+          "_persistent_id" => "section-1",
+          "columns" => %{
+            "0" => %{"heading" => "Sibling column", "_persistent_id" => "sibling-0"}
+          },
+          "columns_order" => ["0"]
+        }
+      }
+
+      for {name, params, expected_sections} <- [
+            {"add", %{"sections_order" => ["0", "1", "new"]},
+             [
+               {"First", ["First column", "Second column"]},
+               {"Second", ["Sibling column"]},
+               {nil, []}
+             ]},
+            {"delete", %{"sections_order" => ["0", "1"], "sections_delete" => ["1"]},
+             [{"First", ["First column", "Second column"]}]},
+            {"reorder", %{"sections_order" => ["1", "0"]},
+             [{"Second", ["Sibling column"]}, {"First", ["First column", "Second column"]}]},
+            {"move up", %{"sections_order" => ["0", "1"], "sections_move_up" => ["1"]},
+             [{"Second", ["Sibling column"]}, {"First", ["First column", "Second column"]}]},
+            {"move down", %{"sections_order" => ["0", "1"], "sections_move_down" => ["0"]},
+             [{"Second", ["Sibling column"]}, {"First", ["First column", "Second column"]}]}
+          ] do
+        Adapter.change(
+          post,
+          Map.merge(%{"sections" => sections}, params),
+          fields,
+          %{current_user: user, live_resource: TestParamCaptureLive, test_pid: self()},
+          TestParamCaptureLive,
+          action: :update
+        )
+
+        assert_receive {:captured_params, %{"sections" => captured_sections}},
+                       100,
+                       "#{name} control was not captured"
+
+        assert Enum.map(captured_sections, fn section ->
+                 {section["title"], Enum.map(section["columns"] || [], & &1["heading"])}
+               end) == expected_sections
+      end
+
+      for {name, params, expected_columns} <- [
+            {"add", put_in(sections, ["0", "columns_order"], ["0", "1", "new"]),
+             ["First column", "Second column", nil]},
+            {"delete", put_in(sections, ["0", "columns_delete"], ["0"]), ["Second column"]},
+            {"reorder", put_in(sections, ["0", "columns_order"], ["1", "0"]),
+             ["Second column", "First column"]},
+            {"move up", put_in(sections, ["0", "columns_move_up"], ["1"]),
+             ["Second column", "First column"]},
+            {"move down", put_in(sections, ["0", "columns_move_down"], ["0"]),
+             ["Second column", "First column"]}
+          ] do
+        Adapter.change(
+          post,
+          %{"sections" => params, "sections_order" => ["0", "1"]},
+          fields,
+          %{current_user: user, live_resource: TestParamCaptureLive, test_pid: self()},
+          TestParamCaptureLive,
+          action: :update
+        )
+
+        assert_receive {:captured_params, %{"sections" => [%{"columns" => columns}, sibling]}},
+                       100,
+                       "nested #{name} control was not captured"
+
+        assert Enum.map(columns, & &1["heading"]) == expected_columns
+        assert Enum.map(sibling["columns"], & &1["heading"]) == ["Sibling column"]
+      end
+    end
+
+    test "normalizes nested InlineCRUD controls without affecting siblings or singular embeds" do
+      user = user()
+      post = post(actor: user)
+
+      fields = [
+        sections: %{
+          module: AshBackpex.Fields.InlineCRUD,
+          child_fields: [
+            columns: %{
+              module: AshBackpex.Fields.InlineCRUD,
+              child_fields: [
+                target: %{
+                  module: AshBackpex.Fields.Embedded,
+                  child_fields: [
+                    labels: %{
+                      module: AshBackpex.Fields.InlineCRUD,
+                      child_fields: [value: %{module: Backpex.Fields.Text}]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+
+      params = %{
+        "sections" => %{
+          "0" => %{
+            "columns" => %{
+              "0" => %{
+                "target" => %{
+                  "kind" => "text",
+                  "labels" => %{
+                    "0" => %{"value" => "one", "_persistent_id" => "label-0"},
+                    "1" => %{"value" => "two", "_persistent_id" => "label-1"}
+                  },
+                  "labels_order" => ["0", "1"],
+                  "labels_move_up" => ["1"]
+                }
+              },
+              "1" => %{"target" => %{"kind" => "number", "labels" => []}}
+            },
+            "columns_order" => ["0", "1"]
+          },
+          "1" => %{
+            "columns" => %{"0" => %{"target" => %{"kind" => "sibling", "labels" => []}}},
+            "columns_order" => ["0"]
+          }
+        },
+        "sections_order" => ["0", "1"],
+        "unknown" => "preserved"
+      }
+
+      Adapter.change(
+        post,
+        params,
+        fields,
+        %{current_user: user, live_resource: TestParamCaptureLive, test_pid: self()},
+        TestParamCaptureLive,
+        action: :update
+      )
+
+      assert_receive {:captured_params, captured_params}
+      assert captured_params["unknown"] == "preserved"
+      assert [%{"columns" => columns}, %{"columns" => [sibling]}] = captured_params["sections"]
+
+      assert [%{"target" => target}, %{"target" => %{"kind" => "number", "labels" => []}}] =
+               columns
+
+      assert target["kind"] == "text"
+      assert Enum.map(target["labels"], & &1["value"]) == ["two", "one"]
+      assert sibling["target"] == %{"kind" => "sibling", "labels" => []}
+    end
   end
 
   describe "AshBackpex.Adapter filtering :: it can" do

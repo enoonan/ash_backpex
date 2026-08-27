@@ -456,9 +456,12 @@ defmodule AshBackpex.Adapter do
       when module in [Backpex.Fields.HasMany, Backpex.Fields.MultiSelect] ->
         normalize_list_field_param(attrs, to_string(field))
 
-      {field, %{module: module}}, attrs
+      {field, %{module: module} = options}, attrs
       when module in [AshBackpex.Fields.InlineCRUD, Backpex.Fields.InlineCRUD] ->
-        normalize_inline_crud_params(attrs, field)
+        normalize_inline_crud_params(attrs, field, options[:child_fields])
+
+      {field, %{child_fields: child_fields}}, attrs when is_list(child_fields) ->
+        normalize_embedded_params(attrs, field, child_fields)
 
       _field, attrs ->
         attrs
@@ -476,7 +479,17 @@ defmodule AshBackpex.Adapter do
   defp remove_blank_list_values(""), do: []
   defp remove_blank_list_values(value), do: value
 
-  defp normalize_inline_crud_params(attrs, field) do
+  defp normalize_embedded_params(attrs, field, child_fields) do
+    case fetch_field_param(attrs, field) do
+      {:ok, key, value} when is_map(value) ->
+        Map.put(attrs, key, normalize_field_params(value, child_fields))
+
+      _ ->
+        attrs
+    end
+  end
+
+  defp normalize_inline_crud_params(attrs, field, child_fields) do
     field = to_string(field)
     order_key = "#{field}_order"
     delete_key = "#{field}_delete"
@@ -485,29 +498,90 @@ defmodule AshBackpex.Adapter do
 
     if Enum.any?(
          [field, order_key, delete_key, move_up_key, move_down_key],
-         &Map.has_key?(attrs, &1)
+         &has_param?(attrs, &1)
        ) do
-      entries = Map.get(attrs, field, %{})
-      deleted = Map.get(attrs, delete_key, [])
+      entries = get_param(attrs, field, %{})
+      deleted = get_param(attrs, delete_key, [])
+      order = get_param(attrs, order_key, if(is_map(entries), do: Map.keys(entries), else: []))
+      move_up = get_param(attrs, move_up_key)
+      move_down = get_param(attrs, move_down_key)
 
-      order =
-        attrs
-        |> Map.get(order_key, Map.keys(entries))
-        |> move_inline_crud_entry(Map.get(attrs, move_up_key), -1)
-        |> move_inline_crud_entry(Map.get(attrs, move_down_key), 1)
+      attrs = drop_param_keys(attrs, [order_key, delete_key, move_up_key, move_down_key])
 
-      children =
-        for index <- order,
-            index not in deleted do
-          Map.get(entries, index, %{})
-        end
+      if is_map(entries) do
+        order =
+          order
+          |> move_inline_crud_entry(move_up, -1)
+          |> move_inline_crud_entry(move_down, 1)
 
-      attrs
-      |> Map.put(field, children)
-      |> Map.drop([order_key, delete_key, move_up_key, move_down_key])
+        children =
+          for index <- order,
+              index not in deleted do
+            entries
+            |> Map.get(index, %{})
+            |> normalize_child_params(child_fields)
+          end
+
+        put_field_param(attrs, field, children)
+      else
+        put_field_param(attrs, field, normalize_inline_crud_list(entries, child_fields))
+      end
     else
       attrs
     end
+  end
+
+  defp normalize_inline_crud_list(entries, child_fields) when is_list(entries) do
+    Enum.map(entries, &normalize_child_params(&1, child_fields))
+  end
+
+  defp normalize_inline_crud_list(entries, _child_fields), do: entries
+
+  defp normalize_child_params(entry, child_fields) when is_map(entry) and is_list(child_fields),
+    do: normalize_field_params(entry, child_fields)
+
+  defp normalize_child_params(entry, _child_fields), do: entry
+
+  defp fetch_field_param(attrs, field) do
+    field = to_string(field)
+
+    case Map.fetch(attrs, field) do
+      {:ok, value} ->
+        {:ok, field, value}
+
+      :error ->
+        Enum.find_value(attrs, :error, fn
+          {key, value} when is_atom(key) ->
+            if Atom.to_string(key) == field, do: {:ok, key, value}
+
+          _ ->
+            false
+        end)
+    end
+  end
+
+  defp has_param?(attrs, key), do: fetch_field_param(attrs, key) != :error
+
+  defp get_param(attrs, key, default \\ nil) do
+    case fetch_field_param(attrs, key) do
+      {:ok, _key, value} -> value
+      :error -> default
+    end
+  end
+
+  defp put_field_param(attrs, field, value) do
+    case fetch_field_param(attrs, field) do
+      {:ok, key, _value} -> Map.put(attrs, key, value)
+      :error -> Map.put(attrs, to_string(field), value)
+    end
+  end
+
+  defp drop_param_keys(attrs, keys) do
+    Enum.reduce(keys, attrs, fn key, attrs ->
+      Map.reject(attrs, fn {attr_key, _value} ->
+        attr_key == key or (is_atom(attr_key) and Atom.to_string(attr_key) == key)
+      end)
+    end)
   end
 
   defp move_inline_crud_entry(order, indexes, offset) do
