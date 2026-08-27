@@ -69,7 +69,10 @@ defmodule AshBackpex.Fields.Embedded do
 
         <.inputs_for :let={embedded_form} field={@form[@name]} skip_persistent_id>
           <% child_fields = child_fields_for_form(@child_fields, embedded_form, assigns) %>
-          <fieldset id={"embedded-fieldset-#{embedded_form.id}"} class="flex flex-col gap-3">
+          <fieldset
+            id={"embedded-fieldset-#{embedded_form.id}"}
+            class="flex w-full min-w-0 flex-col gap-3 [&_dl]:!flex-col [&_dt]:!w-full [&_dt]:!pr-0 [&_dd]:!w-full"
+          >
             <legend :if={@hide_label} class="sr-only">{@field_options[:label]}</legend>
 
             <div :for={{child_name, _options} <- child_fields}>

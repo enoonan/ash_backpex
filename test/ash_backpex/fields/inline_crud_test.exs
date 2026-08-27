@@ -58,6 +58,35 @@ defmodule AshBackpex.Fields.InlineCRUDTest do
     assert length(Regex.scan(~r/class="col-span-full"/, html)) == 2
   end
 
+  test "stacks singular embedded child labels above full-width controls" do
+    html =
+      render_recursive_form(%{
+        "sections" => [
+          %{
+            "_persistent_id" => "section-a",
+            "title" => "Section",
+            "columns" => [
+              %{
+                "_persistent_id" => "column-a",
+                "heading" => "Column",
+                "target" => %{"kind" => "unsupported"}
+              }
+            ]
+          }
+        ]
+      })
+
+    assert html =~ ~s(id="embedded-fieldset-change_sections_section-a_columns_column-a_target")
+    assert html =~ "w-full min-w-0"
+    assert html =~ "[&_dl]:!flex-col"
+    assert html =~ "[&_dt]:!w-full"
+    assert html =~ "[&_dd]:!w-full"
+    assert html =~ ~s(for="change_sections_section-a_columns_column-a_target_kind")
+    assert html =~ ~s(for="change_sections_section-a_columns_column-a_target_path")
+    assert html =~ ~s(name="change[sections][0][columns][0][target][kind]")
+    assert html =~ ~s(name="change[sections][0][columns][0][target][path]")
+  end
+
   test "keeps repeated row DOM ids stable when submitted rows are reordered" do
     first =
       render_recursive_form(%{
