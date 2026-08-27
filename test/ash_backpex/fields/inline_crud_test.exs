@@ -35,6 +35,29 @@ defmodule AshBackpex.Fields.InlineCRUDTest do
     assert html =~ "column-a"
   end
 
+  test "uses a wrapping child grid and gives structural children a full row" do
+    html =
+      render_recursive_form(%{
+        "sections" => [
+          %{
+            "_persistent_id" => "section-a",
+            "title" => "Section",
+            "columns" => [
+              %{
+                "_persistent_id" => "column-a",
+                "heading" => "Column",
+                "target" => %{"kind" => "internal"}
+              }
+            ]
+          }
+        ]
+      })
+
+    assert html =~ "grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))]"
+    assert html =~ "min-w-0"
+    assert length(Regex.scan(~r/class="col-span-full"/, html)) == 2
+  end
+
   test "keeps repeated row DOM ids stable when submitted rows are reordered" do
     first =
       render_recursive_form(%{
@@ -180,6 +203,7 @@ defmodule AshBackpex.Fields.InlineCRUDTest do
     assert html =~ ~s(name="change[comments_delete][]")
     assert html =~ ~s(name="change[comments][0][body]")
     assert html =~ ~s(name="change[comments][0][id]" value="#{comment_id}")
+    assert html =~ ~s(class="min-w-0 flex-1")
   end
 
   defp render_recursive_form(params, field_options \\ nil, changeset \\ nil) do

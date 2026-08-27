@@ -65,7 +65,7 @@ defmodule AshBackpex.Fields.InlineCRUD do
               id={"inline-crud-entry-#{f_nested.id}"}
               class="mb-3"
             >
-              <div class="flex items-start gap-x-4">
+              <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] items-start gap-x-4 gap-y-3">
                 <div
                   :for={{child_field_name, child_field_options} <- child_fields}
                   class={child_field_class(child_field_options, assign(assigns, :form, f_nested))}
@@ -290,7 +290,22 @@ defmodule AshBackpex.Fields.InlineCRUD do
   @impl Backpex.Field
   defdelegate schema(field, schema), to: Backpex.Fields.InlineCRUD
 
-  defp child_field_class(%{class: class}, assigns) when is_function(class), do: class.(assigns)
-  defp child_field_class(%{class: class}, _assigns) when is_binary(class), do: class
-  defp child_field_class(_child_field_options, _assigns), do: "flex-1"
+  defp child_field_class(%{class: class} = child_field_options, assigns) when is_function(class),
+    do: [child_field_layout_class(child_field_options), class.(assigns)]
+
+  defp child_field_class(%{class: class} = child_field_options, _assigns) when is_binary(class),
+    do: [child_field_layout_class(child_field_options), class]
+
+  defp child_field_class(child_field_options, _assigns),
+    do: child_field_layout_class(child_field_options)
+
+  defp child_field_layout_class(%{module: module})
+       when module in [
+              AshBackpex.Fields.InlineCRUD,
+              Backpex.Fields.InlineCRUD,
+              AshBackpex.Fields.Embedded
+            ],
+       do: "col-span-full"
+
+  defp child_field_layout_class(_child_field_options), do: "min-w-0"
 end
