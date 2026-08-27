@@ -30,7 +30,6 @@ ash_backpex-*.tar
 .expert
 
 # Local agent / LLM tool files
-.claude/
 .codex/
 .openai/
 .cursor/
@@ -38,8 +37,5 @@ ash_backpex-*.tar
 .gemini/
 .continue/
 .aider*
-CLAUDE.md
-
-/.specify/
 .DS_Store
 .vscode

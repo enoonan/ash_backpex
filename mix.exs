@@ -76,9 +76,8 @@ defmodule AshBackpex.MixProject do
       {:faker, "~> 0.19.0", only: :test},
       {:simple_sat, "~> 0.1.3", only: [:dev, :test]},
       {:ash_sqlite, "~> 0.1", only: :test},
-      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
+      {:ex_doc, ">= 0.0.0", only: [:dev, :test], runtime: false},
       {:usage_rules, "~> 0.1", only: :dev, runtime: false},
-      {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:ex_check, "~> 0.14", only: [:dev, :test]},
       {:credo, ">= 0.0.0", only: [:dev, :test], runtime: false},
       {:dialyxir, ">= 0.0.0", only: [:dev, :test], runtime: false}
@@ -108,14 +107,40 @@ defmodule AshBackpex.MixProject do
 
   def cli do
     [
-      preferred_envs: [ci: :test]
+      preferred_envs: [
+        ci: :test,
+        "test.adapter": :test,
+        "test.dsl": :test,
+        "test.fields": :test,
+        "test.filters": :test,
+        "test.forms": :test,
+        "test.harness": :test
+      ]
     ]
   end
 
   defp aliases do
     [
       credo: "credo --strict",
-      ci: ["credo --strict", "sobelow", "test"]
+      "test.adapter": "test test/ash_backpex/adapter_test.exs",
+      "test.dsl": "test test/ash_backpex/live_resource",
+      "test.fields":
+        "test test/ash_backpex/fields test/ash_backpex/relationship_options_test.exs",
+      "test.filters": "test test/ash_backpex/filters",
+      "test.forms": "test test/ash_backpex/ash_changeset_to_phoenix_form_test.exs",
+      "test.harness": "test test/harness",
+      "demo.check": [
+        "cmd --cd demo env MIX_ENV=dev mix deps.get --check-locked",
+        "cmd --cd demo env MIX_ENV=dev mix compile --warnings-as-errors"
+      ],
+      ci: [
+        "format --check-formatted",
+        "compile --warnings-as-errors",
+        "credo --strict",
+        "docs --warnings-as-errors",
+        "test",
+        "demo.check"
+      ]
     ]
   end
 end

@@ -29,7 +29,11 @@ jobs:
       - name: Restore dependencies cache
         uses: actions/cache@v3
         with:
-          path: deps
+          path: |
+            deps
+            _build
+            demo/deps
+            demo/_build
           key: ${{ runner.os }}-mix-elixir-1.18-otp-26.0-${{ hashFiles('**/mix.lock') }}
           restore-keys: ${{ runner.os }}-mix-elixir-1.18-otp-26.0-
       - name: Install dependencies

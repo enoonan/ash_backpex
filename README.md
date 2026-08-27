@@ -145,6 +145,15 @@ with matching results.
 
 ## Filters and Actions
 
+## Development
+
+See the
+[contribution guide](https://github.com/enoonan/ash_backpex/blob/main/CONTRIBUTING.md)
+for setup and pull-request expectations. The
+[repository knowledge map](https://github.com/enoonan/ash_backpex/blob/main/docs/README.md)
+links architecture, testing, and maintenance guidance to the authoritative source
+and test files.
+
 ## Thanks!
 
 Building this little integration seemed easier than any alternatives to get the admin I wanted, which is a credit to the great work of the Backpex team!

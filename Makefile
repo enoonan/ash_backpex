@@ -11,7 +11,6 @@ build:
 up: build
 	docker run -d --name $(CONTAINER_NAME) \
 		-v $(PWD):/workspace \
-		-v $(HOME)/.claude:/home/vscode/.claude \
 		-v $(HOME)/.ssh:/home/vscode/.ssh:ro \
 		-p 4005:4005 \
 		-w /workspace \
@@ -23,7 +22,7 @@ down:
 	-docker stop $(CONTAINER_NAME)
 	-docker rm $(CONTAINER_NAME)
 
-# Open a bash shell in the container
+# Open a shell in the container
 shell:
 	docker exec -it $(CONTAINER_NAME) bash
 

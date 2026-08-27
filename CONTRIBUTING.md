@@ -1,141 +1,69 @@
- Contributing to Ash Backpex
+# Contributing to AshBackpex
 
-This project uses AI-assisted development workflows with [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [Spec Kit](https://github.com/github/spec-kit), and [Beads](https://github.com/steveyegge/beads) for task management.
+Thank you for helping improve AshBackpex. GitHub issues and pull requests are the public collaboration interface for this project.
 
-## Getting Started
+## Setup
 
-### Dev Container Setup
-
-The easiest way to contribute is using the provided dev container, which comes pre-configured with all dependencies.
-
-**Prerequisites:**
-- Docker
-- VS Code with the Dev Containers extension (or GitHub Codespaces)
-- Claude API credentials configured in `~/.claude`
-
-**Starting the dev container:**
-
-1. Clone the repository
-2. Open in VS Code
-3. When prompted, click "Reopen in Container" (or use Command Palette → "Dev Containers: Reopen in Container")
-4. The container will automatically:
-   - Install Claude Code CLI
-   - Set up Elixir/Erlang with Hex and Rebar
-   - Install project dependencies
-   - Mount your Claude credentials from `~/.claude`
-
-The dev container forwards ports 4000 (Phoenix app) and 5432 (PostgreSQL).
-
-## Development Workflows
-
-### Claude Commands
-
-The project includes custom Claude commands for task management:
-
-| Command | Description                                        |
-| ------- | -------------------------------------------------- |
-| `/work` | Pick the next available bead and implement it      |
-| `/done` | Run CI, commit changes, and close the current bead |
-| `/epic` | Collaboratively plan a feature and create beads    |
-
-### [Spec Kit](https://github.com/github/spec-kit) Commands
-
-For complex features, use the Spec Kit workflow (see also [speckit.org](https://speckit.org/)):
-
-| Command                  | Description                                           |
-| ------------------------ | ----------------------------------------------------- |
-| `/speckit.specify`       | Create a feature specification from a description     |
-| `/speckit.clarify`       | Identify and resolve underspecified areas in the spec |
-| `/speckit.plan`          | Generate a technical implementation plan              |
-| `/speckit.tasks`         | Generate actionable tasks from the plan               |
-| `/speckit.taskstoissues` | Convert tasks to GitHub issues or beads               |
-| `/speckit.analyze`       | Cross-artifact consistency check                      |
-| `/speckit.checklist`     | Generate a custom checklist for the feature           |
-
-**Typical Spec Kit workflow:**
-
-1. `/speckit.specify Add support for custom field types` - Create the spec
-2. `/speckit.clarify` - Resolve any ambiguities
-3. `/speckit.plan` - Design the implementation
-4. `/speckit.tasks` - Break down into tasks
-5. `/speckit.taskstoissues` - Create beads for execution
-
-### [Beads](https://github.com/steveyegge/beads) (Task Management)
-
-Beads is a git-backed task tracker designed for AI agents. Common commands:
+AshBackpex requires Elixir 1.18 or later. The CI baseline uses Erlang/OTP 26.
 
 ```bash
-bd ready              # Show available work
-bd show <id>          # View bead details
-bd create "Title"     # Create a new bead
-bd update <id> --status in_progress
-bd close <id>         # Mark as complete
-bd sync               # Push/pull changes
+git clone https://github.com/enoonan/ash_backpex.git
+cd ash_backpex
+mix deps.get
+mix test
 ```
 
-## Automated Development with Ralph
+The included dev container is optional and provides the same repository tools without requiring a particular editor or agent runner.
 
-The `ralph.sh` script provides an automated loop for processing beads:
+The Phoenix demo is a separate application that depends on the local package:
 
 ```bash
-./ralph.sh
+cd demo
+mix setup
+mix phx.server
 ```
 
-Ralph will:
-1. Check for available beads via `bd ready`
-2. Start a Claude session with `/work` to complete one bead
-3. Automatically run CI, commit, and close the bead
-4. Repeat until no beads remain
+## Choose and develop a change
 
-This is useful for processing multiple well-defined tasks autonomously.
+Open or select a GitHub issue before substantial work so scope and compatibility expectations are clear. Keep each pull request focused on one issue.
 
-**Requirements:**
-- Claude Code CLI installed and authenticated
-- `--dangerously-skip-permissions` flag is used (review beads before running)
+Read [`usage-rules.md`](usage-rules.md) before changing library behavior or examples. The [`docs/README.md`](docs/README.md) knowledge map links each subsystem to its authoritative source, tests, and fixtures.
 
-## Manual Development
-
-If you prefer manual control:
-
-1. **Find work:** `bd ready`
-2. **Start a Claude session:** `claude`
-3. **Pick up a task:** `/work`
-4. **When complete:** `/done`
-
-Or work without Claude:
-
-1. `bd ready` - Find a task
-2. `bd update <id> --status in_progress` - Claim it
-3. Implement the changes
-4. `mix ci` - Run tests and linting
-5. `git add -A && git commit -m "feat: description"` - Commit
-6. `bd close <id> && bd sync` - Close and sync
-
-## Code Quality
-
-Before submitting:
+Start with the closest focused test and add a failing case for behavior changes. Useful commands include:
 
 ```bash
-mix ci          # Run credo --strict && sobelow
-mix test        # Run all tests
-mix format      # Format code
+mix test test/ash_backpex/adapter_test.exs
+mix test.dsl
+mix test.fields
+mix test.forms
+mix test.filters
 ```
 
-## Commit Messages
+Run `mix format` as you work. Avoid opportunistic refactors that make a behavior change harder to review.
 
-Use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format:
+## Completion checks
 
-- `feat:` - New features
-- `fix:` - Bug fixes
-- `chore:` - Maintenance tasks
-- `refactor:` - Code refactoring
-- `docs:` - Documentation changes
-- `test:` - Test additions/changes
+Run the same completion gate used by GitHub Actions:
 
-Example: `feat: add support for custom field types`
+```bash
+mix ci
+```
 
-## Questions?
+It verifies formatting, warning-free library compilation, strict Credo, generated package documentation, the full test suite (including repository contracts), and a warning-free demo compile against the local AshBackpex checkout.
 
-- Check existing beads: `bd ready` and `bd blocked`
-- Review the spec: `.specify/` directory (if using Spec Kit)
-- Read the code: Start with `CLAUDE.md` for architecture overview
+## Documentation and compatibility
+
+Document user-visible behavior where users will encounter it:
+
+- update module docs and `usage-rules.md` for DSL, adapter, field, or form behavior;
+- update a guide or README example for a workflow-level change;
+- update the demo when it is the clearest executable example;
+- add an entry to `CHANGELOG.md` for user-visible additions, fixes, deprecations, or breaking changes.
+
+AshBackpex and Backpex are still evolving, but existing documented DSL options, callbacks, generated behavior, and parameter shapes should remain compatible unless the issue explicitly approves a breaking change. Prefer additive APIs and document deprecations before removal.
+
+## Commits and pull requests
+
+Use clear, focused commits; Conventional Commit prefixes such as `feat:`, `fix:`, `docs:`, `test:`, and `chore:` are welcome. Do not include generated build output or local tool state.
+
+Pull requests should link the issue, explain the user-facing effect and compatibility impact, list the verification performed, and call out follow-up work that is intentionally out of scope.
