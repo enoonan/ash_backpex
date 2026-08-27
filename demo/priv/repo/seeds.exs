@@ -135,6 +135,30 @@ posts =
       published_on: ~D[2026-01-10],
       featured: true,
       rating: 5,
+      sections: [
+        %{
+          title: "Introduction",
+          columns: [
+            %{
+              heading: "Why Ash?",
+              target: %{kind: :internal, path: "/articles/ash-introduction"}
+            },
+            %{
+              heading: "Framework guide",
+              target: %{kind: :external, path: "https://ash-hq.org"}
+            }
+          ]
+        },
+        %{
+          title: "Next steps",
+          columns: [
+            %{
+              heading: "Build an admin",
+              target: %{kind: :internal, path: "/articles/backpex-admin"}
+            }
+          ]
+        }
+      ],
       author: "Ada Lovelace"
     },
     %{

@@ -56,6 +56,20 @@ defmodule AshBackpex.RepositoryContractTest do
            "demo/mix.exs must keep the repository-local ash_backpex path dependency"
   end
 
+  test "the demo seeds a recursive embedded article and checks pending migrations" do
+    seeds = File.read!("demo/priv/repo/seeds.exs")
+    endpoint = File.read!("demo/lib/demo_web/endpoint.ex")
+
+    assert seeds =~ "title: \"Introduction\""
+    assert seeds =~ "title: \"Next steps\""
+    assert seeds =~ "heading: \"Why Ash?\""
+    assert seeds =~ "heading: \"Framework guide\""
+    assert seeds =~ "target: %{kind: :internal"
+    assert seeds =~ "target: %{kind: :external"
+
+    assert endpoint =~ "plug(Phoenix.Ecto.CheckRepoStatus, otp_app: :demo)"
+  end
+
   defp markdown_targets(markdown) do
     ~r/!?\[[^\]]*\]\(([^)\s]+)(?:\s+["'][^"']*["'])?\)/
     |> Regex.scan(markdown, capture: :all_but_first)

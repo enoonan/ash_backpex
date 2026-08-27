@@ -6,8 +6,16 @@ defmodule Demo.Blog.ContentTarget do
   use Ash.Resource, data_layer: :embedded
 
   attributes do
-    attribute :kind, :atom, public?: true, constraints: [one_of: [:internal, :external]]
-    attribute :path, :string, public?: true
+    attribute :kind, :atom do
+      allow_nil? false
+      public? true
+      constraints one_of: [:internal, :external]
+    end
+
+    attribute :path, :string do
+      allow_nil? false
+      public? true
+    end
   end
 end
 
@@ -19,8 +27,15 @@ defmodule Demo.Blog.ContentColumn do
   use Ash.Resource, data_layer: :embedded
 
   attributes do
-    attribute :heading, :string, public?: true
-    attribute :target, Demo.Blog.ContentTarget, public?: true
+    attribute :heading, :string do
+      allow_nil? false
+      public? true
+    end
+
+    attribute :target, Demo.Blog.ContentTarget do
+      allow_nil? false
+      public? true
+    end
   end
 end
 
@@ -32,7 +47,11 @@ defmodule Demo.Blog.ContentSection do
   use Ash.Resource, data_layer: :embedded
 
   attributes do
-    attribute :title, :string, public?: true
+    attribute :title, :string do
+      allow_nil? false
+      public? true
+    end
+
     attribute :columns, {:array, Demo.Blog.ContentColumn}, default: [], public?: true
   end
 end
