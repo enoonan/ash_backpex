@@ -13,6 +13,8 @@
 - Define recursive `child_fields` configuration for typed embedded resource
   trees, including inferred InlineCRUD embed types and a singular
   `AshBackpex.Fields.Embedded` contract.
+- Reconstruct recursive embedded forms from loaded data or submitted list/map
+  params while preserving empty lists, row identity, and path-aware field errors.
 
 ## [v0.1.11]
 
