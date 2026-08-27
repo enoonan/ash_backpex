@@ -75,6 +75,7 @@ defmodule AshBackpex.MixProject do
 
       # Dev/Test dependencies
       {:faker, "~> 0.19.0", only: :test},
+      {:lazy_html, "~> 0.1", only: :test},
       {:simple_sat, "~> 0.1.3", only: [:dev, :test]},
       {:ash_sqlite, "~> 0.1", only: :test},
       {:ex_doc, ">= 0.0.0", only: [:dev, :test], runtime: false},

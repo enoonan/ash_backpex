@@ -15,6 +15,9 @@
   `AshBackpex.Fields.Embedded` contract.
 - Reconstruct recursive embedded forms from loaded data or submitted list/map
   params while preserving empty lists, row identity, and path-aware field errors.
+- Render recursively composed InlineCRUD arrays and singular embedded fieldsets
+  with depth-local controls, stable row identities, nested callback context, and
+  Ash-compatible input names.
 
 ## [v0.1.11]
 

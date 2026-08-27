@@ -307,6 +307,7 @@ defmodule TestRecursiveEmbeddedLive do
 
                 child_fields do
                   field :kind
+                  field :path
 
                   field :editor do
                     display_field(:name)
@@ -320,6 +321,96 @@ defmodule TestRecursiveEmbeddedLive do
         end
       end
     end
+  end
+end
+
+defmodule TestRecursiveEmbeddedFormLive do
+  @moduledoc false
+
+  use Phoenix.LiveView
+
+  alias AshBackpex.TestDomain.{EmbeddedColumn, EmbeddedPage, EmbeddedSection, EmbeddedTarget}
+
+  @impl Phoenix.LiveView
+  def mount(_params, _session, socket) do
+    page = %EmbeddedPage{
+      title: "Composable page",
+      sections: [
+        %EmbeddedSection{
+          title: "First section",
+          columns: [
+            %EmbeddedColumn{
+              heading: "First column",
+              target: %EmbeddedTarget{kind: :internal}
+            },
+            %EmbeddedColumn{
+              heading: "Second column",
+              target: %EmbeddedTarget{kind: :external}
+            }
+          ]
+        },
+        %EmbeddedSection{title: "Second section", columns: []}
+      ]
+    }
+
+    fields = Backpex.LiveResource.fields(TestRecursiveEmbeddedLive, :new, %{})
+    changeset = Ash.Changeset.new(page)
+
+    {:ok,
+     socket
+     |> assign(:changeset, changeset)
+     |> assign(:fields, fields)
+     |> assign(:form, Phoenix.Component.to_form(changeset, as: :change))
+     |> assign(:item, page)}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("validate", %{"change" => params}, socket) do
+    assigns = %{
+      current_user: nil,
+      live_action: :new,
+      live_resource: TestRecursiveEmbeddedLive
+    }
+
+    changeset =
+      AshBackpex.Adapter.change(
+        socket.assigns.item,
+        params,
+        socket.assigns.fields,
+        assigns,
+        TestRecursiveEmbeddedLive,
+        action: :create
+      )
+
+    changeset = %{changeset | action: :validate}
+
+    {:noreply,
+     socket
+     |> assign(:changeset, changeset)
+     |> assign(:form, Phoenix.Component.to_form(changeset, as: :change, action: :validate))}
+  end
+
+  @impl Phoenix.LiveView
+  def render(assigns) do
+    sections = assigns.fields[:sections]
+    assigns = assign(assigns, :sections, sections)
+
+    ~H"""
+    <.form for={@form} id="recursive-embedded-form" phx-change="validate">
+      <.live_component
+        module={AshBackpex.Fields.InlineCRUD}
+        id="recursive-embedded-sections"
+        type={:form}
+        name={:sections}
+        field={{:sections, @sections}}
+        field_options={@sections}
+        form={@form}
+        item={@item}
+        live_action={:new}
+        live_resource={TestRecursiveEmbeddedLive}
+      />
+    </.form>
+    """
   end
 end
 

@@ -260,3 +260,10 @@ AshBackpex infers `type: :embed` for both repeated embedded nodes and derives
 every child field from the resource at that depth. Relationship InlineCRUD
 remains limited to `has_many` and continues to infer `type: :assoc`; use the
 normal relationship field for other relationship cardinalities.
+
+Each repeated node renders its own add, delete, move-up, and move-down controls.
+Control names are derived from the current nested form, so validation events
+operate on only that node while preserving persistent row identities and the
+submitted order. Singular embedded nodes render a fieldset and pass their
+immediate Phoenix form to child visibility, authorization, readonly, label,
+help-text, and error translation callbacks.

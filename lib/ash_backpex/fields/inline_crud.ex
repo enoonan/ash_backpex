@@ -12,7 +12,22 @@ defmodule AshBackpex.Fields.InlineCRUD do
   require Backpex
 
   @impl Phoenix.LiveComponent
-  defdelegate update(assigns, socket), to: Backpex.Fields.InlineCRUD
+  def update(%{field: {name, field_options}} = assigns, socket) do
+    child_fields =
+      field_options.child_fields
+      |> validate_child_fields(name)
+      |> Backpex.LiveResource.fields_by_action(assigns.live_action)
+      |> maybe_filter_child_fields(assigns)
+
+    socket =
+      socket
+      |> assign(assigns)
+      |> assign_new(:hide_label, fn -> false end)
+      |> assign_new(:readonly, fn -> false end)
+      |> assign(:child_fields, child_fields)
+
+    {:ok, assign_form_errors(socket, assigns.type)}
+  end
 
   @impl Backpex.Field
   defdelegate render_value(assigns), to: Backpex.Fields.InlineCRUD
@@ -20,31 +35,42 @@ defmodule AshBackpex.Fields.InlineCRUD do
   @impl Backpex.Field
   def render_form(assigns) do
     assigns =
-      assign(assigns, :last_index, length(List.wrap(assigns.form[assigns.name].value)) - 1)
+      assign(assigns, :last_index, repeated_count(assigns.form[assigns.name].value) - 1)
 
     ~H"""
     <div>
       <Layout.field_container>
-        <:label align={Backpex.Field.align_label(@field_options, assigns, :top)}>
-          <Layout.input_label id={"inline-crud-label-#{@name}"} as="span" text={@field_options[:label]} />
+        <:label :if={not @hide_label} align={Backpex.Field.align_label(@field_options, assigns, :top)}>
+          <Layout.input_label
+            id={"inline-crud-label-#{control_id(@form, @name)}"}
+            as="span"
+            text={@field_options[:label]}
+          />
         </:label>
 
         <div class="flex flex-col">
           <.inputs_for :let={f_nested} field={@form[@name]}>
             <% f_nested = stable_child_form(f_nested) %>
-            <input type="hidden" name={"change[#{@name}_order][]"} value={f_nested.index} tabindex="-1" aria-hidden="true" />
+            <% child_fields = child_fields_for_form(@child_fields, f_nested, assigns) %>
+            <input
+              type="hidden"
+              name={control_name(@form, @name, "order")}
+              value={f_nested.index}
+              tabindex="-1"
+              aria-hidden="true"
+            />
 
             <div
-              id={"inline-crud-entry-#{@name}-#{f_nested.params["_persistent_id"] || f_nested.index}"}
+              id={"inline-crud-entry-#{f_nested.id}"}
               class="mb-3"
             >
               <div class="flex items-start gap-x-4">
                 <div
-                  :for={{child_field_name, child_field_options} <- @child_fields}
-                  class={child_field_class(child_field_options, assigns)}
+                  :for={{child_field_name, child_field_options} <- child_fields}
+                  class={child_field_class(child_field_options, assign(assigns, :form, f_nested))}
                 >
                   <div
-                    id={"inline-crud-header-label-#{@name}-#{child_field_name}-#{f_nested.index}"}
+                    id={"inline-crud-header-label-#{f_nested.id}-#{child_field_name}"}
                     class="mb-2 text-xs"
                   >
                     {child_field_options.label}
@@ -53,8 +79,8 @@ defmodule AshBackpex.Fields.InlineCRUD do
                     assign(assigns,
                       hide_label: true,
                       aria_labelledby:
-                        "inline-crud-label-#{@name} inline-crud-header-label-#{@name}-#{child_field_name}-#{f_nested.index}",
-                      fields: @child_fields,
+                        "inline-crud-label-#{control_id(@form, @name)} inline-crud-header-label-#{f_nested.id}-#{child_field_name}",
+                      fields: child_fields,
                       name: child_field_name,
                       form: f_nested
                     )
@@ -62,10 +88,10 @@ defmodule AshBackpex.Fields.InlineCRUD do
                 </div>
               </div>
 
-              <div class="flex items-center" style="margin-top: 0.75rem">
+              <div :if={not @readonly} class="flex items-center" style="margin-top: 0.75rem">
                 <input
                   :if={f_nested.index == @last_index}
-                  name={"change[#{@name}_order][]"}
+                  name={control_name(@form, @name, "order")}
                   type="checkbox"
                   aria-label={Backpex.__("Add entry", @live_resource)}
                   class="btn btn-outline btn-sm btn-primary"
@@ -73,25 +99,27 @@ defmodule AshBackpex.Fields.InlineCRUD do
 
                 <div class="flex items-center" style="margin-left: auto; gap: 0.75rem">
                   <.move_control
-                    name={@name}
+                    control_id={control_id(@form, @name)}
+                    control_name={control_name(@form, @name, "move_up")}
                     index={f_nested.index}
                     last_index={@last_index}
                     direction="up"
                     live_resource={@live_resource}
                   />
                   <.move_control
-                    name={@name}
+                    control_id={control_id(@form, @name)}
+                    control_name={control_name(@form, @name, "move_down")}
                     index={f_nested.index}
                     last_index={@last_index}
                     direction="down"
                     live_resource={@live_resource}
                   />
 
-                  <label for={"#{@name}-checkbox-delete-#{f_nested.index}"}>
+                  <label for={"#{control_id(@form, @name)}-delete-#{f_nested.index}"}>
                     <input
-                      id={"#{@name}-checkbox-delete-#{f_nested.index}"}
+                      id={"#{control_id(@form, @name)}-delete-#{f_nested.index}"}
                       type="checkbox"
-                      name={"change[#{@name}_delete][]"}
+                      name={control_name(@form, @name, "delete")}
                       value={f_nested.index}
                       class="hidden"
                     />
@@ -105,11 +133,16 @@ defmodule AshBackpex.Fields.InlineCRUD do
             </div>
           </.inputs_for>
 
-          <input type="hidden" name={"change[#{@name}_delete][]"} tabindex="-1" aria-hidden="true" />
+          <input
+            type="hidden"
+            name={control_name(@form, @name, "delete")}
+            tabindex="-1"
+            aria-hidden="true"
+          />
         </div>
         <input
-          :if={@last_index < 0}
-          name={"change[#{@name}_order][]"}
+          :if={@last_index < 0 and not @readonly}
+          name={control_name(@form, @name, "order")}
           type="checkbox"
           aria-label={Backpex.__("Add entry", @live_resource)}
           class="btn btn-outline btn-sm btn-primary"
@@ -125,7 +158,8 @@ defmodule AshBackpex.Fields.InlineCRUD do
     """
   end
 
-  attr(:name, :atom, required: true)
+  attr(:control_id, :string, required: true)
+  attr(:control_name, :string, required: true)
   attr(:index, :integer, required: true)
   attr(:last_index, :integer, required: true)
   attr(:direction, :string, values: ~w(up down), required: true)
@@ -141,11 +175,11 @@ defmodule AshBackpex.Fields.InlineCRUD do
       )
 
     ~H"""
-    <label for={"#{@name}-checkbox-move-#{@direction}-#{@index}"}>
+    <label for={"#{@control_id}-move-#{@direction}-#{@index}"}>
       <input
-        id={"#{@name}-checkbox-move-#{@direction}-#{@index}"}
+        id={"#{@control_id}-move-#{@direction}-#{@index}"}
         type="checkbox"
-        name={"change[#{@name}_move_#{@direction}][]"}
+        name={@control_name}
         value={@index}
         aria-label={@label}
         disabled={@disabled}
@@ -192,6 +226,62 @@ defmodule AshBackpex.Fields.InlineCRUD do
   end
 
   defp stable_child_form(form), do: form
+
+  defp validate_child_fields(fields, parent_name) do
+    Enum.map(fields, fn {name, options} = field ->
+      options.module.validate_config!(field, parent_name)
+      |> Map.new()
+      |> then(&{name, &1})
+    end)
+  end
+
+  defp assign_form_errors(socket, :form) do
+    %{form: form, name: name, field_options: field_options} = socket.assigns
+    errors = if Phoenix.Component.used_input?(form[name]), do: form[name].errors, else: []
+    translate_error_fun = Map.get(field_options, :translate_error, &Function.identity/1)
+
+    assign(socket, :errors, BackpexForm.translate_form_errors(errors, translate_error_fun))
+  end
+
+  defp assign_form_errors(socket, _type), do: socket
+
+  defp maybe_filter_child_fields(child_fields, %{type: :form}), do: child_fields
+
+  defp maybe_filter_child_fields(child_fields, assigns) do
+    child_fields
+    |> Backpex.LiveResource.fields_by_can(assigns)
+    |> Enum.filter(fn
+      {_name, %{visible: visible}} -> visible.(assigns)
+      _field -> true
+    end)
+  end
+
+  defp child_fields_for_form(child_fields, form, assigns) do
+    nested_assigns =
+      assigns
+      |> assign(:form, form)
+      |> assign(:item, form.data)
+
+    child_fields =
+      child_fields
+      |> Backpex.LiveResource.fields_by_can(nested_assigns)
+      |> Enum.filter(fn
+        {_name, %{visible: visible}} -> visible.(nested_assigns)
+        _field -> true
+      end)
+
+    if assigns.readonly do
+      Enum.map(child_fields, fn {name, options} -> {name, Map.put(options, :readonly, true)} end)
+    else
+      child_fields
+    end
+  end
+
+  defp control_name(form, name, action), do: "#{form.name}[#{name}_#{action}][]"
+  defp control_id(form, name), do: "#{form.id}_#{name}"
+
+  defp repeated_count(value) when is_list(value) or is_map(value), do: Enum.count(value)
+  defp repeated_count(_value), do: 0
 
   @impl Backpex.Field
   defdelegate association?(field), to: Backpex.Fields.InlineCRUD

@@ -54,7 +54,7 @@ defmodule AshBackpex.TestDomain.EmbeddedPage do
   end
 
   actions do
-    defaults([:read])
+    defaults([:read, create: [:title, :sections], update: [:title, :sections]])
   end
 end
 
