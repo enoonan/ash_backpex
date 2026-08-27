@@ -142,7 +142,6 @@ defmodule DemoWeb.PostLive do
           field :body, Backpex.Fields.Textarea do
             label("Body")
             rows(3)
-            class("inline-crud-comment-body")
           end
 
           field :author do

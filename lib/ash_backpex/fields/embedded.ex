@@ -71,7 +71,7 @@ defmodule AshBackpex.Fields.Embedded do
           <% child_fields = child_fields_for_form(@child_fields, embedded_form, assigns) %>
           <fieldset
             id={"embedded-fieldset-#{embedded_form.id}"}
-            class="flex w-full min-w-0 flex-col gap-3 [&_dl]:!flex-col [&_dt]:!w-full [&_dt]:!pr-0 [&_dd]:!w-full"
+            class="embedded-fieldset flex w-full min-w-0 flex-col gap-3 rounded-box border border-base-300 bg-base-100 p-3 [&_dl]:!flex-col [&_dt]:!w-full [&_dt]:!pr-0 [&_dd]:!w-full"
           >
             <legend :if={@hide_label} class="sr-only">{@field_options[:label]}</legend>
 

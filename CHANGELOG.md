@@ -2,6 +2,13 @@
 
 <!-- changelog -->
 
+## Unreleased
+
+### Fixes
+
+- Make repeated InlineCRUD entries and singular embedded values visually distinct,
+  and label their add, move, and delete controls with the entry type.
+
 ## [v0.1.12]
 
 ### Updates

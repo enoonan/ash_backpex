@@ -70,6 +70,18 @@ defmodule AshBackpex.RepositoryContractTest do
     assert endpoint =~ "plug(Phoenix.Ecto.CheckRepoStatus, otp_app: :demo)"
   end
 
+  test "the demo uses the shared InlineCRUD row layout without a selector workaround" do
+    stylesheet = File.read!("demo/assets/css/app.css")
+    post_live = File.read!("demo/lib/demo_web/live/post_live.ex")
+    guide = File.read!("guides/inline-crud.md")
+
+    refute stylesheet =~ "inline-crud-comment-body"
+    refute stylesheet =~ ".flex:has(>"
+    refute post_live =~ "inline-crud-comment-body"
+    refute guide =~ "inline-crud-comment-body"
+    refute guide =~ ".flex:has(>"
+  end
+
   defp markdown_targets(markdown) do
     ~r/!?\[[^\]]*\]\(([^)\s]+)(?:\s+["'][^"']*["'])?\)/
     |> Regex.scan(markdown, capture: :all_but_first)

@@ -58,6 +58,32 @@ defmodule AshBackpex.Fields.InlineCRUDTest do
     assert length(Regex.scan(~r/class="col-span-full"/, html)) == 2
   end
 
+  test "groups repeated entries and names their controls by entry type" do
+    html =
+      render_recursive_form(%{
+        "sections" => [
+          %{
+            "_persistent_id" => "section-a",
+            "title" => "Section",
+            "columns" => [
+              %{
+                "_persistent_id" => "column-a",
+                "heading" => "Column",
+                "target" => %{"kind" => "internal"}
+              }
+            ]
+          }
+        ]
+      })
+
+    assert html =~ "inline-crud-entry inline-crud-entry--bounded mb-4 min-w-0"
+    assert html =~ "inline-crud-entry-actions"
+    assert html =~ ~s(aria-label="Add Sections")
+    assert html =~ ~s(aria-label="Add Page columns")
+    assert html =~ ~s(aria-label="Move Sections up")
+    assert html =~ ~s(aria-label="Delete Page columns")
+  end
+
   test "stacks singular embedded child labels above full-width controls" do
     html =
       render_recursive_form(%{
@@ -77,6 +103,7 @@ defmodule AshBackpex.Fields.InlineCRUDTest do
       })
 
     assert html =~ ~s(id="embedded-fieldset-change_sections_section-a_columns_column-a_target")
+    assert html =~ "embedded-fieldset"
     assert html =~ "w-full min-w-0"
     assert html =~ "[&_dl]:!flex-col"
     assert html =~ "[&_dt]:!w-full"

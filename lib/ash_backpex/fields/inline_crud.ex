@@ -35,8 +35,16 @@ defmodule AshBackpex.Fields.InlineCRUD do
 
   @impl Backpex.Field
   def render_form(assigns) do
+    entry_label = assigns.field_options[:label]
+
     assigns =
-      assign(assigns, :last_index, repeated_count(assigns.form[assigns.name].value) - 1)
+      assign(assigns,
+        last_index: repeated_count(assigns.form[assigns.name].value) - 1,
+        entry_label: entry_label,
+        add_label: add_label(entry_label, assigns.live_resource),
+        delete_label: delete_label(entry_label, assigns.live_resource),
+        actions_label: actions_label(entry_label, assigns.live_resource)
+      )
 
     ~H"""
     <div>
@@ -61,10 +69,11 @@ defmodule AshBackpex.Fields.InlineCRUD do
               aria-hidden="true"
             />
 
-            <div
+            <fieldset
               id={"inline-crud-entry-#{f_nested.id}"}
-              class="mb-3"
+              class="inline-crud-entry inline-crud-entry--bounded mb-4 min-w-0 rounded-box border border-base-300 bg-base-200/20 p-4"
             >
+              <legend class="sr-only">{@entry_label}</legend>
               <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] items-start gap-x-4 gap-y-3">
                 <div
                   :for={{child_field_name, child_field_options} <- child_fields}
@@ -89,22 +98,26 @@ defmodule AshBackpex.Fields.InlineCRUD do
                 </div>
               </div>
 
-              <div :if={not @readonly} class="flex items-center" style="margin-top: 0.75rem">
-                <input
+              <div
+                :if={not @readonly}
+                class="inline-crud-entry-actions mt-3 flex flex-wrap items-center justify-between gap-3 border-base-300 border-t pt-3"
+                aria-label={@actions_label}
+              >
+                <.add_control
                   :if={f_nested.index == @last_index}
-                  name={control_name(@form, @name, "order")}
-                  type="checkbox"
-                  aria-label={Backpex.__("Add entry", @live_resource)}
-                  class="btn btn-outline btn-sm btn-primary"
+                  control_id={control_id(@form, @name)}
+                  control_name={control_name(@form, @name, "order")}
+                  label={@add_label}
                 />
 
-                <div class="flex items-center" style="margin-left: auto; gap: 0.75rem">
+                <div class="ml-auto flex flex-wrap items-center gap-3">
                   <.move_control
                     control_id={control_id(@form, @name)}
                     control_name={control_name(@form, @name, "move_up")}
                     index={f_nested.index}
                     last_index={@last_index}
                     direction="up"
+                    entry_label={@entry_label}
                     live_resource={@live_resource}
                   />
                   <.move_control
@@ -113,6 +126,7 @@ defmodule AshBackpex.Fields.InlineCRUD do
                     index={f_nested.index}
                     last_index={@last_index}
                     direction="down"
+                    entry_label={@entry_label}
                     live_resource={@live_resource}
                   />
 
@@ -122,16 +136,17 @@ defmodule AshBackpex.Fields.InlineCRUD do
                       type="checkbox"
                       name={control_name(@form, @name, "delete")}
                       value={f_nested.index}
+                      aria-label={@delete_label}
                       class="hidden"
                     />
                     <div class="btn btn-outline btn-sm btn-error">
-                      <span class="sr-only">{Backpex.__("Delete", @live_resource)}</span>
+                      <span>{@delete_label}</span>
                       <Backpex.HTML.CoreComponents.icon name="hero-trash" class="size-5" />
                     </div>
                   </label>
                 </div>
               </div>
-            </div>
+            </fieldset>
           </.inputs_for>
 
           <input
@@ -141,12 +156,11 @@ defmodule AshBackpex.Fields.InlineCRUD do
             aria-hidden="true"
           />
         </div>
-        <input
+        <.add_control
           :if={@last_index < 0 and not @readonly}
-          name={control_name(@form, @name, "order")}
-          type="checkbox"
-          aria-label={Backpex.__("Add entry", @live_resource)}
-          class="btn btn-outline btn-sm btn-primary"
+          control_id={control_id(@form, @name)}
+          control_name={control_name(@form, @name, "order")}
+          label={@add_label}
         />
 
         <BackpexForm.error :for={msg <- @errors} class="mt-1">{msg}</BackpexForm.error>
@@ -164,12 +178,13 @@ defmodule AshBackpex.Fields.InlineCRUD do
   attr(:index, :integer, required: true)
   attr(:last_index, :integer, required: true)
   attr(:direction, :string, values: ~w(up down), required: true)
+  attr(:entry_label, :string, required: true)
   attr(:live_resource, :atom, required: true)
 
   defp move_control(assigns) do
     assigns =
       assign(assigns,
-        label: move_label(assigns.direction, assigns.live_resource),
+        label: move_label(assigns.direction, assigns.entry_label, assigns.live_resource),
         disabled:
           (assigns.direction == "up" and assigns.index == 0) or
             (assigns.direction == "down" and assigns.index == assigns.last_index)
@@ -188,7 +203,7 @@ defmodule AshBackpex.Fields.InlineCRUD do
       />
 
       <div class={["btn btn-outline btn-sm", @disabled && "btn-disabled"]}>
-        <span class="sr-only">{@label}</span>
+        <span>{@label}</span>
         <Backpex.HTML.CoreComponents.icon
           :if={@direction == "up"}
           name="hero-arrow-up-solid"
@@ -204,8 +219,39 @@ defmodule AshBackpex.Fields.InlineCRUD do
     """
   end
 
-  defp move_label("up", live_resource), do: Backpex.__("Move up", live_resource)
-  defp move_label("down", live_resource), do: Backpex.__("Move down", live_resource)
+  attr(:control_id, :string, required: true)
+  attr(:control_name, :string, required: true)
+  attr(:label, :string, required: true)
+
+  defp add_control(assigns) do
+    ~H"""
+    <label for={"#{@control_id}-add"}>
+      <input
+        id={"#{@control_id}-add"}
+        name={@control_name}
+        type="checkbox"
+        aria-label={@label}
+        class="hidden"
+      />
+      <span class="btn btn-outline btn-sm btn-primary">{@label}</span>
+    </label>
+    """
+  end
+
+  defp add_label(entry_label, live_resource),
+    do: Backpex.__({"Add %{entry}", %{entry: entry_label}}, live_resource)
+
+  defp delete_label(entry_label, live_resource),
+    do: Backpex.__({"Delete %{entry}", %{entry: entry_label}}, live_resource)
+
+  defp actions_label(entry_label, live_resource),
+    do: Backpex.__({"%{entry} actions", %{entry: entry_label}}, live_resource)
+
+  defp move_label("up", entry_label, live_resource),
+    do: Backpex.__({"Move %{entry} up", %{entry: entry_label}}, live_resource)
+
+  defp move_label("down", entry_label, live_resource),
+    do: Backpex.__({"Move %{entry} down", %{entry: entry_label}}, live_resource)
 
   defp stable_child_form(%{params: %{"_persistent_id" => persistent_id}} = form) do
     persistent_suffix = "_#{persistent_id}"
