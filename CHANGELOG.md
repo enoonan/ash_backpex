@@ -2,21 +2,10 @@
 
 <!-- changelog -->
 
-## Unreleased
-
-### Fixes
-
-- Make repeated InlineCRUD entries and singular embedded values visually distinct,
-  and label their add, move, and delete controls with the entry type.
-
-## [v0.1.12]
+## [v0.1.13]
 
 ### Updates
 
-- Derive InlineCRUD child fields recursively from the child Ash resource,
-  including field modules, relationship queries, and belongs-to typeaheads.
-- Keep repeated child field components and typeahead searches scoped to their
-  persistent row identity while entries are reordered.
 - Define recursive `child_fields` configuration for typed embedded resource
   trees, including inferred InlineCRUD embed types and a singular
   `AshBackpex.Fields.Embedded` contract.
@@ -28,6 +17,23 @@
 - Add a runnable demo content tree and complete documentation for repeated and
   singular recursive embedded forms, including action inputs and parameter
   normalization.
+- Run Sobelow security analysis as part of `mix ci`.
+
+### Fixes
+
+- Make repeated InlineCRUD entries and singular embedded values visually distinct,
+  and label their add, move, and delete controls with the entry type.
+- Keep InlineCRUD actions usable at desktop and narrow viewport widths, with
+  responsive wrapping and consistent spacing between controls.
+
+## [v0.1.12]
+
+### Updates
+
+- Derive InlineCRUD child fields recursively from the child Ash resource,
+  including field modules, relationship queries, and belongs-to typeaheads.
+- Keep repeated child field components and typeahead searches scoped to their
+  persistent row identity while entries are reordered.
 
 ## [v0.1.11]
 

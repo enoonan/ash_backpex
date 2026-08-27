@@ -31,6 +31,7 @@ defmodule AshBackpex.RepositoryContractTest do
              "format --check-formatted",
              "compile --warnings-as-errors",
              "credo --strict",
+             "sobelow --exit",
              "docs --warnings-as-errors",
              "test",
              "demo.check"

@@ -15,7 +15,7 @@ AshBackpex tests run against deterministic in-memory SQLite tables. Start at the
 | Repository documentation/CI/demo contracts | `mix test.harness` |
 | Entire repository | `mix ci` |
 
-`mix ci` is the completion contract used by GitHub Actions. It checks formatting, warning-free compilation, strict Credo, package documentation, all tests, locked demo dependencies, and a warning-free demo compile against the local package.
+`mix ci` is the completion contract used by GitHub Actions. It checks formatting, warning-free compilation, strict Credo, Sobelow security analysis, package documentation, all tests, locked demo dependencies, and a warning-free demo compile against the local package.
 
 ## Fixture map
 

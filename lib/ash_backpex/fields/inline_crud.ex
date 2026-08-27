@@ -100,7 +100,8 @@ defmodule AshBackpex.Fields.InlineCRUD do
 
               <div
                 :if={not @readonly}
-                class="inline-crud-entry-actions mt-3 flex flex-wrap items-center justify-between gap-3 border-base-300 border-t pt-3"
+                class="inline-crud-entry-actions mt-3 flex flex-wrap items-center justify-between border-base-300 border-t pt-3"
+                style="gap: 0.375rem"
                 aria-label={@actions_label}
               >
                 <.add_control
@@ -110,7 +111,7 @@ defmodule AshBackpex.Fields.InlineCRUD do
                   label={@add_label}
                 />
 
-                <div class="ml-auto flex flex-wrap items-center gap-3">
+                <div class="ml-auto flex flex-wrap items-center" style="gap: 0.375rem">
                   <.move_control
                     control_id={control_id(@form, @name)}
                     control_name={control_name(@form, @name, "move_up")}

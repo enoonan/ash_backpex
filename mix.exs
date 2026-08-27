@@ -1,7 +1,7 @@
 defmodule AshBackpex.MixProject do
   use Mix.Project
 
-  @version "0.1.12"
+  @version "0.1.13"
   @source_url "https://github.com/enoonan/ash_backpex"
 
   def project do
@@ -82,7 +82,8 @@ defmodule AshBackpex.MixProject do
       {:usage_rules, "~> 0.1", only: :dev, runtime: false},
       {:ex_check, "~> 0.14", only: [:dev, :test]},
       {:credo, ">= 0.0.0", only: [:dev, :test], runtime: false},
-      {:dialyxir, ">= 0.0.0", only: [:dev, :test], runtime: false}
+      {:dialyxir, ">= 0.0.0", only: [:dev, :test], runtime: false},
+      {:sobelow, "~> 0.15.0", only: [:dev, :test], runtime: false}
     ]
   end
 
@@ -139,6 +140,7 @@ defmodule AshBackpex.MixProject do
         "format --check-formatted",
         "compile --warnings-as-errors",
         "credo --strict",
+        "sobelow --exit",
         "docs --warnings-as-errors",
         "test",
         "demo.check"

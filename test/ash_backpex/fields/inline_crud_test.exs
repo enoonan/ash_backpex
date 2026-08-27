@@ -78,6 +78,7 @@ defmodule AshBackpex.Fields.InlineCRUDTest do
 
     assert html =~ "inline-crud-entry inline-crud-entry--bounded mb-4 min-w-0"
     assert html =~ "inline-crud-entry-actions"
+    assert length(Regex.scan(~r/style="gap: 0.375rem"/, html)) >= 4
     assert html =~ ~s(aria-label="Add Sections")
     assert html =~ ~s(aria-label="Add Page columns")
     assert html =~ ~s(aria-label="Move Sections up")
