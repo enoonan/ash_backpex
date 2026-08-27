@@ -16,5 +16,6 @@ defmodule AshBackpex.TestDomain do
     resource AshBackpex.TestDomain.ManyToManyPost
     resource AshBackpex.TestDomain.ManyToManyCategory
     resource AshBackpex.TestDomain.ManyToManyPostCategory
+    resource AshBackpex.TestDomain.EmbeddedPage
   end
 end

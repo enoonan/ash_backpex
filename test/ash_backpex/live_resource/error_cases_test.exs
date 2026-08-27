@@ -53,6 +53,66 @@ defmodule AshBackpex.LiveResource.ErrorCasesTest do
         end
       end
     end
+
+    test "raises a field-path error when child_fields cannot resolve a child resource" do
+      assert_raise Spark.Error.DslError,
+                   ~r/InvalidChildFieldsLive.*field path: title.*does not resolve to.*Ash resource.*Remove `child_fields`/s,
+                   fn ->
+                     defmodule InvalidChildFieldsLive do
+                       use AshBackpex.LiveResource
+
+                       backpex do
+                         resource(AshBackpex.TestDomain.EmbeddedPage)
+                         layout({TestLayout, :admin})
+
+                         fields do
+                           field :title do
+                             child_fields do
+                               field(:missing)
+                             end
+                           end
+                         end
+                       end
+                     end
+                   end
+    end
+
+    test "raises a field-path error when InlineCRUD is used for a singular embed" do
+      assert_raise Spark.Error.DslError,
+                   ~r/InvalidInlineCrudCardinalityLive.*field path: sections\.columns\.target.*InlineCRUD.*singular embedded resource.*AshBackpex\.Fields\.Embedded/s,
+                   fn ->
+                     defmodule InvalidInlineCrudCardinalityLive do
+                       use AshBackpex.LiveResource
+
+                       backpex do
+                         resource(AshBackpex.TestDomain.EmbeddedPage)
+                         layout({TestLayout, :admin})
+
+                         fields do
+                           field :sections do
+                             module(Backpex.Fields.InlineCRUD)
+
+                             child_fields do
+                               field :columns do
+                                 module(Backpex.Fields.InlineCRUD)
+
+                                 child_fields do
+                                   field :target do
+                                     module(Backpex.Fields.InlineCRUD)
+
+                                     child_fields do
+                                       field(:kind)
+                                     end
+                                   end
+                                 end
+                               end
+                             end
+                           end
+                         end
+                       end
+                     end
+                   end
+    end
   end
 
   describe "custom field type mapping validation :: it can" do

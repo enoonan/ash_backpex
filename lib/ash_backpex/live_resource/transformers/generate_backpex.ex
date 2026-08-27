@@ -57,6 +57,8 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
   | `:belongs_to` | `Backpex.Fields.BelongsTo` |
   | `:has_many` | `Backpex.Fields.HasMany` |
   | `:many_to_many` | `Backpex.Fields.HasMany` |
+  | `{:array, EmbeddedResource}` with InlineCRUD | `AshBackpex.Fields.InlineCRUD` (`type: :embed`) |
+  | singular `EmbeddedResource` | `AshBackpex.Fields.Embedded` (explicit) |
   | `{:array, _}` | `Backpex.Fields.MultiSelect` |
   | Aggregates (`:count`, `:sum`, etc.) | `Backpex.Fields.Number` or `Boolean` |
 
@@ -73,6 +75,8 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
 
   - A field doesn't exist on the Ash resource
   - A field type can't be derived (suggests using `module` option)
+  - Recursive `child_fields` do not resolve to an immediate child Ash resource
+  - InlineCRUD is used with a cardinality other than `has_many` or an embedded-resource array
   - The resource lacks a primary key
 
   ## Internal Use
@@ -589,33 +593,45 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
           end
         end
 
-        child_resource = fn resource, field ->
-          case Ash.Resource.Info.relationship(resource, field.attribute) do
-            %{destination: destination} ->
-              destination
+        field_resource = fn resource, field ->
+          relationship = Ash.Resource.Info.relationship(resource, field.attribute)
+          attribute = Ash.Resource.Info.attribute(resource, field.attribute)
 
-            nil ->
-              case Ash.Resource.Info.attribute(resource, field.attribute) do
-                %{type: {:array, type}} ->
-                  if Ash.Resource.Info.resource?(type), do: type
+          child_resource =
+            case {relationship, attribute} do
+              {%{destination: destination}, _attribute} ->
+                destination
 
-                %{type: type} ->
-                  if Ash.Resource.Info.resource?(type), do: type
+              {nil, %{type: {:array, type}}} ->
+                if Ash.Resource.Info.resource?(type), do: type
 
-                nil ->
-                  nil
-              end
-          end
+              {nil, %{type: type}} ->
+                if Ash.Resource.Info.resource?(type), do: type
+
+              _other ->
+                nil
+            end
+
+          {relationship, attribute, child_resource}
         end
 
-        transform_field = fn transform_field, field, resource, nested? ->
+        transform_field = fn transform_field, field, resource, nested?, parent_path ->
+          field_path = parent_path ++ [field.attribute]
+          formatted_path = Enum.map_join(field_path, ".", &to_string/1)
+
           module =
             case field.module do
               nil when is_nil(resource) ->
                 raise Spark.Error.DslError,
                   module: __MODULE__,
-                  message:
-                    "Unable to derive the module for nested field #{inspect(field.attribute)} because its parent field does not resolve to an Ash resource"
+                  message: """
+                  LiveResource: #{inspect(__MODULE__)}
+                  field path: #{formatted_path}
+
+                  The parent field does not resolve to an Ash resource, so the module for
+                  #{inspect(field.attribute)} cannot be derived. Remove `child_fields` from the
+                  non-resource parent or point it at a relationship or typed embedded resource.
+                  """
 
               nil ->
                 try_derive_module.(resource, field.attribute)
@@ -626,6 +642,56 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
 
           inline_crud? =
             module in [AshBackpex.Fields.InlineCRUD, Backpex.Fields.InlineCRUD]
+
+          {relationship, attribute, nested_resource} = field_resource.(resource, field)
+
+          inferred_inline_type =
+            case {relationship, attribute} do
+              {%{type: :has_many}, _attribute} ->
+                :assoc
+
+              {nil, %{type: {:array, type}}} ->
+                if Ash.Resource.Info.resource?(type) && Ash.Resource.Info.embedded?(type),
+                  do: :embed
+
+              _other ->
+                nil
+            end
+
+          singular_embed? =
+            case attribute do
+              %{type: type} when is_atom(type) ->
+                Ash.Resource.Info.resource?(type) && Ash.Resource.Info.embedded?(type)
+
+              _attribute ->
+                false
+            end
+
+          if inline_crud? && is_nil(inferred_inline_type) do
+            correction =
+              cond do
+                singular_embed? ->
+                  "This is a singular embedded resource; use `AshBackpex.Fields.Embedded` instead."
+
+                relationship ->
+                  "InlineCRUD supports only `has_many` relationships; use the field module for this relationship cardinality."
+
+                match?(%{type: {:array, _type}}, attribute) ->
+                  "InlineCRUD arrays must contain a typed embedded Ash resource."
+
+                true ->
+                  "Use InlineCRUD only for a `has_many` relationship or an `{:array, EmbeddedResource}` attribute."
+              end
+
+            raise Spark.Error.DslError,
+              module: __MODULE__,
+              message: """
+              LiveResource: #{inspect(__MODULE__)}
+              field path: #{formatted_path}
+
+              InlineCRUD is not supported for this field cardinality. #{correction}
+              """
+          end
 
           belongs_to? =
             module in [AshBackpex.Fields.BelongsTo, Backpex.Fields.BelongsTo]
@@ -646,21 +712,29 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
               true -> module
             end
 
-          type =
-            Map.get(field, :type) ||
-              if inline_crud? && derive_type.(resource, field.attribute) == :has_many,
-                do: :assoc
+          type = Map.get(field, :type) || if(inline_crud?, do: inferred_inline_type)
 
           child_fields =
             case field.child_fields do
-              nil ->
+              child_fields when child_fields in [nil, []] ->
                 nil
 
-              %{fields: child_fields} ->
-                nested_resource = child_resource.(resource, field)
+              child_fields when is_list(child_fields) ->
+                if is_nil(nested_resource) do
+                  raise Spark.Error.DslError,
+                    module: __MODULE__,
+                    message: """
+                    LiveResource: #{inspect(__MODULE__)}
+                    field path: #{formatted_path}
+
+                    `child_fields` does not resolve to a relationship or typed embedded Ash resource.
+                    Remove `child_fields` or change #{inspect(field.attribute)} to a relationship or
+                    typed embedded resource.
+                    """
+                end
 
                 Enum.map(child_fields, fn child ->
-                  transform_field.(transform_field, child, nested_resource, true)
+                  transform_field.(transform_field, child, nested_resource, true, field_path)
                 end)
             end
 
@@ -711,7 +785,9 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
         @fields Spark.Dsl.Extension.get_entities(__MODULE__, [:backpex, :fields])
                 |> Enum.reverse()
                 |> Enum.reduce([], fn field, fields ->
-                  {attribute, config} = transform_field.(transform_field, field, @resource, false)
+                  {attribute, config} =
+                    transform_field.(transform_field, field, @resource, false, [])
+
                   Keyword.put(fields, attribute, config)
                 end)
 

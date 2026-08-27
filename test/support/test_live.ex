@@ -279,6 +279,50 @@ defmodule TestInlineCrudLive do
   end
 end
 
+defmodule TestRecursiveEmbeddedLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource AshBackpex.TestDomain.EmbeddedPage
+    layout({TestLayout, :admin})
+
+    fields do
+      field :sections do
+        module Backpex.Fields.InlineCRUD
+        except [:index]
+
+        child_fields do
+          field :title
+
+          field :columns do
+            module Backpex.Fields.InlineCRUD
+            label("Page columns")
+
+            child_fields do
+              field :heading, Backpex.Fields.Textarea
+
+              field :target do
+                module AshBackpex.Fields.Embedded
+
+                child_fields do
+                  field :kind
+
+                  field :editor do
+                    display_field(:name)
+                    typeahead(true)
+                    prompt("Choose an editor")
+                  end
+                end
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+end
+
 defmodule TestCustomItemActionLiveWithOnly do
   @moduledoc false
   use AshBackpex.LiveResource

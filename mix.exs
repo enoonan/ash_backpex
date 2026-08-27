@@ -50,6 +50,7 @@ defmodule AshBackpex.MixProject do
         Internals: [
           AshBackpex.BasicSearch,
           AshBackpex.Fields.BelongsTo,
+          AshBackpex.Fields.Embedded,
           AshBackpex.Fields.InlineCRUD,
           AshBackpex.LoadSelectResolver,
           AshBackpex.LiveResource.Transformers.GenerateBackpex

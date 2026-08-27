@@ -116,8 +116,11 @@ defmodule AshBackpex.LiveResource.Dsl do
   - `typeahead` - Use a server-backed single-select typeahead for `belongs_to`
   - `typeahead_limit` - Maximum results per query (default: `10`)
   - `type` - InlineCRUD storage type (`:assoc` or `:embed`). Defaults to `:assoc`
-    when InlineCRUD is used for an Ash `has_many` relationship.
-  - `child_fields` - Nested field definitions rendered in each InlineCRUD child form.
+    for an Ash `has_many` relationship and `:embed` for an array of typed embedded
+    Ash resources.
+  - `child_fields` - Field definitions for the immediate relationship or typed embedded
+    resource. The block may be nested recursively. Use `Backpex.Fields.InlineCRUD` for
+    repeated children and `AshBackpex.Fields.Embedded` for a singular embedded child.
 
   #### Date/Time Field Options
 
@@ -366,7 +369,8 @@ defmodule AshBackpex.LiveResource.Dsl do
 
   defmodule ChildFields do
     @moduledoc false
-    defstruct fields: [], __spark_metadata__: nil
+
+    defmacro child_fields(do: block), do: block
   end
 
   @field_schema Keyword.new([
@@ -469,7 +473,7 @@ defmodule AshBackpex.LiveResource.Dsl do
                   ],
                   type: [
                     doc:
-                      "The InlineCRUD field type. Defaults to `:assoc` for Ash `has_many` relationships.",
+                      "The InlineCRUD field type. Defaults to `:assoc` for Ash `has_many` relationships and `:embed` for arrays of typed embedded resources.",
                     type: {:in, [:assoc, :embed]}
                   ],
                   # TIME FIELDS (e.g. Date, Time, DateTime)
@@ -495,29 +499,16 @@ defmodule AshBackpex.LiveResource.Dsl do
                 )
                 |> Keyword.drop([:select])
 
-  @child_field %Spark.Dsl.Entity{
-    name: :field,
-    args: [:attribute, {:optional, :module}],
-    target: AshBackpex.LiveResource.Dsl.Field,
-    describe: "Configures a field rendered inside an InlineCRUD child form.",
-    schema: @field_schema
-  }
-
-  @child_fields %Spark.Dsl.Entity{
-    name: :child_fields,
-    target: AshBackpex.LiveResource.Dsl.ChildFields,
-    entities: [fields: [@child_field]]
-  }
-
   @field %Spark.Dsl.Entity{
     name: :field,
-    args: [:attribute],
+    args: [:attribute, {:optional, :module}],
     target: AshBackpex.LiveResource.Dsl.Field,
     describe:
       "Configures an Ash Resource attribute, relation, calculation or aggregate as a field to display in Backpex.",
     schema: @field_schema,
-    entities: [child_fields: [@child_fields]],
-    singleton_entity_keys: [:child_fields]
+    entities: [child_fields: []],
+    recursive_as: :child_fields,
+    imports: [AshBackpex.LiveResource.Dsl.ChildFields]
   }
 
   @fields %Spark.Dsl.Section{

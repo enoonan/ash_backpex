@@ -10,6 +10,9 @@
   including field modules, relationship queries, and belongs-to typeaheads.
 - Keep repeated child field components and typeahead searches scoped to their
   persistent row identity while entries are reordered.
+- Define recursive `child_fields` configuration for typed embedded resource
+  trees, including inferred InlineCRUD embed types and a singular
+  `AshBackpex.Fields.Embedded` contract.
 
 ## [v0.1.11]
 

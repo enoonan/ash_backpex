@@ -225,8 +225,38 @@ after reloading is still part of the child resource model; add a position
 attribute and set it from your child actions if the relationship needs durable
 ordering.
 
-## Limitations
+## Recursive Embedded Configuration
 
-Backpex does not support an `InlineCRUD` child field inside another
-`InlineCRUD`. Use InlineCRUD for one repeated relationship level and a custom
-field or dedicated editor for a nested repeater.
+The same `child_fields` syntax recursively describes typed embedded resource
+trees. Use InlineCRUD at repeated `{:array, EmbeddedResource}` nodes and
+`AshBackpex.Fields.Embedded` at singular embedded nodes:
+
+```elixir
+field :sections do
+  module Backpex.Fields.InlineCRUD
+
+  child_fields do
+    field :columns do
+      module Backpex.Fields.InlineCRUD
+
+      child_fields do
+        field :heading
+
+        field :target do
+          module AshBackpex.Fields.Embedded
+
+          child_fields do
+            field :kind
+            field :path
+          end
+        end
+      end
+    end
+  end
+end
+```
+
+AshBackpex infers `type: :embed` for both repeated embedded nodes and derives
+every child field from the resource at that depth. Relationship InlineCRUD
+remains limited to `has_many` and continues to infer `type: :assoc`; use the
+normal relationship field for other relationship cardinalities.

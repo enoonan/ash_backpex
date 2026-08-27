@@ -107,7 +107,7 @@ relationship query, then replaces them with matching results as the user types.
 Relationship filters, sorts, read action, context, actor, tenant, and
 authorization continue to flow through the field's derived `options_query`.
 
-### Repeating Child Forms
+### Repeating and Embedded Child Fields
 
 `has_many` relationships continue to use the selection-oriented
 `Backpex.Fields.HasMany` by default. Opt into repeated child forms with
@@ -143,7 +143,41 @@ argument :rows, {:array, :map}, allow_nil?: false, default: []
 change manage_relationship(:rows, type: :direct_control)
 ```
 
-Backpex does not support nesting an InlineCRUD child inside another InlineCRUD.
+Typed embedded Ash resources may describe their field tree recursively. Use
+InlineCRUD for an array embed and `AshBackpex.Fields.Embedded` for a singular
+embed:
+
+```elixir
+field :sections do
+  module Backpex.Fields.InlineCRUD
+
+  child_fields do
+    field :title
+
+    field :columns do
+      module Backpex.Fields.InlineCRUD
+
+      child_fields do
+        field :heading
+
+        field :target do
+          module AshBackpex.Fields.Embedded
+
+          child_fields do
+            field :kind
+            field :path
+          end
+        end
+      end
+    end
+  end
+end
+```
+
+At every level, field modules, labels, relationship option queries, and
+typeaheads are derived from the immediate child resource. AshBackpex supplies
+`type: :embed` for each `{:array, EmbeddedResource}` InlineCRUD node. A
+singular embedded resource is not a valid InlineCRUD cardinality.
 
 ### Searchable Fields
 

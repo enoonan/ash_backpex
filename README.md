@@ -119,6 +119,11 @@ child primary keys for updates. The parent Ash actions must expose an
 array-of-maps argument and use `manage_relationship`, typically with
 `type: :direct_control`.
 
+The `child_fields` DSL is recursive for typed embedded Ash resources. Repeated
+embedded children use InlineCRUD with an inferred `type: :embed`; singular
+embedded children use `AshBackpex.Fields.Embedded`. Each nested field is
+derived against its immediate embedded resource rather than the root resource.
+
 See the [Inline CRUD guide](guides/inline-crud.md) for the complete resource and
 LiveResource setup.
 

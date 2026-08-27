@@ -1,3 +1,63 @@
+defmodule AshBackpex.TestDomain.EmbeddedTarget do
+  @moduledoc false
+
+  use Ash.Resource, data_layer: :embedded
+
+  attributes do
+    attribute(:kind, :atom, public?: true, constraints: [one_of: [:internal, :external]])
+    attribute(:path, :string, public?: true)
+  end
+
+  relationships do
+    belongs_to(:editor, AshBackpex.TestDomain.User, public?: true)
+  end
+end
+
+defmodule AshBackpex.TestDomain.EmbeddedColumn do
+  @moduledoc false
+
+  use Ash.Resource, data_layer: :embedded
+
+  attributes do
+    attribute(:heading, :string, public?: true)
+    attribute(:target, AshBackpex.TestDomain.EmbeddedTarget, public?: true)
+  end
+end
+
+defmodule AshBackpex.TestDomain.EmbeddedSection do
+  @moduledoc false
+
+  use Ash.Resource, data_layer: :embedded
+
+  attributes do
+    attribute(:title, :string, public?: true)
+    attribute(:columns, {:array, AshBackpex.TestDomain.EmbeddedColumn}, public?: true)
+  end
+end
+
+defmodule AshBackpex.TestDomain.EmbeddedPage do
+  @moduledoc false
+
+  use Ash.Resource,
+    domain: AshBackpex.TestDomain,
+    data_layer: AshSqlite.DataLayer
+
+  sqlite do
+    table("embedded_pages")
+    repo(AshBackpex.TestRepo)
+  end
+
+  attributes do
+    uuid_primary_key(:id)
+    attribute(:title, :string, public?: true)
+    attribute(:sections, {:array, AshBackpex.TestDomain.EmbeddedSection}, default: [])
+  end
+
+  actions do
+    defaults([:read])
+  end
+end
+
 defmodule AshBackpex.TestDomain.Post do
   @moduledoc false
 

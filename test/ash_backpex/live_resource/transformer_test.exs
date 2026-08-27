@@ -158,6 +158,41 @@ defmodule AshBackpex.LiveResource.TransformerTest do
       assert TestPostLive.fields()[:author].module == Backpex.Fields.BelongsTo
     end
 
+    test "derives repeated and singular embedded fields at every resource depth" do
+      sections = TestRecursiveEmbeddedLive.fields()[:sections]
+      columns = sections.child_fields[:columns]
+      target = columns.child_fields[:target]
+      editor = target.child_fields[:editor]
+
+      assert sections.module == AshBackpex.Fields.InlineCRUD
+      assert sections.type == :embed
+
+      assert columns.module == AshBackpex.Fields.InlineCRUD
+      assert columns.type == :embed
+      assert columns.label == "Page columns"
+
+      assert columns.child_fields[:heading].module == Backpex.Fields.Textarea
+      assert target.module == AshBackpex.Fields.Embedded
+      assert target.child_fields[:kind].module == Backpex.Fields.Select
+
+      assert editor.module == AshBackpex.Fields.BelongsTo
+      assert editor.display_field == :name
+      assert editor.typeahead
+      assert editor.prompt == "Choose an editor"
+      assert is_function(editor.options_query, 2)
+    end
+
+    test "recursively finalizes nested field configuration for Backpex" do
+      sections = Backpex.LiveResource.fields(TestRecursiveEmbeddedLive, :edit, %{})[:sections]
+      columns = sections.child_fields[:columns]
+      target = columns.child_fields[:target]
+
+      assert sections.type == :embed
+      assert columns.type == :embed
+      assert target.module == AshBackpex.Fields.Embedded
+      assert target.child_fields[:editor].module == AshBackpex.Fields.BelongsTo
+    end
+
     test "derive default and non-default primary key with init_order" do
       assert TestPostLive.config(:primary_key) == :id
 
