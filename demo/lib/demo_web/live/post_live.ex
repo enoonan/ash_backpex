@@ -20,7 +20,8 @@ defmodule DemoWeb.PostLive do
     panels(
       content: "Content",
       publishing: "Publishing",
-      relationships: "Relationships"
+      relationships: "Relationships",
+      composition: "Content composition"
     )
 
     # Filters demonstrating auto-derivation from Ash attribute types
@@ -162,6 +163,33 @@ defmodule DemoWeb.PostLive do
           field :approved do
             label("Approved")
             class("w-28")
+          end
+        end
+      end
+
+      field :sections do
+        module(Backpex.Fields.InlineCRUD)
+        except([:index])
+        panel(:composition)
+
+        child_fields do
+          field(:title)
+
+          field :columns do
+            module(Backpex.Fields.InlineCRUD)
+
+            child_fields do
+              field(:heading)
+
+              field :target do
+                module(AshBackpex.Fields.Embedded)
+
+                child_fields do
+                  field(:kind)
+                  field(:path)
+                end
+              end
+            end
           end
         end
       end

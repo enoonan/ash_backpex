@@ -179,6 +179,30 @@ typeaheads are derived from the immediate child resource. AshBackpex supplies
 `type: :embed` for each `{:array, EmbeddedResource}` InlineCRUD node. A
 singular embedded resource is not a valid InlineCRUD cardinality.
 
+Each typed embedded resource uses `data_layer: :embedded`. The parent resource
+stores the root embedded array and its create/update actions must accept that
+attribute; unlike a relationship, it does not use `manage_relationship`:
+
+```elixir
+attribute :sections, {:array, MyApp.Content.Section}, default: [], public?: true
+
+create :admin_create do
+  accept [:title, :sections]
+end
+
+update :admin_update do
+  require_atomic? false
+  accept [:title, :sections]
+end
+```
+
+Repeated levels submit indexed maps plus depth-local order, delete, and move
+controls. AshBackpex removes the controls and normalizes each repeated level to
+an ordered list of maps; singular embedded values remain maps. Keep `default:
+[]` for editable empty lists. Validation rerenders retain the nested field path
+and persistent row identity. Typed embedded trees can coexist with relationship
+InlineCRUD; union or variant-specific conditional forms are not supported.
+
 ### Searchable Fields
 
 Enable search on string fields:

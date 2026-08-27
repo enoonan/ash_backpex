@@ -4,7 +4,8 @@ defmodule AshBackpex.Fields.InlineCRUD do
 
   It adds move-up and move-down controls and repeats child labels for every
   entry. Configure `Backpex.Fields.InlineCRUD` in the DSL; AshBackpex selects
-  this renderer automatically.
+  this renderer automatically. It supports `has_many` relationships and arrays
+  of typed embedded Ash resources; nested arrays normalize independently.
   """
 
   use Backpex.Field, config_schema: Backpex.Fields.InlineCRUD.config_schema()

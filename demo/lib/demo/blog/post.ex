@@ -32,6 +32,12 @@ defmodule Demo.Blog.Post do
       public? true
     end
 
+    attribute :sections, {:array, Demo.Blog.ContentSection} do
+      allow_nil? false
+      default []
+      public? true
+    end
+
     attribute :status, :atom do
       allow_nil? false
       default :draft
@@ -132,6 +138,7 @@ defmodule Demo.Blog.Post do
       :slug,
       :content,
       :excerpt,
+      :sections,
       :status,
       :published,
       :published_on,
@@ -150,6 +157,7 @@ defmodule Demo.Blog.Post do
         :slug,
         :content,
         :excerpt,
+        :sections,
         :status,
         :published,
         :published_on,
@@ -171,6 +179,7 @@ defmodule Demo.Blog.Post do
         :slug,
         :content,
         :excerpt,
+        :sections,
         :status,
         :published,
         :published_on,
@@ -196,6 +205,7 @@ defmodule Demo.Blog.Post do
         :slug,
         :content,
         :excerpt,
+        :sections,
         :status,
         :published,
         :published_on,
@@ -218,6 +228,7 @@ defmodule Demo.Blog.Post do
         :slug,
         :content,
         :excerpt,
+        :sections,
         :status,
         :published,
         :published_on,

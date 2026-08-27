@@ -227,9 +227,67 @@ ordering.
 
 ## Recursive Embedded Configuration
 
-The same `child_fields` syntax recursively describes typed embedded resource
-trees. Use InlineCRUD at repeated `{:array, EmbeddedResource}` nodes and
-`AshBackpex.Fields.Embedded` at singular embedded nodes:
+The demo's article content composition is a compact, real recursive tree:
+repeated sections contain repeated columns, and each column has one singular
+target. Unlike relationship InlineCRUD, it needs no custom Backpex field or
+`manage_relationship` change. Define each nested node as an Ash embedded
+resource and accept the root attribute in the parent actions:
+
+```elixir
+defmodule Demo.Blog.ContentTarget do
+  use Ash.Resource, data_layer: :embedded
+
+  attributes do
+    attribute :kind, :atom, public?: true, constraints: [one_of: [:internal, :external]]
+    attribute :path, :string, public?: true
+  end
+end
+
+defmodule Demo.Blog.ContentColumn do
+  use Ash.Resource, data_layer: :embedded
+
+  attributes do
+    attribute :heading, :string, public?: true
+    attribute :target, Demo.Blog.ContentTarget, public?: true
+  end
+end
+
+defmodule Demo.Blog.ContentSection do
+  use Ash.Resource, data_layer: :embedded
+
+  attributes do
+    attribute :title, :string, public?: true
+    attribute :columns, {:array, Demo.Blog.ContentColumn}, default: [], public?: true
+  end
+end
+
+defmodule Demo.Blog.Post do
+  use Ash.Resource, domain: Demo.Blog, data_layer: AshSqlite.DataLayer
+
+  attributes do
+    attribute :sections, {:array, Demo.Blog.ContentSection}, default: [], public?: true
+  end
+
+  actions do
+    create :admin_create do
+      accept [:title, :sections]
+    end
+
+    update :admin_update do
+      require_atomic? false
+      accept [:title, :sections]
+    end
+  end
+end
+```
+
+The embedded resources need `data_layer: :embedded`; they are attribute types,
+not independently persisted records. The parent database column stores the
+tree, and both create and update actions must accept the root `:sections`
+attribute. Add the equivalent column through your Ash data-layer migration.
+
+Configure the root field in the parent LiveResource. This is the complete DSL
+shape used by the demo:
 
 ```elixir
 field :sections do
@@ -261,9 +319,53 @@ every child field from the resource at that depth. Relationship InlineCRUD
 remains limited to `has_many` and continues to infer `type: :assoc`; use the
 normal relationship field for other relationship cardinalities.
 
+## Embedded Parameters, Validation, and Empty Lists
+
+The browser sends repeated fields as indexed maps, with controls at each
+repeated level. For example, a section with one column normalizes to the Ash
+attribute shape below; the `*_order`, `*_delete`, and `*_move_*` keys are form
+controls and do not reach the Ash action:
+
+```elixir
+%{
+  "sections" => [
+    %{
+      "title" => "Hero",
+      "columns" => [
+        %{
+          "heading" => "Welcome",
+          "target" => %{"kind" => "internal", "path" => "/welcome"}
+        }
+      ]
+    }
+  ]
+}
+```
+
+AshBackpex applies moves and deletes, then turns every repeated indexed map
+into its ordered list form before calling the parent create or update action.
+A singular embedded node stays a map. An empty repeated node is normalized to
+`[]`, so `default: []` on embedded array attributes is important and an empty
+section or an empty root list remains editable after a validation rerender.
+
 Each repeated node renders its own add, delete, move-up, and move-down controls.
 Control names are derived from the current nested form, so validation events
 operate on only that node while preserving persistent row identities and the
 submitted order. Singular embedded nodes render a fieldset and pass their
 immediate Phoenix form to child visibility, authorization, readonly, label,
 help-text, and error translation callbacks.
+
+When Ash rejects a nested value, its error is reconstructed at the submitted
+array index and singular-field path on the next render. Keep the hidden
+`_persistent_id` values emitted by the form: they give unsaved rows stable
+LiveView identity while users add, delete, reorder, and correct invalid values.
+Ordering controls only determine the submitted list order; persist a position
+attribute in your own model if that order must survive a later reload.
+
+Recursive embeds compose with relationship InlineCRUD. A parent can retain a
+`has_many` relationship field configured with `type: :assoc` and
+`manage_relationship`, alongside embedded fields configured with `type: :embed`.
+They normalize independently at each repeated depth.
+
+This support is for typed embedded resources and ordinary fields. Conditional
+union or variant-specific forms remain outside this configuration model.

@@ -33,3 +33,5 @@ A minimal demo application showcasing the integration between Ash Framework and 
 - Post has title, content, published flag, and word count calculation
 - Backpex admin interface for managing posts
 - Basic CRUD operations through the admin panel
+- Article content sections demonstrating recursive embedded forms: repeated
+  sections, repeated columns, and one singular target per column

@@ -18,6 +18,9 @@
 - Render recursively composed InlineCRUD arrays and singular embedded fieldsets
   with depth-local controls, stable row identities, nested callback context, and
   Ash-compatible input names.
+- Add a runnable demo content tree and complete documentation for repeated and
+  singular recursive embedded forms, including action inputs and parameter
+  normalization.
 
 ## [v0.1.11]
 

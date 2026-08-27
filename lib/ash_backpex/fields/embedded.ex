@@ -6,6 +6,9 @@ defmodule AshBackpex.Fields.Embedded do
   `AshBackpex.LiveResource`. This module defines the configuration boundary used
   by AshBackpex's singular embedded-resource renderer. It is distinct from
   `Backpex.Fields.InlineCRUD`, which represents repeated children.
+
+  The parent Ash action accepts a singular embedded value as a map. Repeated
+  typed embeds use InlineCRUD and are normalized to ordered lists of maps.
   """
 
   @config_schema [
