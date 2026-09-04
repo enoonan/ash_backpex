@@ -328,7 +328,8 @@ defmodule AshBackpex.Fields.InlineCRUD do
   defp control_name(form, name, action), do: "#{form.name}[#{name}_#{action}][]"
   defp control_id(form, name), do: "#{form.id}_#{name}"
 
-  defp repeated_count(value) when is_list(value) or is_map(value), do: Enum.count(value)
+  defp repeated_count(value) when is_list(value), do: length(value)
+  defp repeated_count(value) when is_map(value) and not is_struct(value), do: map_size(value)
   defp repeated_count(_value), do: 0
 
   @impl Backpex.Field

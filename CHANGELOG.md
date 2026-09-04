@@ -2,6 +2,26 @@
 
 <!-- changelog -->
 
+## [v0.2.0]
+
+### Breaking Changes
+
+- Require Backpex 0.20 and its unified preference system and collapsible app
+  shell. Applications upgrading from AshBackpex 0.1 must migrate their Backpex
+  layout and router integration; the demo and getting-started guide show the new
+  setup.
+
+### Updates
+
+- Expose opt-in index-state persistence through the `persist` DSL option.
+- Keep the demo theme selector at the right edge of the top bar so its menu opens
+  within the viewport.
+
+### Fixes
+
+- Treat unloaded `has_many` relationships as empty InlineCRUD collections when
+  rendering new-resource forms.
+
 ## [v0.1.13]
 
 ### Updates

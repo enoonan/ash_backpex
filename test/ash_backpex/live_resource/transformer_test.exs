@@ -209,6 +209,11 @@ defmodule AshBackpex.LiveResource.TransformerTest do
              }
     end
 
+    test "passes persisted index state to Backpex" do
+      assert TestPostLive.config(:persist) == [:columns, :metrics]
+      assert TestMinimalLive.config(:persist) == []
+    end
+
     test "include calculations as fields" do
       fields = TestPostLive.fields()
       # Calculation

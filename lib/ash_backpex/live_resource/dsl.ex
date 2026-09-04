@@ -40,6 +40,7 @@ defmodule AshBackpex.LiveResource.Dsl do
   - `full_text_search` - Column name for full-text search
   - `save_and_continue_button?` - Show "Save & Continue" button (default: `false`)
   - `on_mount` - LiveView on_mount hooks to attach
+  - `persist` - Index state to persist through Backpex preferences (default: `[]`)
 
   ## fields Section
 
@@ -769,6 +770,12 @@ defmodule AshBackpex.LiveResource.Dsl do
         """,
         type: {:or, [:mod_arg, :atom, {:list, {:or, [:mod_arg, :atom]}}]},
         required: false
+      ],
+      persist: [
+        doc:
+          "Index-view state to persist through Backpex preferences. Accepts any subset of `[:order, :filters, :columns, :metrics]`.",
+        type: {:list, {:in, [:order, :filters, :columns, :metrics]}},
+        default: []
       ]
     ],
     sections: [@fields, @filters, @item_actions]

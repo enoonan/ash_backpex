@@ -263,6 +263,29 @@ defmodule AshBackpex.Fields.InlineCRUDTest do
     assert html =~ ~s(class="min-w-0 flex-1")
   end
 
+  test "treats an unloaded has-many relationship as empty on a new form" do
+    changeset = Ash.Changeset.for_create(Post, :create, %{title: "Post"})
+    assert %Ash.NotLoaded{} = changeset.data.comments
+
+    form = Phoenix.Component.to_form(changeset, as: :change)
+    field_options = Backpex.LiveResource.fields(TestInlineCrudLive, :new, %{})[:comments]
+
+    html =
+      render_component(AshBackpex.Fields.InlineCRUD, %{
+        id: "new-post-comments",
+        type: :form,
+        name: :comments,
+        field: {:comments, field_options},
+        field_options: field_options,
+        form: form,
+        item: changeset.data,
+        live_action: :new,
+        live_resource: TestInlineCrudLive
+      })
+
+    assert html =~ ~s(aria-label="Add Comments")
+  end
+
   defp render_recursive_form(params, field_options \\ nil, changeset \\ nil) do
     page = %EmbeddedPage{id: Ash.UUID.generate(), title: "Page", sections: []}
     changeset = changeset || %{Ash.Changeset.new(page) | params: params, action: :validate}

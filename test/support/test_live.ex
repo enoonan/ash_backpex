@@ -6,6 +6,7 @@ defmodule TestPostLive do
   backpex do
     resource(AshBackpex.TestDomain.Post)
     layout({TestLayout, :admin})
+    persist([:columns, :metrics])
 
     fields do
       field(:title) do

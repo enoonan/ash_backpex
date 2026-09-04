@@ -15,14 +15,14 @@ Add `ash_backpex` to your dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:ash_backpex, "~> 0.1.12"}
+    {:ash_backpex, "~> 0.2.0"}
   ]
 end
 ```
 
 Run `mix deps.get` to install the dependency.
 
-AshBackpex 0.1.12 targets Backpex `~> 0.19.6` and declares that dependency
+AshBackpex 0.2.0 targets Backpex `~> 0.20.0` and declares that dependency
 itself. If your application pins Backpex directly, update its constraint to
 match.
 
@@ -44,13 +44,28 @@ defmodule MyAppWeb.Layouts do
   attr :flash, :map, required: true
   attr :fluid?, :boolean, default: false
   attr :current_url, :string, required: true
+  attr :socket, :any, required: true
+  attr :current_theme, :string, required: true
+  attr :sidebar_open, :boolean, required: true
+  attr :preferences_manifest, :map, required: true
   slot :inner_block, required: true
 
   def admin(assigns) do
     ~H"""
-    <.app_shell fluid={@fluid?}>
+    <.app_shell
+      socket={@socket}
+      fluid={@fluid?}
+      sidebar_open={@sidebar_open}
+      preferences_manifest={@preferences_manifest}
+    >
+      <:sidebar_branding>
+        <.sidebar_branding title="My App" />
+      </:sidebar_branding>
       <:topbar>
-        <.topbar_branding />
+        <.theme_selector
+          current_theme={@current_theme}
+          themes={[{"Light", "light"}, {"Dark", "dark"}]}
+        />
         <.topbar_dropdown>
           <:label>
             <div class="btn btn-square btn-ghost">
@@ -76,6 +91,12 @@ defmodule MyAppWeb.Layouts do
     """
   end
 end
+```
+
+Use the server-assigned theme in your root layout:
+
+```heex
+<html data-theme={assigns[:current_theme] || "light"}>
 ```
 
 See the [Backpex layout documentation](https://hexdocs.pm/backpex/Backpex.HTML.Layout.html) for more details on available components and customization options.
@@ -111,10 +132,16 @@ Add routes for your admin LiveResource:
 
 ```elixir
 # lib/my_app_web/router.ex
+import Backpex.Router
+
 scope "/admin", MyAppWeb.Admin do
   pipe_through [:browser]
 
-  live "/posts", PostLive
+  backpex_routes()
+
+  live_session :backpex_admin, on_mount: [Backpex.InitAssigns] do
+    live_resources "/posts", PostLive
+  end
 end
 ```
 
@@ -195,6 +222,23 @@ backpex do
   resource MyApp.Blog.Post
   layout {MyAppWeb.Layouts, :admin}
   init_order %{by: :inserted_at, direction: :desc}
+
+  fields do
+    # ...
+  end
+end
+```
+
+### Persisted Index State
+
+Backpex 0.20 makes persistence opt-in. Choose which index settings should
+survive navigation and reloads:
+
+```elixir
+backpex do
+  resource MyApp.Blog.Post
+  layout {MyAppWeb.Layouts, :admin}
+  persist [:order, :filters, :columns, :metrics]
 
   fields do
     # ...

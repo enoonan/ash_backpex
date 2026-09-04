@@ -348,6 +348,23 @@ backpex do
 end
 ```
 
+## Persisting Index State
+
+Backpex 0.20 makes index-state persistence opt-in. Choose any index settings
+that should survive navigation and reloads:
+
+```elixir
+backpex do
+  resource MyApp.Blog.Post
+  layout {MyAppWeb.Layouts, :admin}
+  persist [:order, :filters, :columns, :metrics]
+end
+```
+
+The application layout must use Backpex's preference-enabled app shell and the
+router must include `backpex_routes()`. See the Getting Started guide for the
+complete layout and router setup.
+
 ## Form Panels
 
 Organize form fields into panels:

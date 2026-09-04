@@ -911,7 +911,8 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                 Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :full_text_search),
               save_and_continue_button?:
                 Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :save_and_continue_button?),
-              on_mount: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :on_mount)
+              on_mount: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :on_mount),
+              persist: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :persist)
             ]
             |> Keyword.reject(&(&1 |> elem(1) |> is_nil))
 

@@ -16,7 +16,7 @@ defmodule DemoWeb.Router do
   end
 
   scope "/", DemoWeb do
-    pipe_through([:browser, Backpex.ThemeSelectorPlug, :assign_user])
+    pipe_through([:browser, :assign_user])
 
     get("/", PageController, :redirect_to_posts)
 
