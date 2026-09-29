@@ -6,6 +6,10 @@ defmodule Demo.Blog.Comment do
   sqlite do
     table "comments"
     repo(Demo.Repo)
+
+    references do
+      reference(:post, on_delete: :delete)
+    end
   end
 
   attributes do

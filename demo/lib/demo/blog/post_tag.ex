@@ -6,6 +6,10 @@ defmodule Demo.Blog.PostTag do
   sqlite do
     table "post_tags"
     repo(Demo.Repo)
+
+    references do
+      reference(:post, on_delete: :delete)
+    end
   end
 
   relationships do

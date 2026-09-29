@@ -25,7 +25,7 @@ A minimal demo application showcasing the integration between Ash Framework and 
    mix phx.server
    ```
 
-5. Visit the admin interface at http://localhost:4000/
+5. Visit the admin interface at http://localhost:4005/
 
 ## What's Included
 
