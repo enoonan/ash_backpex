@@ -136,7 +136,8 @@ defmodule AshBackpex.Adapter do
   - `count/4` - Counts matching records using `Ash.count/2`
   - `insert/2` - Creates records using `Ash.create/2`
   - `update/2` - Updates records using `Ash.update/2`
-  - `delete_all/2` - Bulk deletes using `Ash.bulk_destroy/4`
+  - `delete_all/2` - Bulk deletes using `Ash.bulk_destroy/4` with the configured
+    destroy action (or the resource's primary destroy action)
 
   ### Authorization
 
@@ -145,8 +146,11 @@ defmodule AshBackpex.Adapter do
   changeset is persisted.
 
   Backpex's `delete_all/2` adapter callback does not provide assigns, so bulk
-  deletion cannot currently receive the actor and continues to bypass Ash
-  authorization.
+  deletion cannot receive the actor and runs `Ash.bulk_destroy/4` with
+  `authorize?: false`. Backpex authorizes `:delete` for every selected item
+  through the LiveResource's Ash-backed `can?/3` before calling this callback,
+  unless the caller explicitly passes `authorize?: false` to
+  `Backpex.Resource.delete_all/4`.
 
   ### Custom Actions
 
@@ -336,6 +340,12 @@ defmodule AshBackpex.Adapter do
 
   @doc """
   Deletes multiple items.
+
+  Returns `{:error, errors}` when any item cannot be deleted (for example,
+  because another record still references it), so Backpex reports the failure.
+  On data layers that support transactions, the whole selection is deleted in a
+  single transaction and nothing is deleted on failure. Data layers without
+  transactions, such as AshSqlite, keep any records deleted before the failure.
   """
   @impl Backpex.Adapter
   def delete_all(items, live_resource) do
@@ -344,16 +354,20 @@ defmodule AshBackpex.Adapter do
 
     ids = Enum.map(items, &Map.fetch!(&1, primary_key))
 
-    result =
-      config[:resource]
-      |> Ash.Query.filter(^Ash.Expr.ref(primary_key) in ^ids)
-      |> Ash.bulk_destroy(:destroy, %{},
-        strategy: :stream,
-        return_records?: true,
-        authorize?: false
-      )
-
-    {:ok, result.records}
+    config[:resource]
+    |> Ash.Query.filter(^Ash.Expr.ref(primary_key) in ^ids)
+    |> Ash.bulk_destroy(primary_action(live_resource, :destroy), %{},
+      strategy: :stream,
+      transaction: :all,
+      return_records?: true,
+      return_errors?: true,
+      stop_on_error?: true,
+      authorize?: false
+    )
+    |> case do
+      %Ash.BulkResult{status: :success, records: records} -> {:ok, records || []}
+      %Ash.BulkResult{errors: errors} -> {:error, errors}
+    end
   end
 
   @doc """
@@ -453,7 +467,11 @@ defmodule AshBackpex.Adapter do
   defp normalize_field_params(attrs, fields) do
     Enum.reduce(fields, attrs, fn
       {field, %{module: module}}, attrs
-      when module in [Backpex.Fields.HasMany, Backpex.Fields.MultiSelect] ->
+      when module in [
+             Backpex.Fields.HasMany,
+             Backpex.Fields.MultiSelect,
+             Backpex.Fields.Checkgroup
+           ] ->
         normalize_list_field_param(attrs, to_string(field))
 
       {field, %{module: module} = options}, attrs
@@ -747,6 +765,7 @@ defmodule AshBackpex.Adapter do
       case action_type do
         :create -> :create_action
         :update -> :update_action
+        :destroy -> :destroy_action
       end
 
     case Keyword.get(config, config_val) do

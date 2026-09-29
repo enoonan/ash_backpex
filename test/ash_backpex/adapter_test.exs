@@ -24,6 +24,57 @@ defmodule AshBackpex.AdapterTest do
     end
   end
 
+  describe "AshBackpex.Adapter delete_all :: it can" do
+    test "delete_all/2 uses the LiveResource's configured destroy action" do
+      item = Ash.Seed.seed!(%AshBackpex.TestDomain.Item{name: "Keep me"})
+
+      assert {:ok, [%{id: id}]} = Adapter.delete_all([item], TestSoftDeleteItemLive)
+      assert id == item.id
+
+      assert %{note: "soft deleted"} = Ash.get!(AshBackpex.TestDomain.Item, item.id)
+    end
+
+    test "delete_all/2 returns every deleted record for a multi-item selection" do
+      items =
+        for name <- ["First", "Second", "Third"] do
+          Ash.Seed.seed!(%AshBackpex.TestDomain.Item{name: name})
+        end
+
+      assert {:ok, deleted} = Adapter.delete_all(items, TestItemLive)
+
+      assert deleted |> Enum.map(& &1.id) |> Enum.sort() ==
+               items |> Enum.map(& &1.id) |> Enum.sort()
+
+      assert {:ok, []} = Ash.read(AshBackpex.TestDomain.Item)
+    end
+
+    test "delete_all/2 returns an error when a record cannot be deleted" do
+      owner = user()
+      referenced_post = post(actor: owner)
+
+      Ash.Seed.seed!(%AshBackpex.TestDomain.Comment{
+        body: "Keeps the post referenced",
+        post_id: referenced_post.id,
+        author_id: owner.id
+      })
+
+      # AshSqlite cannot run transactions, so all-or-nothing deletion is covered in
+      # adapter_transactional_delete_test.exs against a transactional data layer.
+      assert {:error, _error} = Adapter.delete_all([referenced_post], TestPostLive)
+
+      assert [%{id: id}] = Ash.read!(Post, authorize?: false)
+      assert id == referenced_post.id
+    end
+
+    test "delete_all/2 falls back to the resource's primary destroy action" do
+      item = Ash.Seed.seed!(%AshBackpex.TestDomain.Item{name: "Delete me"})
+
+      assert {:ok, [_item]} = Adapter.delete_all([item], TestItemLive)
+
+      assert {:error, %Ash.Error.Invalid{}} = Ash.get(AshBackpex.TestDomain.Item, item.id)
+    end
+  end
+
   describe "AshBackpex.Adapter change :: it can" do
     test "build update changesets for index-editable fields without a form assign" do
       user = user()
@@ -42,13 +93,14 @@ defmodule AshBackpex.AdapterTest do
       assert %Ash.Changeset{action_type: :update, data: ^post} = changeset
     end
 
-    test "removes blank form values from has_many and multiselect list fields" do
+    test "removes blank form values from has_many, multiselect, and checkgroup list fields" do
       user = user()
       post = post(actor: user)
 
       fields = [
         comments: %{module: Backpex.Fields.HasMany},
         tags: %{module: Backpex.Fields.MultiSelect},
+        roles: %{module: Backpex.Fields.Checkgroup},
         keywords: %{module: Backpex.Fields.Text}
       ]
 
@@ -57,6 +109,7 @@ defmodule AshBackpex.AdapterTest do
         %{
           "comments" => [""],
           "tags" => ["", "food", "politics"],
+          "roles" => ["", "admin"],
           "keywords" => ["", "keep-me"],
           atom_tags: ["", "keep-me-too"]
         },
@@ -70,6 +123,7 @@ defmodule AshBackpex.AdapterTest do
                       %{
                         "comments" => [],
                         "tags" => ["food", "politics"],
+                        "roles" => ["admin"],
                         "keywords" => ["", "keep-me"],
                         atom_tags: ["", "keep-me-too"]
                       }}

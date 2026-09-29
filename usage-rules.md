@@ -399,6 +399,38 @@ AshBackpex automatically integrates with Ash authorization:
 
 Ensure your Ash resources have policies defined and `current_user` is set in assigns.
 
+Backpex enforces the generated `can?/3` before every mutation and item action:
+- Item actions receive records re-read through the adapter as the current actor
+- A selection with any unauthorized record raises `Backpex.ForbiddenError`; a
+  deleted or unreadable record raises `Backpex.NoResultsError`
+- Pass `authorize?: false` when a custom item action writes the records it was
+  handed through `Backpex.Resource`; Backpex already authorized them
+- Call `Backpex.Resource.delete_all/4` and `update_all/5` with `socket.assigns`
+
+Do not define `can?/3` in a LiveResource. AshBackpex generates it from your Ash
+policies, and defining it is a compile error. Express access rules as Ash
+policies instead.
+
+## Backpex Callbacks
+
+AshBackpex generates `can?/3`, `fields/0`, `filters/0`, `item_actions/1`, and
+`layout/1`; defining them is a compile error. Use Ash policies and the DSL
+instead.
+
+Other `Backpex.LiveResource` callbacks (`on_item_updated/2`, `return_to/5`,
+`form_actions/2`, `index_row_class/4`, ...) can be defined in the module. Write
+`form_actions/2` and `index_row_class/4` as pattern-matching clauses without a
+catch-all so unmatched calls fall through to Backpex's default:
+
+```elixir
+@impl Backpex.LiveResource
+def form_actions(%{item: %{status: :draft}}, _default_actions) do
+  [save: %{label: "Save as draft", soft: true}, publish: %{label: "Publish"}]
+end
+```
+
+A catch-all clause makes Elixir warn that Backpex's default clause is redundant.
+
 ## Router Setup
 
 Add routes for your LiveResource:
@@ -469,6 +501,14 @@ If actions are hidden unexpectedly:
 1. Check that `current_user` is set in your LiveView assigns
 2. Verify your Ash resource policies allow the action
 3. Test with `Ash.can?({resource, action}, user)` in IEx
+
+### "defines can?/3, but AshBackpex generates can?/3"
+
+The LiveResource defines a callback AshBackpex generates. Earlier versions
+silently replaced the definition, so it never ran. Move the logic to Ash
+policies (`can?/3`) or the matching DSL entry (`fields`, `filters`,
+`item_actions`, `layout`), then remove the function. The error message names
+the replacement.
 
 ### Fields Not Loading
 

@@ -521,4 +521,102 @@ defmodule AshBackpex.LiveResource.ErrorCasesTest do
                    end
     end
   end
+
+  describe "user-defined callbacks that AshBackpex generates :: it can" do
+    test "refuse to compile a custom can?/3 and explain why and how to fix it" do
+      error =
+        assert_raise Spark.Error.DslError, fn ->
+          defmodule CustomCanLive do
+            use AshBackpex.LiveResource
+
+            backpex do
+              resource(AshBackpex.TestDomain.Post)
+              layout({TestLayout, :admin})
+
+              fields do
+                field(:title)
+              end
+            end
+
+            def can?(_assigns, :delete, _item), do: false
+          end
+        end
+
+      message = Exception.message(error)
+
+      assert message =~ "CustomCanLive defines can?/3"
+      assert message =~ ~r/error_cases_test\.exs:\d+/
+      assert message =~ "silently overridden"
+      assert message =~ ~r/unexpected\s+authorization behavior/
+      assert message =~ ~r/To fix it, express the rule as Ash policies/
+      assert message =~ "AshBackpex.TestDomain.Post"
+      assert message =~ "Then remove can?/3"
+    end
+
+    for {name, arity, guidance} <- [
+          {:fields, 0, "`fields` section"},
+          {:filters, 0, "`filters` section"},
+          {:item_actions, 1, "`item_actions` section"},
+          {:layout, 1, "`layout` option"}
+        ] do
+      test "refuse to compile a custom #{name}/#{arity} and point to the DSL" do
+        name = unquote(name)
+        arity = unquote(arity)
+        module = Module.concat(__MODULE__, "Custom#{Macro.camelize(to_string(name))}Live")
+        args = Macro.generate_arguments(arity, __MODULE__)
+
+        error =
+          assert_raise Spark.Error.DslError, fn ->
+            Code.eval_quoted(
+              quote do
+                defmodule unquote(module) do
+                  use AshBackpex.LiveResource
+
+                  backpex do
+                    resource(AshBackpex.TestDomain.Post)
+                    layout({TestLayout, :admin})
+
+                    fields do
+                      field(:title)
+                    end
+                  end
+
+                  def unquote(name)(unquote_splicing(args)), do: :user_defined
+                end
+              end
+            )
+          end
+
+        message = Exception.message(error)
+        assert message =~ "defines #{name}/#{arity}"
+        assert message =~ "silently overridden"
+        assert message =~ unquote(guidance)
+      end
+    end
+
+    test "keep compiling callbacks where the user definition already takes effect" do
+      defmodule CustomNamesCallbackLive do
+        use AshBackpex.LiveResource
+
+        backpex do
+          resource(AshBackpex.TestDomain.Post)
+          layout({TestLayout, :admin})
+
+          fields do
+            field(:title)
+          end
+        end
+
+        def singular_name, do: "Article"
+
+        def form_actions(%{item: %{status: :draft}}, _default_actions),
+          do: [save: %{label: "Save draft"}]
+      end
+
+      assert CustomNamesCallbackLive.singular_name() == "Article"
+
+      assert CustomNamesCallbackLive.form_actions(%{item: %{status: :published}}, save: %{}) ==
+               [save: %{}]
+    end
+  end
 end

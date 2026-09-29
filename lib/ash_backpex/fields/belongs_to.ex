@@ -219,6 +219,9 @@ defmodule AshBackpex.Fields.BelongsTo do
   defdelegate render_index_form(assigns), to: Backpex.Fields.BelongsTo
 
   @impl Backpex.Field
+  defdelegate index_assigns(field, items, assigns), to: Backpex.Fields.BelongsTo
+
+  @impl Backpex.Field
   defdelegate display_field(field), to: Backpex.Fields.BelongsTo
 
   @impl Backpex.Field

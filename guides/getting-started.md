@@ -22,9 +22,12 @@ end
 
 Run `mix deps.get` to install the dependency.
 
-AshBackpex 0.2.0 targets Backpex `~> 0.20.0` and declares that dependency
-itself. If your application pins Backpex directly, update its constraint to
-match.
+AshBackpex targets Backpex `~> 0.21.0` and declares that dependency itself. If
+your application pins Backpex directly, update its constraint to match. When
+upgrading from Backpex 0.20, read the
+[Backpex 0.21 upgrade guide](https://hexdocs.pm/backpex/v0-21.html)
+if your application calls `Backpex.Resource` directly or defines custom item
+actions.
 
 ## Creating Your First Admin LiveResource
 

@@ -3,6 +3,8 @@ defmodule AshBackpex.LiveResource.TransformerTest do
 
   describe "generated module callbacks :: it can" do
     test "implement all required Backpex.LiveResource callbacks" do
+      Code.ensure_loaded!(TestPostLive)
+
       # Test required callbacks exist
       assert function_exported?(TestPostLive, :singular_name, 0)
       assert function_exported?(TestPostLive, :plural_name, 0)
@@ -224,6 +226,12 @@ defmodule AshBackpex.LiveResource.TransformerTest do
   end
 
   describe "authorization integration :: it can" do
+    test "generate TestPostLive fields that pass Backpex runtime validation" do
+      fields = Backpex.LiveResource.fields(TestPostLive, :index, %{})
+
+      assert Keyword.fetch!(fields, :author).display_field == :name
+    end
+
     test "export can?/3 callback" do
       Code.ensure_loaded!(TestPostLive)
       assert function_exported?(TestPostLive, :can?, 3)
@@ -408,6 +416,19 @@ defmodule AshBackpex.LiveResource.TransformerTest do
       tags_filter = Keyword.get(filters, :tags)
 
       assert tags_filter.options == [
+               {"Food", :food},
+               {"Entertainment", :entertainment},
+               {"Politics", :politics}
+             ]
+    end
+
+    test "derive Checkgroup field options from array one_of constraints" do
+      tags = Keyword.fetch!(TestCheckgroupLive.fields(), :tags)
+
+      assert tags.module == Backpex.Fields.Checkgroup
+      assert is_function(tags.options, 1)
+
+      assert tags.options.(%{field: {:tags, tags}}) == [
                {"Food", :food},
                {"Entertainment", :entertainment},
                {"Politics", :politics}

@@ -78,6 +78,9 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
   - Recursive `child_fields` do not resolve to an immediate child Ash resource
   - InlineCRUD is used with a cardinality other than `has_many` or an embedded-resource array
   - The resource lacks a primary key
+  - The LiveResource defines `can?/3`, `fields/0`, `filters/0`, `item_actions/1`,
+    or `layout/1` itself. The generated callback would silently replace it, so
+    the error points to the Ash policy or DSL option to use instead.
 
   ## Internal Use
 
@@ -89,6 +92,8 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
   use Spark.Dsl.Transformer
   # credo:disable-for-this-file Credo.Check.Refactor.CyclomaticComplexity
   def transform(dsl_state) do
+    ensure_no_replaced_callbacks!(dsl_state)
+
     backpex =
       quote do
         @resource Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :resource)
@@ -442,7 +447,7 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                   []
               end
 
-            Backpex.Fields.MultiSelect ->
+            module when module in [Backpex.Fields.MultiSelect, Backpex.Fields.Checkgroup] ->
               case get_one_of_constraint.(resource, attribute_name) do
                 [_ | _] -> &__MODULE__.maybe_default_options/1
                 _ -> []
@@ -1075,5 +1080,140 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
       end
 
     {:ok, Spark.Dsl.Transformer.eval(dsl_state, [], backpex)}
+  end
+
+  # Backpex marks these callbacks overridable, and the code generated below is
+  # evaluated after the LiveResource's own module body. A user definition of any
+  # of them is therefore replaced by the generated one without a warning.
+  @replaced_callbacks [can?: 3, fields: 0, filters: 0, item_actions: 1, layout: 1]
+
+  defp ensure_no_replaced_callbacks!(dsl_state) do
+    module = Spark.Dsl.Transformer.get_persisted(dsl_state, :module)
+
+    if module && Module.open?(module) do
+      Enum.each(@replaced_callbacks, fn callback ->
+        if Module.defines?(module, callback) do
+          raise Spark.Error.DslError,
+            module: module,
+            path: [:backpex],
+            message: replaced_callback_message(dsl_state, module, callback)
+        end
+      end)
+    end
+  end
+
+  defp replaced_callback_message(dsl_state, module, {name, arity} = callback) do
+    signature = "#{name}/#{arity}"
+    resource = Spark.Dsl.Transformer.get_option(dsl_state, [:backpex], :resource)
+
+    """
+    #{inspect(module)} defines #{signature}#{definition_location(dsl_state, module, callback)},
+    but AshBackpex generates #{signature} for every LiveResource.
+
+    Prior to this version of AshBackpex, this would not throw a compiler error.
+    Instead, the custom function was silently overridden by the generated
+    `#{signature}` AshBackpex function. Since this could cause unexpected
+    #{replaced_callback_behavior(name)} behavior, it is now treated as a compiler error.
+
+    #{replaced_callback_guidance(name, resource)}
+
+      Then remove #{signature} from #{inspect(module)}.
+    """
+    |> indent_continuation_lines()
+  end
+
+  # Spark indents the first line of a DSL error message; indent the rest to match.
+  defp indent_continuation_lines(message) do
+    message
+    |> String.trim_trailing()
+    |> String.split("\n")
+    |> Enum.map_join("\n", fn
+      "" -> ""
+      line -> "  " <> line
+    end)
+    |> String.trim_leading()
+  end
+
+  defp definition_location(dsl_state, module, callback) do
+    file = Spark.Dsl.Transformer.get_persisted(dsl_state, :file)
+
+    line =
+      case Module.get_definition(module, callback) do
+        {:v1, _kind, meta, [{clause_meta, _args, _guards, _body} | _clauses]} ->
+          Keyword.get(meta, :line) || Keyword.get(clause_meta, :line)
+
+        _definition ->
+          nil
+      end
+
+    case {file, line} do
+      {file, line} when is_binary(file) and is_integer(line) ->
+        " (#{Path.relative_to_cwd(file)}:#{line})"
+
+      _location ->
+        ""
+    end
+  end
+
+  defp replaced_callback_behavior(:can?), do: "authorization"
+  defp replaced_callback_behavior(:fields), do: "field"
+  defp replaced_callback_behavior(:filters), do: "filter"
+  defp replaced_callback_behavior(:item_actions), do: "item action"
+  defp replaced_callback_behavior(:layout), do: "layout"
+
+  defp replaced_callback_guidance(:can?, resource) do
+    """
+      To fix it, express the rule as Ash policies on #{inspect(resource)}.
+      The generated can?/3 checks them with Ash.can?/2, using assigns.current_user
+      as the actor:
+
+        :new            -> the create action
+        :index, :show   -> the read action
+        :edit           -> the update action
+        :delete         -> the destroy action
+        other keys      -> the Ash action with the same name, if one exists
+                           (custom item and resource actions without one are allowed)\
+    """
+  end
+
+  defp replaced_callback_guidance(:fields, _resource) do
+    """
+      To fix it, declare fields in the `fields` section of the `backpex` block:
+
+        fields do
+          field :title
+        end\
+    """
+  end
+
+  defp replaced_callback_guidance(:filters, _resource) do
+    """
+      To fix it, declare filters in the `filters` section of the `backpex` block:
+
+        filters do
+          filter :published
+        end\
+    """
+  end
+
+  defp replaced_callback_guidance(:item_actions, _resource) do
+    """
+      To fix it, configure item actions in the `item_actions` section of the
+      `backpex` block:
+
+        item_actions do
+          action :publish, MyAppWeb.ItemActions.Publish
+          strip_default [:delete]
+        end\
+    """
+  end
+
+  defp replaced_callback_guidance(:layout, _resource) do
+    """
+      To fix it, set the `layout` option in the `backpex` block. It accepts a
+      {module, function} tuple or a function that receives the assigns:
+
+        layout {MyAppWeb.Layouts, :admin}\
+    """
   end
 end

@@ -127,9 +127,11 @@ defmodule AshBackpex.LiveResource.Dsl do
 
   - `format` - strftime format string or function (default: `"%Y-%m-%d"`)
 
-  #### Select/MultiSelect Field Options
+  #### Select/MultiSelect/Checkgroup Field Options
 
-  - `options` - List of options or function returning options
+  - `options` - List of options or function returning options. Derived from
+    `one_of` constraints when omitted; set `module Backpex.Fields.Checkgroup` to
+    render array options as checkboxes.
 
   ## filters Section
 
@@ -414,7 +416,7 @@ defmodule AshBackpex.LiveResource.Dsl do
                   ],
                   readonly: [
                     doc:
-                      "Sets the field to readonly. Also see the [panels](/guides/fields/readonly.md) guide.",
+                      "Sets the field to readonly. Supported by every Backpex field. See the Backpex readonly guide.",
                     type: {:or, [:boolean, {:fun, 1}]}
                   ],
                   panel: [

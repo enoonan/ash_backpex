@@ -24,7 +24,11 @@ defmodule TestPostLive do
       field(:tags)
       # field(:metadata)
       field(:status)
-      field(:author)
+
+      field :author do
+        display_field(:name)
+      end
+
       field(:word_count)
     end
 
@@ -472,6 +476,41 @@ defmodule TestParamCaptureLive do
     |> Keyword.fetch!(:assigns)
     |> Map.fetch!(:test_pid)
     |> send({:captured_params, params})
+  end
+end
+
+# LiveResource whose configured destroy action is not the resource's primary destroy
+defmodule TestSoftDeleteItemLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.Item)
+    layout({TestLayout, :admin})
+    destroy_action(:soft_delete)
+
+    fields do
+      field(:name)
+    end
+  end
+end
+
+# LiveResource using Backpex 0.21's Checkgroup field on an array attribute with one_of
+defmodule TestCheckgroupLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.Post)
+    layout({TestLayout, :admin})
+
+    fields do
+      field(:title)
+
+      field :tags do
+        module(Backpex.Fields.Checkgroup)
+      end
+    end
   end
 end
 

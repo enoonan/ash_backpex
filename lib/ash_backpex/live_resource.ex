@@ -210,7 +210,26 @@ defmodule AshBackpex.LiveResource do
   - `:delete` - Checks `Ash.can?({item, destroy_action}, actor)`
 
   Custom item actions fall back to checking if a matching Ash action exists and
-  verifying authorization against it.
+  verifying authorization against it. Actions without a matching Ash action are
+  allowed.
+
+  Backpex enforces `can?/3` centrally. `Backpex.Resource` authorizes every
+  mutation before it builds a changeset, and item actions re-read the selected
+  records through `AshBackpex.Adapter` (as the current actor) before authorizing
+  them. A selection containing a record the actor cannot act on raises
+  `Backpex.ForbiddenError`; a record that no longer exists or is not readable by
+  the actor raises `Backpex.NoResultsError`. A custom item action that writes the
+  records it receives through `Backpex.Resource` should pass `authorize?: false`,
+  because Backpex has already authorized them:
+
+  ```elixir
+  def handle(socket, items, _data) do
+    Backpex.Resource.update_all(items, [set: [archived: true]], socket.assigns,
+      socket.assigns.live_resource, authorize?: false)
+
+    {:ok, socket}
+  end
+  ```
 
   ### Relationships, Calculations, and Aggregates
 
@@ -316,6 +335,45 @@ defmodule AshBackpex.LiveResource do
   The changeset function receives `(item, params, metadata)` where metadata contains:
   - `:assigns` - The LiveView assigns
   - `:target` - The form field that triggered the changeset (or `nil`)
+
+  ### Defining Backpex Callbacks
+
+  AshBackpex generates `can?/3`, `fields/0`, `filters/0`, `item_actions/1`, and
+  `layout/1` from the DSL and your Ash policies. Defining any of them in a
+  LiveResource is a compile error: the generated callback would otherwise
+  replace yours without a warning. Use Ash policies for authorization and the
+  `fields`, `filters`, `item_actions`, and `layout` DSL entries instead.
+
+  Other `Backpex.LiveResource` callbacks, such as `on_item_updated/2`,
+  `return_to/5`, `form_actions/2`, and `index_row_class/4`, can be defined in the
+  module as usual. Prefer the DSL where an option exists (`singular_name`,
+  `plural_name`, `panels`, `load`); a function definition takes precedence over
+  it.
+
+  Because AshBackpex adds Backpex's defaults after your module body, write
+  `form_actions/2` and `index_row_class/4` as pattern-matching clauses without a
+  catch-all. Unmatched calls fall through to Backpex's default. A catch-all
+  clause also works, but Elixir reports Backpex's default clause as redundant,
+  which fails builds that use `--warnings-as-errors`.
+
+  ```elixir
+  defmodule MyAppWeb.PostLive do
+    use AshBackpex.LiveResource
+
+    backpex do
+      resource MyApp.Blog.Post
+      layout {MyAppWeb.Layouts, :admin}
+    end
+
+    @impl Backpex.LiveResource
+    def form_actions(%{item: %{status: :draft}}, _default_actions) do
+      [save: %{label: "Save as draft", soft: true}, publish: %{label: "Publish"}]
+    end
+
+    @impl Backpex.LiveResource
+    def index_row_class(_assigns, %{status: :archived}, _selected, _index), do: "opacity-60"
+  end
+  ```
 
   ## Router Setup
 

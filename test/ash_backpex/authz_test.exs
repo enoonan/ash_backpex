@@ -77,6 +77,54 @@ defmodule AshBackpex.AuthzTest do
     end
   end
 
+  describe "Backpex central authorization :: it can" do
+    test "gate Backpex.Resource.delete_all/4 with the generated Ash-backed can?/3" do
+      owner = user()
+      post = post(actor: owner)
+
+      assert_raise Backpex.ForbiddenError, fn ->
+        Backpex.Resource.delete_all([post], %{current_user: user()}, TestPostLive)
+      end
+
+      assert {:ok, [_post]} = Ash.read(AshBackpex.TestDomain.Post, actor: owner)
+    end
+
+    test "reload item action selections through the adapter before authorizing them" do
+      owner = user()
+      post = post(actor: owner)
+      socket = item_action_socket(owner)
+
+      assert [%{id: id}] = Backpex.ItemAction.authorize_fresh!(socket, :delete, [post])
+      assert id == post.id
+
+      Ash.destroy!(post, actor: owner)
+
+      assert_raise Backpex.NoResultsError, fn ->
+        Backpex.ItemAction.authorize_fresh!(socket, :delete, [post])
+      end
+    end
+
+    test "raise for item action selections the actor cannot read or act on" do
+      owner = user()
+      post = post(actor: owner)
+
+      assert_raise Backpex.NoResultsError, fn ->
+        Backpex.ItemAction.authorize_fresh!(item_action_socket(user()), :delete, [post])
+      end
+    end
+
+    defp item_action_socket(user) do
+      %Phoenix.LiveView.Socket{
+        assigns: %{
+          __changed__: %{},
+          current_user: user,
+          live_resource: TestPostLive,
+          live_action: :index
+        }
+      }
+    end
+  end
+
   describe "AshBackpex.Adapter mutations" do
     test "insert/2 enforces create policies from the changeset actor" do
       inactive_user = user(active: false)

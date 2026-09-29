@@ -37,6 +37,28 @@ defmodule AshBackpex.Fields.BelongsToTest do
     refute Map.has_key?(socket.assigns, :selected_id)
   end
 
+  test "loads index-editable options once per page through Backpex index_assigns/3" do
+    ada = seed_user!("Ada", "ada@example.com")
+    post = %Post{id: Ash.UUID.generate(), author_id: ada.id}
+
+    field_options =
+      TestTypeaheadLive.fields()[:author]
+      |> Map.put(:index_editable, true)
+
+    assigns = %{live_action: :index, live_resource: TestTypeaheadLive}
+
+    assert %{index_form_options: %{} = options_by_item} =
+             BelongsTo.index_assigns({:author, field_options}, [post], assigns)
+
+    assert {"Ada", ada.id} in Map.fetch!(options_by_item, post.id)
+
+    assert BelongsTo.index_assigns(
+             {:author, Map.put(field_options, :index_editable, false)},
+             [post],
+             assigns
+           ) == %{}
+  end
+
   test "renders the search inside the resource form with single-select options" do
     form = Phoenix.Component.to_form(%{"author_id" => "selected-id"}, as: :change)
 

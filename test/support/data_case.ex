@@ -65,6 +65,19 @@ defmodule AshBackpex.DataCase do
     """)
 
     Ecto.Adapters.SQL.query!(AshBackpex.TestRepo, """
+    CREATE TABLE IF NOT EXISTS items (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      note TEXT,
+      content TEXT,
+      view_count INTEGER,
+      birth_date DATE,
+      created_at DATETIME,
+      user_id TEXT REFERENCES users(id)
+    )
+    """)
+
+    Ecto.Adapters.SQL.query!(AshBackpex.TestRepo, """
     CREATE TABLE IF NOT EXISTS many_to_many_posts (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL

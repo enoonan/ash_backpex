@@ -192,7 +192,11 @@ defmodule AshBackpex.Fields.InlineCRUDTest do
     assert_receive {:kind_can, "change[sections][0][columns][0][target]"}
     assert_receive {:kind_readonly, "change[sections][0][columns][0][target]"}
 
+    # Backpex 0.21 renders text-like fields with native `readonly` instead of `disabled`.
     assert html =~
+             ~r/<input[^>]+name="change\[sections\]\[0\]\[columns\]\[0\]\[target\]\[path\]"[^>]+readonly/
+
+    refute html =~
              ~r/<input[^>]+name="change\[sections\]\[0\]\[columns\]\[0\]\[target\]\[path\]"[^>]+disabled/
   end
 

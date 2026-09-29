@@ -233,6 +233,11 @@ defmodule AshBackpex.TestDomain.Item do
 
   actions do
     defaults [:read, :destroy, create: [:name, :note], update: [:name, :note]]
+
+    destroy :soft_delete do
+      soft? true
+      change set_attribute(:note, "soft deleted")
+    end
   end
 
   attributes do

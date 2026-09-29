@@ -2,6 +2,63 @@
 
 <!-- changelog -->
 
+## [Unreleased]
+
+### Breaking Changes
+
+- Require Backpex 0.21. Backpex now enforces the generated, Ash-backed `can?/3`
+  centrally: `Backpex.Resource` authorizes every insert, update, `update_all`,
+  and `delete_all`, and item actions re-read the selected records through the
+  AshBackpex adapter before authorizing them. AshBackpex LiveResources need no
+  configuration changes, but application code that calls Backpex directly must
+  follow the [Backpex 0.21 upgrade guide](https://hexdocs.pm/backpex/v0-21.html):
+  - `Backpex.Resource.delete_all/2` is now `delete_all/4`, and `update_all/3`
+    and `update_all/4` are now `update_all/5` (pass `socket.assigns`; move
+    `event_name` into the options).
+  - Item actions are strict. A selection that contains an item the actor cannot
+    act on raises `Backpex.ForbiddenError` instead of silently skipping it, a
+    record that was deleted or is no longer readable by the actor raises
+    `Backpex.NoResultsError`, and `handle/3` is never called with an empty list.
+  - Custom item actions receive the freshly reloaded records. When `handle/3`
+    writes those same records through `Backpex.Resource`, pass
+    `authorize?: false`; Backpex has already authorized them.
+- Defining `can?/3`, `fields/0`, `filters/0`, `item_actions/1`, or `layout/1` in
+  an AshBackpex LiveResource is now a compile error. AshBackpex generates these
+  callbacks after the module body, so earlier versions silently replaced a user
+  definition, and it never ran. For `can?/3` this meant a custom access rule
+  was never enforced. The error explains what happened and names the Ash policy
+  or DSL entry to use instead. `form_actions/2`, `index_row_class/4`, and other
+  Backpex callbacks can still be defined; see "Defining Backpex Callbacks" in
+  `AshBackpex.LiveResource`.
+- Nested readonly text-like inputs inside InlineCRUD and embedded fields now
+  render with the native `readonly` attribute instead of `disabled`, so their
+  current values are submitted with the form. Readonly checkboxes and toggles no
+  longer submit a hidden `false` value. Top-level readonly fields are still
+  dropped from submitted params before they reach the Ash action.
+
+### Updates
+
+- Support `Backpex.Fields.Checkgroup`. Checkgroup fields on array attributes with
+  `one_of` constraints derive their options automatically, and the blank
+  placeholder value Checkgroup submits is removed before the Ash action runs.
+- Load `belongs_to` options for index-editable `AshBackpex.Fields.BelongsTo`
+  fields once per index page through Backpex's `index_assigns/3`, instead of
+  once per row.
+
+### Fixes
+
+- Bulk deletion now runs the LiveResource's configured `destroy_action` (or the
+  resource's primary destroy action) instead of always calling `:destroy`, so
+  custom and soft-delete destroy actions are honored.
+- Report failed bulk deletions instead of a false success. `delete_all/2` now
+  returns `{:error, errors}` when any record cannot be deleted (for example,
+  because another record still references it), so Backpex shows its error
+  message. Previously the errors were discarded and Backpex reported
+  "0 items have been deleted successfully." On data layers that support
+  transactions, the selection is deleted in one transaction, so a failure
+  deletes nothing. AshSqlite does not support transactions, so records deleted
+  before the failure stay deleted.
+
 ## [v0.2.0]
 
 ### Breaking Changes
