@@ -1110,7 +1110,7 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
     #{inspect(module)} defines #{signature}#{definition_location(dsl_state, module, callback)},
     but AshBackpex generates #{signature} for every LiveResource.
 
-    Prior to this version of AshBackpex, this would not throw a compiler error.
+    Prior to AshBackpex 0.3.0, this would not throw a compiler error.
     Instead, the custom function was silently overridden by the generated
     `#{signature}` AshBackpex function. Since this could cause unexpected
     #{replaced_callback_behavior(name)} behavior, it is now treated as a compiler error.
