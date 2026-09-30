@@ -407,15 +407,24 @@ Backpex enforces the generated `can?/3` before every mutation and item action:
   handed through `Backpex.Resource`; Backpex already authorized them
 - Call `Backpex.Resource.delete_all/4` and `update_all/5` with `socket.assigns`
 
-Do not define `can?/3` in a LiveResource. AshBackpex generates it from your Ash
-policies, and defining it is a compile error. Express access rules as Ash
-policies instead.
+Do not define `can?/3` in a LiveResource. AshBackpex generates it, and defining
+it is a compile error. Express access rules one of two ways:
+
+- The admin does not offer create, edit, or delete to anyone: set
+  `create_action false`, `update_action false`, or `destroy_action false`. The
+  generated `can?/3` denies `:new`, `:edit`, or `:delete` without consulting Ash.
+- The rule depends on the actor or the record: write Ash policies on the
+  resource.
+
+Routing with `except: [:new]` does not hide Backpex's empty-state "New" button,
+which only consults `can?(assigns, :new, nil)`. Set `create_action false` too.
 
 ## Backpex Callbacks
 
 AshBackpex generates `can?/3`, `fields/0`, `filters/0`, `item_actions/1`, and
-`layout/1`; defining them is a compile error. Use Ash policies and the DSL
-instead.
+`layout/1`; defining them is a compile error. Use the DSL instead; for `can?/3`,
+use `create_action false` / `update_action false` / `destroy_action false` or
+Ash policies (see Authorization).
 
 Other `Backpex.LiveResource` callbacks (`on_item_updated/2`, `return_to/5`,
 `form_actions/2`, `index_row_class/4`, ...) can be defined in the module. Write
@@ -505,10 +514,11 @@ If actions are hidden unexpectedly:
 ### "defines can?/3, but AshBackpex generates can?/3"
 
 The LiveResource defines a callback AshBackpex generates. Earlier versions
-silently replaced the definition, so it never ran. Move the logic to Ash
-policies (`can?/3`) or the matching DSL entry (`fields`, `filters`,
-`item_actions`, `layout`), then remove the function. The error message names
-the replacement.
+silently replaced the definition, so it never ran. For `can?/3`, set
+`create_action false`, `update_action false`, or `destroy_action false` when the
+rule turns an operation off for everyone, and write Ash policies otherwise. For
+the others, use the matching DSL entry (`fields`, `filters`, `item_actions`,
+`layout`). Then remove the function. The error message names the replacement.
 
 ### Fields Not Loading
 

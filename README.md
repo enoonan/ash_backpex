@@ -4,12 +4,23 @@ You got your [Ash](https://ash-hq.org/) in my [Backpex](https://backpex.live/). 
 
 An integration library that brings together Ash Framework's powerful resource system with Backpex's admin interface capabilities. This library provides a clean DSL for creating admin interfaces directly from your Ash resources.
 
+> ## Upgrading to 0.3? Read this first {: .warning}
+>
+> 0.2 and 0.3 break more than earlier releases did. Your application may stop
+> compiling, the admin layout has to change if you are coming from 0.1, and any
+> `can?/3` you defined in a LiveResource was never being enforced. Follow
+> [Upgrading to 0.3](guides/upgrading-to-0.3.md) before you bump the dependency.
+
 > ## Warning! {: .error}
 >
-> Backpex itself is pre-1.0, so expect its API to change. AshBackpex passes the
-> current actor through normal reads, creates, and updates, but Backpex's bulk
-> delete adapter callback does not provide the actor. For now, use AshBackpex
-> in a high-trust environment such as internal tooling.
+> Backpex itself is pre-1.0, so expect its API to change, and AshBackpex's with
+> it.
+
+AshBackpex enforces your Ash policies in the admin. Reads, creates, and updates
+run as the current user. Deletes are checked against the destroy action's
+policies for every selected record, as the current user, before anything is
+deleted; the destroy action itself then runs without an actor, because Backpex
+does not pass one to that callback.
 
 This is a partial implementation - feel free to open a github issue to request additional features or submit a PR if you're into that kind of thing ;)
 

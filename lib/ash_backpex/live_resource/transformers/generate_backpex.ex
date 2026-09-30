@@ -1163,7 +1163,12 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
 
   defp replaced_callback_guidance(:can?, resource) do
     """
-      To fix it, express the rule as Ash policies on #{inspect(resource)}.
+      To fix it, if the rule turns creating, editing, or deleting off in this
+      admin for everyone, set `create_action false`, `update_action false`, or
+      `destroy_action false` in the `backpex` block. The generated can?/3 then
+      denies :new, :edit, or :delete without consulting Ash.
+
+      Otherwise, express the rule as Ash policies on #{inspect(resource)}.
       The generated can?/3 checks them with Ash.can?/2, using assigns.current_user
       as the actor:
 

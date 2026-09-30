@@ -18,12 +18,11 @@ defmodule DemoWeb.Router do
   scope "/", DemoWeb do
     pipe_through([:browser, :assign_user])
 
-    get("/", PageController, :redirect_to_posts)
-
     backpex_routes()
 
     live_session :backpex_admin,
       on_mount: [{DemoWeb.LiveUserAuth, :live_user_demo}, Backpex.InitAssigns] do
+      live("/", DashboardLive)
       live_resources("/authors", AuthorLive)
       live_resources("/posts", PostLive)
       live_resources("/tags", TagLive)

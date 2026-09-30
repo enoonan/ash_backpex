@@ -548,7 +548,8 @@ defmodule AshBackpex.LiveResource.ErrorCasesTest do
       assert message =~ ~r/error_cases_test\.exs:\d+/
       assert message =~ "silently overridden"
       assert message =~ ~r/unexpected\s+authorization behavior/
-      assert message =~ ~r/To fix it, express the rule as Ash policies/
+      assert message =~ ~r/create_action false.*update_action false.*destroy_action false/s
+      assert message =~ ~r/Otherwise, express the rule as Ash policies/
       assert message =~ "AshBackpex.TestDomain.Post"
       assert message =~ "Then remove can?/3"
     end

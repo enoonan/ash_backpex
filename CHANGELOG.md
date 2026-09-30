@@ -2,7 +2,43 @@
 
 <!-- changelog -->
 
+> **Upgrading to 0.3.x from 0.2 or 0.1?** These releases break more than usual:
+> the application may stop compiling, and from 0.1 the admin layout has to
+> change. Follow the [upgrade guide](guides/upgrading-to-0.3.md) before you bump
+> the dependency.
+
+## [Unreleased]
+
+### Updates
+
+- Add an [upgrade guide](guides/upgrading-to-0.3.md) covering 0.1 → 0.2 (the
+  Backpex 0.20 layout, sidebar, and preference changes) and 0.2 → 0.3 (the new
+  compile errors, Backpex 0.21's central authorization, and the empty-index
+  "New" button). The README and the getting-started guide point to it.
+- The compile error for a `can?/3` defined in a LiveResource now names
+  `create_action false`, `update_action false`, and `destroy_action false` as
+  the fix when the rule turns an operation off in the admin for everyone, and
+  Ash policies otherwise. It named only Ash policies, which does not fit a rule
+  such as "this admin never creates these records".
+- Getting-started guide: run an authentication hook before
+  `Backpex.InitAssigns` in the `live_session`, wrap the LiveSocket params with
+  `backpexParams`, give `sidebar_section` its `id` and `sidebar_section_states`,
+  and pass the layout assigns from an admin page that is not a resource.
+- Demo: add a dashboard LiveView at `/` that renders the admin layout without
+  being a LiveResource, and wrap the LiveSocket params with `backpexParams` so
+  preferences survive navigation.
+
+### Fixes
+
+- Correct the README and getting-started warning about bulk deletion. Since
+  Backpex 0.21, `Backpex.Resource.delete_all/4` checks the destroy action's
+  policies for every selected record, as the current user, before it calls the
+  adapter, so AshBackpex no longer needs a high-trust environment for that
+  reason. The destroy action itself still runs without an actor.
+
 ## [v0.3.1]
+
+See the [upgrade guide](guides/upgrading-to-0.3.md) when coming from 0.2 or 0.1.
 
 ### Features
 
@@ -21,6 +57,8 @@
   `Protocol.UndefinedError`.
 
 ## [v0.3.0]
+
+See the [upgrade guide](guides/upgrading-to-0.3.md) when coming from 0.2 or 0.1.
 
 ### Breaking Changes
 

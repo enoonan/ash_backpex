@@ -23,11 +23,12 @@ end
 Run `mix deps.get` to install the dependency.
 
 AshBackpex targets Backpex `~> 0.21.0` and declares that dependency itself. If
-your application pins Backpex directly, update its constraint to match. When
-upgrading from Backpex 0.20, read the
-[Backpex 0.21 upgrade guide](https://hexdocs.pm/backpex/v0-21.html)
-if your application calls `Backpex.Resource` directly or defines custom item
-actions.
+your application pins Backpex directly, update its constraint to match.
+
+> #### Upgrading an existing admin? {: .warning}
+>
+> AshBackpex 0.2 and 0.3 each follow a Backpex release with breaking changes.
+> Read [Upgrading to 0.3](upgrading-to-0.3.md) before you bump the dependency.
 
 ## Creating Your First Admin LiveResource
 
@@ -50,6 +51,7 @@ defmodule MyAppWeb.Layouts do
   attr :socket, :any, required: true
   attr :current_theme, :string, required: true
   attr :sidebar_open, :boolean, required: true
+  attr :sidebar_section_states, :map, required: true
   attr :preferences_manifest, :map, required: true
   slot :inner_block, required: true
 
@@ -83,10 +85,13 @@ defmodule MyAppWeb.Layouts do
         </.topbar_dropdown>
       </:topbar>
       <:sidebar>
-        <.sidebar_item current_url={@current_url} navigate={~p"/admin/posts"}>
-          <Backpex.HTML.CoreComponents.icon name="hero-document-text" class="size-5" /> Posts
-        </.sidebar_item>
-        <%!-- Add more sidebar items for your resources --%>
+        <.sidebar_section id="blog" sidebar_section_states={@sidebar_section_states}>
+          <:label>Blog</:label>
+          <.sidebar_item current_url={@current_url} navigate={~p"/admin/posts"}>
+            <Backpex.HTML.CoreComponents.icon name="hero-document-text" class="size-5" /> Posts
+          </.sidebar_item>
+          <%!-- Add more sidebar items for your resources --%>
+        </.sidebar_section>
       </:sidebar>
       <.flash_messages flash={@flash} />
       {render_slot(@inner_block)}
@@ -95,6 +100,17 @@ defmodule MyAppWeb.Layouts do
   end
 end
 ```
+
+`Backpex.InitAssigns` assigns `@current_theme`, `@sidebar_open`,
+`@sidebar_section_states`, and `@preferences_manifest`; the layout passes them
+on. Two details of `sidebar_section/1` are easy to miss:
+
+- `id` is required and must be unique among your sections. Backpex stores each
+  section's open state under it. Use only letters, digits, underscores, and
+  hyphens.
+- `sidebar_section_states` must be passed explicitly. A function component does
+  not inherit the surrounding assign, so a section without it always renders
+  open and a collapsed section does not stay collapsed.
 
 Use the server-assigned theme in your root layout:
 
@@ -142,15 +158,110 @@ scope "/admin", MyAppWeb.Admin do
 
   backpex_routes()
 
-  live_session :backpex_admin, on_mount: [Backpex.InitAssigns] do
+  live_session :backpex_admin,
+    on_mount: [{MyAppWeb.LiveUserAuth, :require_admin}, Backpex.InitAssigns] do
     live_resources "/posts", PostLive
   end
 end
 ```
 
-### 4. Visit the Admin
+Put your authentication hook first. It must assign `current_user`, and halt the
+mount for anyone who may not use the admin:
+
+```elixir
+# lib/my_app_web/live_user_auth.ex
+defmodule MyAppWeb.LiveUserAuth do
+  import Phoenix.Component
+  import Phoenix.LiveView
+
+  def on_mount(:require_admin, _params, session, socket) do
+    socket = assign_new(socket, :current_user, fn -> load_user(session) end)
+
+    if admin?(socket.assigns.current_user) do
+      {:cont, socket}
+    else
+      {:halt, redirect(socket, to: "/sign-in")}
+    end
+  end
+
+  # load_user/1 and admin?/1 depend on how your application authenticates.
+end
+```
+
+The order matters for two reasons. AshBackpex uses `assigns.current_user` as the
+Ash actor, so it has to be there before the LiveResource mounts. And
+`Backpex.InitAssigns` reads the user's stored preferences using whatever the
+authentication hook assigned, so it has to run after it. If you use
+AshAuthentication or `mix phx.gen.auth`, use the `on_mount` hook they provide in
+place of `MyAppWeb.LiveUserAuth`.
+
+### 4. Wire Up the Browser
+
+Backpex sends the browser's stored preferences with the LiveView connection.
+Wrap your connect params with `backpexParams` in `assets/js/app.js`:
+
+```javascript
+import { Hooks as BackpexHooks, backpexParams } from "backpex";
+
+const liveSocket = new LiveSocket("/live", Socket, {
+  params: backpexParams({ _csrf_token: csrfToken }),
+  hooks: { ...BackpexHooks },
+});
+```
+
+Without it, the theme, sidebar, and column choices revert when the user
+navigates to another resource, and Backpex logs a console warning.
+
+### 5. Visit the Admin
 
 Start your Phoenix server and visit `http://localhost:4000/admin/posts` to see your admin interface.
+
+### Admin Pages That Are Not Resources
+
+A dashboard or any other LiveView can use the same admin layout. Route it inside
+the same `live_session`, so both hooks run for it:
+
+```elixir
+live_session :backpex_admin,
+  on_mount: [{MyAppWeb.LiveUserAuth, :require_admin}, Backpex.InitAssigns] do
+  live "/", DashboardLive
+  live_resources "/posts", PostLive
+end
+```
+
+A LiveResource hands every assign to the layout for you. Your own LiveView has
+to pass them itself:
+
+```elixir
+# lib/my_app_web/live/admin/dashboard_live.ex
+defmodule MyAppWeb.Admin.DashboardLive do
+  use MyAppWeb, :live_view
+
+  def render(assigns) do
+    ~H"""
+    <MyAppWeb.Layouts.admin
+      socket={@socket}
+      flash={@flash}
+      current_url={@current_url}
+      current_theme={@current_theme}
+      sidebar_open={@sidebar_open}
+      sidebar_section_states={@sidebar_section_states}
+      preferences_manifest={@preferences_manifest}
+    >
+      <h1 class="text-2xl font-semibold">Dashboard</h1>
+    </MyAppWeb.Layouts.admin>
+    """
+  end
+end
+```
+
+`socket`, `sidebar_open`, `sidebar_section_states`, and `preferences_manifest`
+are the ones Backpex 0.20 added, and the ones an older dashboard will be
+missing. The layout above requires all of them, so the page raises a `KeyError`
+when one is left out.
+
+Link to the page from the layout's `<:sidebar>` slot with another
+`sidebar_item`.
 
 ## Adding More Features
 
@@ -234,8 +345,8 @@ end
 
 ### Persisted Index State
 
-Backpex 0.20 makes persistence opt-in. Choose which index settings should
-survive navigation and reloads:
+Persistence is opt-in, and the default is to persist nothing. Choose which index
+settings should survive navigation and reloads:
 
 ```elixir
 backpex do
@@ -322,7 +433,8 @@ end
 
 AshBackpex automatically integrates with Ash authorization policies. The admin will:
 
-- Check `Ash.can?/2` before showing create/edit/delete buttons
+- Check `Ash.can?/2` before showing create/edit/delete buttons, and again
+  before every create, update, delete, and item action
 - Use `assigns.current_user` as the actor for reads and relationship options
 - Persist create and update changesets with their configured actor
 
@@ -330,9 +442,32 @@ Make sure your Ash resources have policies defined and that you're setting
 `current_user` in your LiveView assigns. If you provide custom create or update
 changeset functions, set that actor on the returned Ash changeset.
 
-Backpex's bulk delete adapter callback does not provide LiveView assigns, so it
-cannot currently pass the actor to Ash. Only enable bulk deletion in a
-high-trust admin environment.
+Policies are for rules that depend on who is asking. When the admin should not
+offer an operation to anyone, turn it off in the LiveResource instead:
+
+```elixir
+backpex do
+  resource MyApp.Audit.Event
+  layout {MyAppWeb.Layouts, :admin}
+
+  create_action false   # no "New" button, and :new is denied
+  update_action false   # no editing
+  destroy_action false  # no deleting
+end
+```
+
+Do this even if you also route the resource with `except: [:new]`. Backpex shows
+the "New" button on an empty index page whenever `:new` is allowed, without
+looking at the routes, and the page raises when the route is missing.
+
+Do not define `can?/3` in the LiveResource. AshBackpex generates it, and
+defining it is a compile error.
+
+Deleting is authorized per record: Backpex checks the destroy action's policies
+for every selected record, as the current user, before anything is deleted.
+Backpex does not hand the actor to the delete callback itself, so the destroy
+action then runs without one. A change or notifier on that action that reads the
+actor (an audit trail, for example) will not see it.
 
 ## Next Steps
 

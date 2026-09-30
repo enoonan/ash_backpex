@@ -42,6 +42,9 @@ defmodule DemoWeb.Layouts do
           />
         </:topbar>
         <:sidebar>
+          <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate="/">
+            <Backpex.HTML.CoreComponents.icon name="hero-home" class="size-5" /> Dashboard
+          </Backpex.HTML.Layout.sidebar_item>
           <Backpex.HTML.Layout.sidebar_section
             id="blog"
             sidebar_section_states={@sidebar_section_states}

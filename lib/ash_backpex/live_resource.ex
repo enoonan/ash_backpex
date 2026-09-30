@@ -209,10 +209,34 @@ defmodule AshBackpex.LiveResource do
   - `:edit` - Checks `Ash.can?({item, update_action}, actor)`
   - `:delete` - Checks `Ash.can?({item, destroy_action}, actor)`
 
-  Setting `create_action`, `update_action`, or `destroy_action` to `false` denies
-  `:new`, `:edit`, or `:delete` without consulting Ash. Use it when the admin must
-  not offer an operation the resource still needs elsewhere, for example a resource
-  that only background jobs write, routed with `except: [:new, :edit]`.
+  There are two ways to restrict what an admin can do, and they answer different
+  questions:
+
+  - **"This admin does not offer the operation to anyone."** Set `create_action`,
+    `update_action`, or `destroy_action` to `false`. The generated `can?/3` then
+    denies `:new`, `:edit`, or `:delete` without consulting Ash, and the resource
+    keeps its actions for the rest of the application. Use it for a resource that
+    only background jobs write, or a log that must not be edited by hand.
+  - **"It depends on who is asking."** Write Ash policies on the resource. The
+    generated `can?/3` checks them with `assigns.current_user` as the actor.
+
+  ```elixir
+  backpex do
+    resource MyApp.Audit.Event
+    layout {MyAppWeb.Layouts, :admin}
+
+    # Events are written by the application, never in the admin.
+    create_action false
+    update_action false
+    destroy_action false
+  end
+  ```
+
+  Routing a LiveResource with `except: [:new]` is not enough on its own. Backpex
+  decides whether to show the "New" button on an empty index page by calling
+  `can?(assigns, :new, nil)`; it does not look at the routes, so the button links
+  to a route that does not exist and the page raises. Set `create_action false`
+  as well.
 
   Custom item actions fall back to checking if a matching Ash action exists and
   verifying authorization against it. Actions without a matching Ash action are
@@ -346,8 +370,15 @@ defmodule AshBackpex.LiveResource do
   AshBackpex generates `can?/3`, `fields/0`, `filters/0`, `item_actions/1`, and
   `layout/1` from the DSL and your Ash policies. Defining any of them in a
   LiveResource is a compile error: the generated callback would otherwise
-  replace yours without a warning. Use Ash policies for authorization and the
-  `fields`, `filters`, `item_actions`, and `layout` DSL entries instead.
+  replace yours without a warning. Use the `fields`, `filters`, `item_actions`,
+  and `layout` DSL entries instead. For a rule that used to live in `can?/3`:
+
+  - to turn creating, editing, or deleting off in this admin for everyone, set
+    `create_action false`, `update_action false`, or `destroy_action false`;
+  - for a rule that depends on the actor or the record, write Ash policies on the
+    resource.
+
+  See "Ash Authorization Integration" above.
 
   Other `Backpex.LiveResource` callbacks, such as `on_item_updated/2`,
   `return_to/5`, `form_actions/2`, and `index_row_class/4`, can be defined in the
