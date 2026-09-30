@@ -7,7 +7,7 @@
 > change. Follow the [upgrade guide](guides/upgrading-to-0.3.md) before you bump
 > the dependency.
 
-## [Unreleased]
+## [v0.3.2]
 
 ### Updates
 

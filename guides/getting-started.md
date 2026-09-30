@@ -15,7 +15,7 @@ Add `ash_backpex` to your dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:ash_backpex, "~> 0.3.1"}
+    {:ash_backpex, "~> 0.3.2"}
   ]
 end
 ```
