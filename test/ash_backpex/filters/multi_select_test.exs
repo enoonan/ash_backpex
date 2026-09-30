@@ -14,6 +14,24 @@ defmodule AshBackpex.Filters.MultiSelectTest do
     assert MultiSelect.label() == "Multi Select"
   end
 
+  describe "options given as a function" do
+    @assigns %{live_resource: TestFilterOptionsFunctionLive, field: :tags}
+
+    test "options/1 calls the function with the assigns" do
+      assert MultiSelect.options(@assigns) == [{"Food", :food}, {"Politics", :politics}]
+    end
+
+    test "Backpex's filter validation accepts listed values and rejects others" do
+      filters = TestFilterOptionsFunctionLive.filters() |> Keyword.take([:tags])
+
+      valid = Backpex.FilterValidation.build_changeset(%{"tags" => ["food"]}, filters, @assigns)
+      invalid = Backpex.FilterValidation.build_changeset(%{"tags" => ["gone"]}, filters, @assigns)
+
+      assert Backpex.FilterValidation.valid_values(valid) == %{tags: ["food"]}
+      assert Backpex.FilterValidation.valid_values(invalid) == %{}
+    end
+  end
+
   describe "to_ash_expr/3" do
     test "returns IN expression when multiple values are selected" do
       expr = MultiSelect.to_ash_expr(:status, ["active", "pending"], %{})

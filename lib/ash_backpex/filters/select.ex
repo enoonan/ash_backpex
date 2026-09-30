@@ -140,19 +140,24 @@ defmodule AshBackpex.Filters.Select do
 
   def to_ash_expr(_field, _value, _assigns), do: nil
 
-  defp options_for(%{filters: filters}, field) when is_atom(field) do
+  defp options_for(%{filters: filters} = assigns, field) when is_atom(field) do
     filters
     |> Keyword.get(field, %{})
     |> Map.get(:options, [])
+    |> resolve_options(assigns)
   end
 
   defp options_for(%{live_resource: live_resource} = assigns, field) when is_atom(field) do
     live_resource.filters(assigns)
     |> Keyword.get(field, %{})
     |> Map.get(:options, [])
+    |> resolve_options(assigns)
   end
 
   defp options_for(_assigns, _field), do: []
+
+  defp resolve_options(options, assigns) when is_function(options, 1), do: options.(assigns)
+  defp resolve_options(options, _assigns), do: options
 
   defp prompt_for(%{filters: filters}, field) when is_atom(field) do
     filters

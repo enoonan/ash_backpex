@@ -2,6 +2,24 @@
 
 <!-- changelog -->
 
+## [Unreleased]
+
+### Features
+
+- Document `create_action false`, `update_action false`, and `destroy_action
+  false`. They turn creating, editing, or deleting off in the admin: the
+  generated `can?/3` denies `:new`, `:edit`, or `:delete` without consulting
+  Ash. This hides Backpex's empty-state "New" button, which a LiveResource
+  routed with `except: [:new]` could not otherwise remove.
+
+### Fixes
+
+- `AshBackpex.Filters.Select` and `AshBackpex.Filters.MultiSelect` now call
+  `options` given as a 1-arity function with the assigns, as the filter DSL
+  documents. They passed the function to Backpex unchanged, and Backpex 0.21
+  validates filter values on every index load, so the index page raised
+  `Protocol.UndefinedError`.
+
 ## [v0.3.0]
 
 ### Breaking Changes

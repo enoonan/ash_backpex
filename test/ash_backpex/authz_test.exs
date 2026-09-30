@@ -26,6 +26,19 @@ defmodule AshBackpex.AuthzTest do
     end
   end
 
+  describe "AshBackpex.LiveResource :: can? with actions turned off" do
+    test "create_action false and update_action false deny :new and :edit" do
+      user = user()
+      post = post(actor: user)
+      assigns = %{current_user: user}
+
+      refute TestCreateAndUpdateDisabledLive.can?(assigns, :new, nil)
+      refute TestCreateAndUpdateDisabledLive.can?(assigns, :edit, post)
+      assert TestCreateAndUpdateDisabledLive.can?(assigns, :index, nil)
+      assert TestCreateAndUpdateDisabledLive.can?(assigns, :delete, post)
+    end
+  end
+
   describe "AshBackpex.LiveResource :: can? with missing actions" do
     test "returns false for :edit when update action doesn't exist" do
       refute TestReadOnlyLive.can?(%{current_user: nil}, :edit, %{})

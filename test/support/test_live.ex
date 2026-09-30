@@ -650,3 +650,47 @@ defmodule TestArrayFilterTypeLive do
     end
   end
 end
+
+# LiveResource whose Select and MultiSelect filter options are 1-arity functions
+defmodule TestFilterOptionsFunctionLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.Post)
+    layout({TestLayout, :admin})
+
+    fields do
+      field(:title)
+    end
+
+    filters do
+      filter :status do
+        module(AshBackpex.Filters.Select)
+        options(fn _assigns -> [{"Draft", :draft}, {"Published", :published}] end)
+      end
+
+      filter :tags do
+        module(AshBackpex.Filters.MultiSelect)
+        options(fn _assigns -> [{"Food", :food}, {"Politics", :politics}] end)
+      end
+    end
+  end
+end
+
+# LiveResource that turns off creating and editing despite the resource's actions
+defmodule TestCreateAndUpdateDisabledLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.Post)
+    layout({TestLayout, :admin})
+    create_action(false)
+    update_action(false)
+
+    fields do
+      field(:title)
+    end
+  end
+end

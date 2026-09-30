@@ -209,6 +209,11 @@ defmodule AshBackpex.LiveResource do
   - `:edit` - Checks `Ash.can?({item, update_action}, actor)`
   - `:delete` - Checks `Ash.can?({item, destroy_action}, actor)`
 
+  Setting `create_action`, `update_action`, or `destroy_action` to `false` denies
+  `:new`, `:edit`, or `:delete` without consulting Ash. Use it when the admin must
+  not offer an operation the resource still needs elsewhere, for example a resource
+  that only background jobs write, routed with `except: [:new, :edit]`.
+
   Custom item actions fall back to checking if a matching Ash action exists and
   verifying authorization against it. Actions without a matching Ash action are
   allowed.

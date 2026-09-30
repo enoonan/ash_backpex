@@ -15,6 +15,24 @@ defmodule AshBackpex.Filters.SelectTest do
     assert Select.label() == "Select"
   end
 
+  describe "options given as a function" do
+    @assigns %{live_resource: TestFilterOptionsFunctionLive, field: :status}
+
+    test "options/1 calls the function with the assigns" do
+      assert Select.options(@assigns) == [{"Draft", :draft}, {"Published", :published}]
+    end
+
+    test "Backpex's filter validation accepts listed values and rejects others" do
+      filters = TestFilterOptionsFunctionLive.filters() |> Keyword.take([:status])
+
+      valid = Backpex.FilterValidation.build_changeset(%{"status" => "draft"}, filters, @assigns)
+      invalid = Backpex.FilterValidation.build_changeset(%{"status" => "gone"}, filters, @assigns)
+
+      assert Backpex.FilterValidation.valid_values(valid) == %{status: "draft"}
+      assert Backpex.FilterValidation.valid_values(invalid) == %{}
+    end
+  end
+
   describe "to_ash_expr/3" do
     test "returns equality expression when a value is selected" do
       expr = Select.to_ash_expr(:status, "active", %{})

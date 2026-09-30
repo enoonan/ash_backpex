@@ -23,10 +23,10 @@ defmodule AshBackpex.LiveResource.Dsl do
   ### Optional Options
 
   - `load` - List of relationships/calculations/aggregates to preload
-  - `create_action` - Ash action for creating (defaults to primary create action)
+  - `create_action` - Ash action for creating (defaults to primary create action; `false` turns creating off)
   - `read_action` - Ash action for reading (defaults to primary read action)
-  - `update_action` - Ash action for updating (defaults to primary update action)
-  - `destroy_action` - Ash action for destroying (defaults to primary destroy action)
+  - `update_action` - Ash action for updating (defaults to primary update action; `false` turns editing off)
+  - `destroy_action` - Ash action for destroying (defaults to primary destroy action; `false` turns deleting off)
   - `create_changeset` - Custom changeset function for creates (3-arity)
   - `update_changeset` - Custom changeset function for updates (3-arity)
   - `singular_name` - Display name for single items (e.g., "Post")
@@ -653,7 +653,7 @@ defmodule AshBackpex.LiveResource.Dsl do
       create_action: [
         type: :atom,
         doc:
-          "The create action to be used when creating resources. Will default to the primary create action."
+          "The create action to be used when creating resources. Will default to the primary create action. Set to `false` to turn create off in the admin, so the generated `can?/3` denies `:new`."
       ],
       read_action: [
         type: :atom,
@@ -663,12 +663,12 @@ defmodule AshBackpex.LiveResource.Dsl do
       update_action: [
         type: :atom,
         doc:
-          "The update action to be used when updating resources. Will default to the primary update action."
+          "The update action to be used when updating resources. Will default to the primary update action. Set to `false` to turn update off in the admin, so the generated `can?/3` denies `:edit`."
       ],
       destroy_action: [
         type: :atom,
         doc:
-          "The destroy action to be used when destroying resources. Will default to the primary destroy action."
+          "The destroy action to be used when destroying resources. Will default to the primary destroy action. Set to `false` to turn destroy off in the admin, so the generated `can?/3` denies `:delete`."
       ],
       update_changeset: [
         doc: """
