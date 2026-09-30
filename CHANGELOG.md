@@ -2,7 +2,7 @@
 
 <!-- changelog -->
 
-## [Unreleased]
+## [v0.3.1]
 
 ### Features
 
