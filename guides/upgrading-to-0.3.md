@@ -15,7 +15,7 @@ repeat what Backpex's guides already say.
 
 Install the latest 0.3 release.
 
-## What to expect:
+## Errors You May Experience on Upgrading
 
 - The application may stop compiling. Defining `can?/3`, `fields/0`,
   `filters/0`, `item_actions/1`, or `layout/1` in a LiveResource is now a [compile
