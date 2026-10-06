@@ -7,12 +7,12 @@
 > change. Follow the [upgrade guide](guides/upgrading-to-0.3.md) before you bump
 > the dependency.
 
-## [Unreleased]
+## [v0.3.3]
 
-> **Admin records now carry every attribute Ash selects by default.** Pages
-> that use 0.3.2 or earlier crash with `%Ash.NotLoaded{}` when a resource change
-> reads an attribute the LiveResource does not list as a field. Upgrade if you
-> hit that, and expect index, show, and edit queries to fetch more columns. See
+> **Admin records now carry every attribute Ash selects by default.** On 0.3.0
+> through 0.3.2, admin pages crash with `%Ash.NotLoaded{}` when a resource change
+> reads an attribute the LiveResource does not list as a field. Expect index,
+> show, and edit queries to fetch more columns. See
 > [Resource changes run for every index row](guides/upgrading-to-0.3.md#resource-changes-run-for-every-index-row).
 
 ### Fixes

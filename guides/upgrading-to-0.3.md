@@ -28,7 +28,7 @@ What to expect:
 ```elixir
 def deps do
   [
-    {:ash_backpex, "~> 0.3.2"}
+    {:ash_backpex, "~> 0.3.3"}
   ]
 end
 ```
