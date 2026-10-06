@@ -7,8 +7,7 @@ An integration library that brings together Ash Framework's powerful resource sy
 > ## Upgrading to 0.3? Read this first {: .warning}
 >
 > 0.2 and 0.3 break more than earlier releases did. Your application may stop
-> compiling, the admin layout has to change if you are coming from 0.1, and any
-> `can?/3` you defined in a LiveResource was never being enforced. Follow
+> compiling, and the admin layout has to change if you are coming from 0.1. Follow
 > [Upgrading to 0.3](guides/upgrading-to-0.3.md) before you bump the dependency.
 
 > ## Warning! {: .error}

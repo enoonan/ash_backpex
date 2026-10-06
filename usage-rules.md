@@ -524,8 +524,7 @@ If actions are hidden unexpectedly:
 
 ### "defines can?/3, but AshBackpex generates can?/3"
 
-The LiveResource defines a callback AshBackpex generates. Earlier versions
-silently replaced the definition, so it never ran. For `can?/3`, set
+The LiveResource defines a callback AshBackpex generates. For `can?/3`, set
 `create_action false`, `update_action false`, or `destroy_action false` when the
 rule turns an operation off for everyone, and write Ash policies otherwise. For
 the others, use the matching DSL entry (`fields`, `filters`, `item_actions`,
