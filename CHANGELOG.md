@@ -9,27 +9,34 @@
 
 ## [v0.3.3]
 
-> **Admin records now carry every attribute Ash selects by default.** On 0.3.0
-> through 0.3.2, admin pages crash with `%Ash.NotLoaded{}` when a resource change
-> reads an attribute the LiveResource does not list as a field. Expect index,
-> show, and edit queries to fetch more columns. See
+> **Admin records now carry every attribute Ash selects by default.** Before
+> 0.3.3, admin pages crash with `%Ash.NotLoaded{}` when a resource change reads
+> an attribute the LiveResource does not list as a field. Expect index, show,
+> and edit queries to fetch more columns. See
 > [Resource changes run for every index row](guides/upgrading-to-0.3.md#resource-changes-run-for-every-index-row).
 
 ### Fixes
 
 - The adapter's `list/4` and `get/4` now read every attribute Ash selects by
   default, plus any attribute listed as a field, instead of only the fields'
-  attributes. Backpex 0.21 checks `can?/3` for `:edit` and `:delete` on every
-  index row, which builds an update and a destroy changeset per row and runs
-  the resource's changes, so a change that read any other attribute crashed the
-  index page. The same narrowed records reached the show page, the edit form's
-  update changeset, and item actions. Records in the admin now match what
+  attributes. Backpex checks `can?/3` for `:edit` and `:delete` on every index
+  row (and, since 0.21, for each bulk item action), which builds an update and a
+  destroy changeset per row and runs the resource's changes, so a change that
+  read any other attribute crashed the index page. The same narrowed records
+  reached the show page, the edit form's update changeset, and item actions. Records in the admin now match what
   `Ash.read/2` returns elsewhere in the application.
 
 ### Updates
 
 - An attribute with `select_by_default? false` is still read when it is a field,
   so the admin can show columns that plain reads leave out.
+- The upgrade guide now points to Backpex's
+  [v0.20](https://hexdocs.pm/backpex/v0-20.html) and
+  [v0.21](https://hexdocs.pm/backpex/v0-21.html) upgrade guides as the
+  authority, and covers only what differs in an AshBackpex application: the
+  authentication hook order, layout assigns on pages that are not resources,
+  `persist` and `init_order` as DSL options, the generated `can?/3`, per-row
+  changeset building and its query cost, and AshBackpex's own fixes.
 - The upgrade guide, `usage-rules.md`, and the `AshBackpex.Adapter` docs explain
   which attributes the admin reads, and how to write changes that cope with the
   cases that can still be missing: attributes with `select_by_default? false`

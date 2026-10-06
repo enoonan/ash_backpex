@@ -1,12 +1,17 @@
 # Upgrading to 0.3
 
 AshBackpex 0.2 and 0.3 each follow a Backpex release that changes how an admin
-is wired together. Expect this upgrade to take longer than the ones before it:
+is wired together. Expect this upgrade to take longer than the ones before it.
 
-| You are on | AshBackpex changes | Backpex changes |
+Backpex's own upgrade guides are the authority for everything Backpex changed.
+Work through them first, in order, then come back here. This guide covers only
+what is different or additional in an AshBackpex application, and does not
+repeat what Backpex's guides already say.
+
+| You are on | Backpex guides to follow | Then in this guide |
 | --- | --- | --- |
-| 0.1.x | Everything in this guide | 0.19 → 0.21 |
-| 0.2.x | [From 0.2 to 0.3](#from-0-2-to-0-3) | 0.20 → 0.21 |
+| 0.1.x | [Upgrading to v0.20](https://hexdocs.pm/backpex/v0-20.html), then [Upgrading to v0.21](https://hexdocs.pm/backpex/v0-21.html) | Everything |
+| 0.2.x | [Upgrading to v0.21](https://hexdocs.pm/backpex/v0-21.html) | [From 0.2 to 0.3](#from-0-2-to-0-3) |
 
 0.3.0 and 0.3.1 were tagged on GitHub but not published to Hex. Install the
 latest 0.3 release.
@@ -17,9 +22,12 @@ What to expect:
   `filters/0`, `item_actions/1`, or `layout/1` in a LiveResource is now a compile
   error. [Each one has a fix](#callbacks-that-are-now-compile-errors).
 - Pages that compile may still raise. From 0.1, the admin layout has to change
-  before any page renders. From either version, a LiveResource routed with
+  before any page renders (see Backpex's v0.20 guide). From either version, a LiveResource routed with
   `except: [:new]` raises on an empty index page until you set
   [`create_action false`](#the-new-button-on-an-empty-index-page).
+- Resource changes run for every row of an index page. A change that reads an
+  attribute the record may not have
+  [can crash the page](#resource-changes-run-for-every-index-row).
 - Access rules written in `can?/3` never ran. If a LiveResource defined one, its
   rule was not being enforced, and you have to decide where it belongs now.
 
@@ -65,19 +73,13 @@ here because the two upgrades tend to arrive together.
 ## From 0.1 to 0.2
 
 AshBackpex 0.2 requires Backpex 0.20, which replaced its cookie-based UI state
-with a preference system and gave the app shell a collapsible sidebar. Work
-through Backpex's own
-[Upgrading to v0.20](https://hexdocs.pm/backpex/v0-20.html) guide; it is the
-authority. The steps below are the ones every AshBackpex application hits, and
-the [getting-started guide](getting-started.md) shows the finished result.
+with a preference system and gave the app shell a collapsible sidebar.
+[Upgrading to v0.20](https://hexdocs.pm/backpex/v0-20.html) walks through the
+router, `app.js`, root and admin layouts, sidebar sections, persistence, and
+default ordering. The [getting-started guide](getting-started.md) shows the
+finished result in an AshBackpex application. In addition:
 
-### Router
-
-Remove `plug Backpex.ThemeSelectorPlug`; it no longer exists. `backpex_routes()`
-is now required, because the app shell looks up the preferences route on every
-render.
-
-Run your authentication hook before `Backpex.InitAssigns`:
+### Run your authentication hook first
 
 ```elixir
 live_session :backpex_admin,
@@ -86,128 +88,49 @@ live_session :backpex_admin,
 end
 ```
 
-`Backpex.InitAssigns` now reads the user's stored preferences, using whatever
-your authentication hook assigned. It has to run second.
-
-### app.js
-
-Wrap your LiveSocket connect params with `backpexParams`:
-
-```diff
-- import { Hooks as BackpexHooks } from "backpex";
-+ import { Hooks as BackpexHooks, backpexParams } from "backpex";
-
-  const liveSocket = new LiveSocket("/live", Socket, {
--   params: { _csrf_token: csrfToken },
-+   params: backpexParams({ _csrf_token: csrfToken }),
-    hooks: { ...BackpexHooks },
-  });
-```
-
-Nothing fails without it. The theme, sidebar, and column choices revert when the
-user navigates to another resource, and Backpex logs a console warning.
-
-### Root layout
-
-```diff
-- <html data-theme={assigns[:theme] || "light"}>
-+ <html data-theme={assigns[:current_theme] || "light"}>
-```
-
-### Admin layout
-
-`app_shell` now requires `socket`. The branding moved from the top bar into a
-`<:sidebar_branding>` slot, and `topbar_branding` was renamed to
-`sidebar_branding`. The theme selector takes `current_theme` instead of
-`socket`.
-
-```diff
-  <Backpex.HTML.Layout.app_shell
-+   socket={@socket}
-    fluid={@fluid?}
-+   sidebar_open={@sidebar_open}
-+   preferences_manifest={@preferences_manifest}
-  >
-    <:topbar>
--     <Backpex.HTML.Layout.topbar_branding />
--     <Backpex.HTML.Layout.theme_selector socket={@socket} themes={...} />
-+     <Backpex.HTML.Layout.theme_selector current_theme={@current_theme} themes={...} />
-    </:topbar>
-+   <:sidebar_branding>
-+     <Backpex.HTML.Layout.sidebar_branding />
-+   </:sidebar_branding>
-    <:sidebar>
--     <Backpex.HTML.Layout.sidebar_section id="blog">
-+     <Backpex.HTML.Layout.sidebar_section
-+       id="blog"
-+       sidebar_section_states={@sidebar_section_states}
-+     >
-        <:label>Blog</:label>
-      </Backpex.HTML.Layout.sidebar_section>
-    </:sidebar>
-  </Backpex.HTML.Layout.app_shell>
-```
-
-`sidebar_open` and `preferences_manifest` have defaults, so the layout renders
-without them, but the sidebar forgets whether it was open.
-
-### Sidebar sections
-
-Every `sidebar_section` needs two attributes:
-
-- `id`, which is now required and must be unique. Backpex stores each section's
-  open state under it, so two sections with the same id toggle together. Use
-  only letters, digits, underscores, and hyphens.
-- `sidebar_section_states={@sidebar_section_states}`. It is not inherited from
-  the surrounding assigns. A section without it always renders open, and a
-  collapsed section does not stay collapsed.
+AshBackpex uses `assigns.current_user` as the Ash actor, so the hook that
+assigns it has to run before any LiveResource mounts. `Backpex.InitAssigns` now
+reads the user's stored preferences using whatever that hook assigned, so it has
+to come second.
 
 ### Admin pages that are not resources
 
-A LiveResource hands every assign to your layout. A LiveView of your own that
-renders the admin layout, such as a dashboard, has to pass the new ones itself:
+A LiveResource passes every layout assign for you. A LiveView of your own that
+renders the admin layout, such as a dashboard, has to pass the ones Backpex 0.20
+added: `socket`, `sidebar_open`, `sidebar_section_states`, and
+`preferences_manifest`. Route it in the same `live_session` so
+`Backpex.InitAssigns` assigns them. See
+[Admin Pages That Are Not Resources](getting-started.md#admin-pages-that-are-not-resources).
 
-```elixir
-<MyAppWeb.Layouts.admin
-  socket={@socket}
-  flash={@flash}
-  current_url={@current_url}
-  current_theme={@current_theme}
-  sidebar_open={@sidebar_open}
-  sidebar_section_states={@sidebar_section_states}
-  preferences_manifest={@preferences_manifest}
->
-  ...
-</MyAppWeb.Layouts.admin>
-```
+### `persist` and `init_order` go in the `backpex` block
 
-`Backpex.InitAssigns` assigns all of them, so the page must be routed in a
-`live_session` that mounts it.
-
-### `persist` is opt-in
-
-Backpex 0.19 remembered column and metric visibility for every resource. Backpex
-0.20 remembers nothing unless the resource asks. To keep the old behavior, add
-`persist` to each LiveResource:
+Backpex's guide shows these as `use Backpex.LiveResource` options. In AshBackpex
+they are DSL options:
 
 ```elixir
 backpex do
   resource MyApp.Blog.Post
   layout {MyAppWeb.Layouts, :admin}
   persist [:columns, :metrics]
+  init_order %{by: :inserted_at, direction: :desc}
 end
 ```
 
-`:order` and `:filters` can be persisted the same way. There is no project-wide
-default; each resource opts in.
-
-Existing choices are not carried over. After the upgrade every user starts with
-the default theme, columns, and open sidebar sections.
+There is no project-wide default for `persist`; each LiveResource opts in.
 
 ## From 0.2 to 0.3
 
-AshBackpex 0.3 requires Backpex 0.21, which enforces `can?/3` everywhere instead
-of leaving it to each caller.
+AshBackpex 0.3 requires Backpex 0.21, which enforces `can?/3` in
+`Backpex.Resource` instead of leaving it to each caller.
+[Upgrading to v0.21](https://hexdocs.pm/backpex/v0-21.html) covers the new
+`Backpex.Resource` signatures, strict item actions, `authorize?: false`,
+re-raising Backpex's errors from `rescue` clauses, and readonly fields.
+
+LiveResources need no change for central enforcement: the `can?/3` that Backpex
+enforces is the one AshBackpex generates from your Ash policies. An item action
+that writes through your own Ash actions, with the current user as the actor,
+also needs no change; Ash checks its policies again when it runs. What follows
+is specific to AshBackpex.
 
 ### Callbacks that are now compile errors
 
@@ -295,42 +218,20 @@ live_resources "/events", EventLive, except: [:new, :edit]
 Set `create_action false` in that LiveResource. Do it for every resource routed
 with `except: [:new]`, not only the ones that crash today.
 
-### Backpex now enforces `can?/3` centrally
-
-In Backpex 0.20, authorization was checked where the interface asked for it. In
-0.21, `Backpex.Resource` checks `can?/3` before every insert, update,
-`update_all`, and `delete_all`, and item actions re-read the selected records as
-the current user before they run. LiveResources need no change for this. Code
-that calls Backpex directly does:
-
-- `Backpex.Resource.delete_all/4` used to take two arguments, and
-  `Backpex.Resource.update_all/5` three or four. Pass `socket.assigns`, and move
-  `event_name` into the options.
-- Item actions are strict. A selection containing a record the user may not act
-  on raises `Backpex.ForbiddenError` instead of skipping it. A record that was
-  deleted, or that the user can no longer read, raises `Backpex.NoResultsError`.
-  `handle/3` is never called with an empty list.
-- A custom item action that writes the records it was handed through
-  `Backpex.Resource` should pass `authorize?: false`. Backpex has already
-  authorized them.
-
-An item action that writes through your own domain functions instead of
-`Backpex.Resource` needs no code change; the strict checks still apply to its
-selection. Backpex's [Upgrading to v0.21](https://hexdocs.pm/backpex/v0-21.html) guide has
-the details.
-
 ### Resource changes run for every index row
 
-Backpex 0.21 calls `can?(assigns, :edit, item)` and `can?(assigns, :delete, item)`
-for every row on the index page. The generated `can?/3` asks `Ash.can?/2`, which
-builds an update or destroy changeset for the row, and building a changeset runs
-the action's changes and the resource's global changes. Before 0.21 that only
-happened when someone submitted a form.
+Backpex asks `can?/3` about every row on the index page: `:edit` and `:delete`
+for the row's buttons, and since 0.21 each bulk item action as well, to decide
+whether the row can be selected. The generated `can?/3` answers with
+`Ash.can?/2`, which builds an update or destroy changeset for the row. Building
+a changeset runs the action's changes and the resource's global changes, so they
+run for every row, on every render, with an empty input.
 
-In 0.3.0 through 0.3.2 the admin read only the attributes its fields listed, so
-a change that read any other attribute found `%Ash.NotLoaded{}` and the index
-page crashed. Since 0.3.3 the admin reads every attribute Ash selects by
-default, as `Ash.read/2` does anywhere else. Two cases can still fail:
+Before 0.3.3 the admin read only the attributes its fields listed, so a change
+that read any other attribute found `%Ash.NotLoaded{}` and the index page
+crashed. Since 0.3.3 the admin reads every attribute Ash selects by default, as
+`Ash.read/2` does anywhere else, plus any attribute listed as a field. Two cases
+can still fail:
 
 - a change that reads an attribute with `select_by_default? false`, unless that
   attribute is one of the LiveResource's fields
@@ -342,6 +243,10 @@ narrower selection. Have them read only what the changeset is changing
 (`Ash.Changeset.changing_attribute?/2`), load what they need, or move the work
 into an `Ash.Changeset.before_action/2` hook, which runs only when the action
 does.
+
+Each check is an `Ash.can?/2` call, so policies that run queries run them once
+per row and operation. Keep an eye on index pages for resources with expensive
+policies.
 
 ### Filter options given as functions
 
@@ -357,21 +262,27 @@ uncalled. 0.3.1 fixed it. If you pinned 0.3.0 from GitHub, move to the latest
   calling `:destroy`, so a soft-delete action is now honored. Check any resource
   whose configured destroy action differs from its `:destroy` action.
 - A bulk deletion that fails now shows Backpex's error message. It used to
-  report "0 items have been deleted successfully."
+  report "0 items have been deleted successfully." On data layers that support
+  transactions the whole selection is deleted in one transaction, so a failure
+  deletes nothing. AshSqlite does not support them, so records deleted before
+  the failure stay deleted.
 - Readonly text inputs nested inside InlineCRUD and embedded fields render with
   `readonly` instead of `disabled`, so their values are submitted with the form.
   Top-level readonly fields are still dropped before they reach the Ash action.
 
 ## Checklist
 
-1. `mix compile` succeeds, with each removed `can?/3` replaced by
+1. You have worked through Backpex's upgrade guides for every version you
+   crossed.
+2. `mix compile` succeeds, with each removed `can?/3` replaced by
    `create_action false` and friends, or by a policy.
-2. Every resource routed with `except: [:new]` sets `create_action false`. Open
+3. Every resource routed with `except: [:new]` sets `create_action false`. Open
    one with an empty table.
-3. Toggle the theme, a sidebar section, and a column, navigate to another
-   resource, and reload. Each choice should survive, and the browser console
-   should show no `BackpexPreferences` warning.
-4. Open any admin page that is not a resource.
-5. Open an index page for every resource that has filters.
-6. Run each custom item action, and a bulk delete, as a user who is allowed and
+4. Open the index page of every resource whose changes read other attributes,
+   and of every resource with filters.
+5. Toggle the theme, a sidebar section, and a column, navigate to another
+   resource, and reload. Each choice should survive, which confirms the
+   authentication hook runs before `Backpex.InitAssigns`.
+6. Open any admin page that is not a resource.
+7. Run each custom item action, and a bulk delete, as a user who is allowed and
    as one who is not.
