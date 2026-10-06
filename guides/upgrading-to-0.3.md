@@ -8,8 +8,8 @@ is wired together. Expect this upgrade to take longer than the ones before it:
 | 0.1.x | Everything in this guide | 0.19 → 0.21 |
 | 0.2.x | [From 0.2 to 0.3](#from-0-2-to-0-3) | 0.20 → 0.21 |
 
-0.3.0 and 0.3.1 were tagged on GitHub but not published to Hex, so on Hex the
-release after 0.2.0 is 0.3.2.
+0.3.0 and 0.3.1 were tagged on GitHub but not published to Hex. Install the
+latest 0.3 release.
 
 What to expect:
 
@@ -319,12 +319,37 @@ An item action that writes through your own domain functions instead of
 selection. Backpex's [Upgrading to v0.21](https://hexdocs.pm/backpex/v0-21.html) guide has
 the details.
 
+### Resource changes run for every index row
+
+Backpex 0.21 calls `can?(assigns, :edit, item)` and `can?(assigns, :delete, item)`
+for every row on the index page. The generated `can?/3` asks `Ash.can?/2`, which
+builds an update or destroy changeset for the row, and building a changeset runs
+the action's changes and the resource's global changes. Before 0.21 that only
+happened when someone submitted a form.
+
+In 0.3.0 through 0.3.2 the admin read only the attributes its fields listed, so
+a change that read any other attribute found `%Ash.NotLoaded{}` and the index
+page crashed. Since 0.3.3 the admin reads every attribute Ash selects by
+default, as `Ash.read/2` does anywhere else. Two cases can still fail:
+
+- a change that reads an attribute with `select_by_default? false`, unless that
+  attribute is one of the LiveResource's fields
+- a change that reads a relationship, calculation, or aggregate the record has
+  not loaded
+
+Those changes fail the same way outside the admin, for any record read with a
+narrower selection. Have them read only what the changeset is changing
+(`Ash.Changeset.changing_attribute?/2`), load what they need, or move the work
+into an `Ash.Changeset.before_action/2` hook, which runs only when the action
+does.
+
 ### Filter options given as functions
 
 Backpex 0.21 validates filter values on every index load. A `Select` or
 `MultiSelect` filter whose `options` is a 1-arity function raised
 `Protocol.UndefinedError` on 0.3.0, because the function was passed to Backpex
-uncalled. 0.3.1 fixed it. If you pinned 0.3.0 from GitHub, move to 0.3.2.
+uncalled. 0.3.1 fixed it. If you pinned 0.3.0 from GitHub, move to the latest
+0.3 release.
 
 ### Smaller changes
 

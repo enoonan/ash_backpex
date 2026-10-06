@@ -326,6 +326,54 @@ defmodule AshBackpex.TestDomain.AggregateItem do
   end
 end
 
+defmodule AshBackpex.TestDomain.RichTextEntry do
+  @moduledoc """
+  A resource whose update change reads an attribute that LiveResources do not
+  list as a field, the way a sanitizing or normalizing change does.
+
+  `Ash.can?/2` builds an update changeset, which runs this change, so the
+  records AshBackpex reads must carry the resource's default attributes.
+  """
+  use Ash.Resource,
+    domain: AshBackpex.TestDomain,
+    data_layer: AshSqlite.DataLayer
+
+  sqlite do
+    table "rich_text_entries"
+    repo(AshBackpex.TestRepo)
+  end
+
+  actions do
+    defaults [:read, :destroy, create: [:title, :body, :internal_notes], update: [:title]]
+  end
+
+  changes do
+    change fn changeset, _context ->
+             body = Ash.Changeset.get_attribute(changeset, :body)
+             Ash.Changeset.force_change_attribute(changeset, :body, String.upcase(body))
+           end,
+           on: [:update]
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :title, :string do
+      public? true
+    end
+
+    attribute :body, :string do
+      allow_nil? false
+      public? true
+    end
+
+    attribute :internal_notes, :string do
+      public? true
+      select_by_default? false
+    end
+  end
+end
+
 defmodule AshBackpex.TestDomain.ReadOnlyEntry do
   @moduledoc """
   A read-only resource without update or destroy actions.

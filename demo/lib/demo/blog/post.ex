@@ -22,9 +22,12 @@ defmodule Demo.Blog.Post do
       public? true
     end
 
+    # Article bodies are large, so plain reads leave them out. The admin still
+    # shows them, because AshBackpex selects every attribute listed as a field.
     attribute :content, :string do
       allow_nil? true
       public? true
+      select_by_default? false
     end
 
     attribute :excerpt, :string do
@@ -69,6 +72,10 @@ defmodule Demo.Blog.Post do
 
     create_timestamp :inserted_at
     update_timestamp :updated_at
+  end
+
+  changes do
+    change Demo.Blog.Post.Changes.TidyExcerpt, on: [:create, :update]
   end
 
   relationships do

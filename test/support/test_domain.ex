@@ -12,6 +12,7 @@ defmodule AshBackpex.TestDomain do
     resource(AshBackpex.TestDomain.Item)
     resource(AshBackpex.TestDomain.AggregateItem)
     resource(AshBackpex.TestDomain.ReadOnlyEntry)
+    resource(AshBackpex.TestDomain.RichTextEntry)
     resource AshBackpex.TestDomain.NonDefaultPrimaryKeyName
     resource AshBackpex.TestDomain.ManyToManyPost
     resource AshBackpex.TestDomain.ManyToManyCategory

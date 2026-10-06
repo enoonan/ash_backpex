@@ -195,7 +195,14 @@ defmodule AshBackpex.Adapter do
   - `params` - The form parameters
   - `metadata` - Keyword list with `:assigns` and `:target` keys
 
-  ### Loads
+  ### Selects and Loads
+
+  `list/4` and `get/4` read every attribute Ash selects by default, as
+  `Ash.read/2` does, plus any attribute listed as a field, including one with
+  `select_by_default? false`. Records in the admin carry the same attributes as
+  records read anywhere else in the application, which matters because
+  `can?/3` builds an update and a destroy changeset for every index row, and
+  building a changeset runs the resource's changes.
 
   Relationships, calculations, and aggregates are loaded automatically based on
   the fields you configure. Additional loads can be specified:
@@ -279,7 +286,7 @@ defmodule AshBackpex.Adapter do
 
     config[:resource]
     |> Ash.Query.filter(^Ash.Expr.ref(primary_key) == ^primary_value)
-    |> Ash.Query.select(select)
+    |> Ash.Query.ensure_selected(select)
     |> Ash.Query.load(default_loads ++ load)
     |> Ash.read_one(actor: assigns.current_user)
     |> case do
@@ -315,7 +322,7 @@ defmodule AshBackpex.Adapter do
       |> BasicSearch.apply(search_params(criteria, assigns), live_resource)
       |> Ash.Query.sort(resolve_sort(criteria, assigns, live_resource.config(:init_order)))
       |> Ash.Query.page(limit: page_size, offset: (page_num - 1) * page_size)
-      |> Ash.Query.select(select)
+      |> Ash.Query.ensure_selected(select)
       |> Ash.Query.load(default_loads ++ load)
 
     with {:ok, %{results: results}} <- query |> Ash.read(actor: assigns.current_user) do

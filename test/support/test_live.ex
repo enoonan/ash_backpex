@@ -694,3 +694,32 @@ defmodule TestCreateAndUpdateDisabledLive do
     end
   end
 end
+
+defmodule TestRichTextEntryLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.RichTextEntry)
+    layout({TestLayout, :admin})
+
+    fields do
+      field(:title)
+    end
+  end
+end
+
+defmodule TestRichTextEntryNotesLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.RichTextEntry)
+    layout({TestLayout, :admin})
+
+    fields do
+      field(:title)
+      field(:internal_notes)
+    end
+  end
+end

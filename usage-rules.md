@@ -227,7 +227,18 @@ field :internal_notes do
 end
 ```
 
-## Preloading Relationships
+## Selected Attributes and Preloading
+
+The admin reads every attribute Ash selects by default, plus any attribute
+listed as a field (including one with `select_by_default? false`).
+Relationships, calculations, and aggregates are loaded only when they are fields
+or listed in `load`.
+
+`can?/3` builds an update and a destroy changeset for every index row, which
+runs the resource's changes. A change must not read an attribute with
+`select_by_default? false` or an unloaded relationship unless it checks for
+`%Ash.NotLoaded{}`, reads only what the changeset is changing, or does the work
+in a `before_action` hook.
 
 Use `load` to preload relationships, calculations, or aggregates:
 
@@ -519,6 +530,14 @@ silently replaced the definition, so it never ran. For `can?/3`, set
 rule turns an operation off for everyone, and write Ash policies otherwise. For
 the others, use the matching DSL entry (`fields`, `filters`, `item_actions`,
 `layout`). Then remove the function. The error message names the replacement.
+
+### Index Page Crashes on `%Ash.NotLoaded{}` in a Change
+
+A resource change reads a value the index rows do not have: an attribute with
+`select_by_default? false` or a relationship that is not loaded. `can?/3` runs
+the change for every row. Make the change read only attributes the changeset is
+changing (`Ash.Changeset.changing_attribute?/2`), add the value to `fields` or
+`load`, or move the work into `Ash.Changeset.before_action/2`.
 
 ### Fields Not Loading
 

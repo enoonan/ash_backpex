@@ -36,3 +36,7 @@ A minimal demo application showcasing the integration between Ash Framework and 
 - Basic CRUD operations through the admin panel
 - Article content sections demonstrating recursive embedded forms: repeated
   sections, repeated columns, and one singular target per column
+- Selected attributes: `Post.content` has `select_by_default? false`, yet the
+  admin shows it because it is a field. `Post`'s `TidyExcerpt` change reads
+  `excerpt`, which the Articles index does not list, and runs for every index
+  row when `can?/3` builds an update changeset

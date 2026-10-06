@@ -78,6 +78,15 @@ defmodule AshBackpex.DataCase do
     """)
 
     Ecto.Adapters.SQL.query!(AshBackpex.TestRepo, """
+    CREATE TABLE IF NOT EXISTS rich_text_entries (
+      id TEXT PRIMARY KEY,
+      title TEXT,
+      body TEXT NOT NULL,
+      internal_notes TEXT
+    )
+    """)
+
+    Ecto.Adapters.SQL.query!(AshBackpex.TestRepo, """
     CREATE TABLE IF NOT EXISTS many_to_many_posts (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL

@@ -90,6 +90,56 @@ defmodule AshBackpex.AuthzTest do
     end
   end
 
+  describe "AshBackpex.Adapter :: records it reads" do
+    alias AshBackpex.TestDomain.RichTextEntry
+
+    setup do
+      entry =
+        Ash.create!(RichTextEntry, %{title: "Hello", body: "Body", internal_notes: "Private"})
+
+      %{entry: entry}
+    end
+
+    test "carry attributes that are not fields, so can?/3 can build changesets for index rows",
+         %{entry: entry} do
+      assigns = %{current_user: nil}
+      fields = TestRichTextEntryLive.fields()
+
+      {:ok, [row]} = Adapter.list([], fields, assigns, TestRichTextEntryLive)
+      {:ok, item} = Adapter.get(entry.id, fields, assigns, TestRichTextEntryLive)
+
+      for record <- [row, item] do
+        assert TestRichTextEntryLive.can?(assigns, :edit, record)
+        assert TestRichTextEntryLive.can?(assigns, :delete, record)
+        assert record.body == "Body"
+      end
+    end
+
+    test "leave attributes that are not selected by default unloaded unless they are fields",
+         %{entry: entry} do
+      assigns = %{current_user: nil}
+
+      {:ok, [row]} =
+        Adapter.list([], TestRichTextEntryLive.fields(), assigns, TestRichTextEntryLive)
+
+      assert %Ash.NotLoaded{} = row.internal_notes
+
+      {:ok, [row]} =
+        Adapter.list([], TestRichTextEntryNotesLive.fields(), assigns, TestRichTextEntryNotesLive)
+
+      {:ok, item} =
+        Adapter.get(
+          entry.id,
+          TestRichTextEntryNotesLive.fields(),
+          assigns,
+          TestRichTextEntryNotesLive
+        )
+
+      assert row.internal_notes == "Private"
+      assert item.internal_notes == "Private"
+    end
+  end
+
   describe "Backpex central authorization :: it can" do
     test "gate Backpex.Resource.delete_all/4 with the generated Ash-backed can?/3" do
       owner = user()

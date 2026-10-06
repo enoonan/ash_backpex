@@ -5,11 +5,13 @@ defmodule AshBackpex.LoadSelectResolver do
   This module analyzes the fields configured in an AshBackpex LiveResource and
   determines which ones are:
 
-  - **Attributes** - Added to the `select` list for efficient querying
+  - **Attributes** - Added to the `select` list
   - **Relationships, Calculations, or Aggregates** - Added to the `load` list
 
-  This separation allows the adapter to build efficient Ash queries that only
-  fetch the data actually needed for the admin interface.
+  The adapter passes the `select` list to `Ash.Query.ensure_selected/2`, so it
+  adds to the attributes Ash selects by default rather than replacing them.
+  Records in the admin then carry the same attributes as records read anywhere
+  else, which the changesets built by `can?/3` and by updates rely on.
 
   ## How It Works
 
