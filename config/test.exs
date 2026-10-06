@@ -3,6 +3,10 @@ import Config
 # Configure Ash domains for test environment
 config :ash_backpex, ash_domains: [AshBackpex.TestDomain]
 
+config :backpex,
+  translator_function: {AshBackpex.TestTranslator, :translate},
+  error_translator_function: {AshBackpex.TestTranslator, :translate}
+
 # Configure the test repo
 config :ash_backpex, ecto_repos: [AshBackpex.TestRepo]
 

@@ -23,6 +23,7 @@ AshBackpex tests run against deterministic in-memory SQLite tables. Start at the
 - `test/support/test_resources.ex` contains representative Ash resources: attributes and policies, aggregates, read-only actions, non-default primary keys, and many-to-many relationships.
 - `test/support/test_domain.ex` registers those resources with the test domain.
 - `test/support/test_live.ex` contains small DSL consumers for transformer, adapter, authorization, typeahead, InlineCRUD, and filter tests.
+- `test/support/test_translator.ex` is the Backpex `translator_function` and `error_translator_function` configured in `config/test.exs`. It interpolates placeholders like Backpex's fallback without the fallback's warning on every call.
 - `test/support/test_generators.ex` seeds reusable records. Pass explicit values when a test asserts ordering, filtering, or normalization; do not depend on generated prose.
 
 Prefer extending the smallest existing fixture over creating a new domain. Name unusual fixture fields for the invariant they represent and keep setup local when sharing it would hide the behavior under test.
