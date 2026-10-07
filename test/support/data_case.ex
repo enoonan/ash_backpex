@@ -108,5 +108,14 @@ defmodule AshBackpex.DataCase do
       PRIMARY KEY (post_id, category_id)
     )
     """)
+
+    Ecto.Adapters.SQL.query!(AshBackpex.TestRepo, """
+    CREATE TABLE IF NOT EXISTS assignments (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      owner_id TEXT REFERENCES users(id),
+      reviewer_id TEXT REFERENCES users(id)
+    )
+    """)
   end
 end
