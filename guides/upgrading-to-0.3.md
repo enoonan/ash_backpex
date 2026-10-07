@@ -8,10 +8,11 @@ Work through them first, in order, then come back here. This guide covers only
 what is different or additional in an AshBackpex application, and does not
 repeat what Backpex's guides already say.
 
-| You are on | Backpex guides to follow                                                                                                      | Then in this guide                  |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| 0.1.x      | [Upgrading to v0.20](https://hexdocs.pm/backpex/v0-20.html), then [Upgrading to v0.21](https://hexdocs.pm/backpex/v0-21.html) | Everything                          |
-| 0.2.x      | [Upgrading to v0.21](https://hexdocs.pm/backpex/v0-21.html)                                                                   | [From 0.2 to 0.3](#from-0-2-to-0-3) |
+| You are on | Backpex guides to follow                                                                                                                                                                        | Then in this guide                                                      |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| 0.1.x      | [Upgrading to v0.20](https://hexdocs.pm/backpex/v0-20.html), then [Upgrading to v0.21](https://hexdocs.pm/backpex/v0-21.html), then [Upgrading to v0.22](https://hexdocs.pm/backpex/v0-22.html) | Everything, including [Backpex 0.22](#backpex-0-22)                     |
+| 0.2.x      | [Upgrading to v0.21](https://hexdocs.pm/backpex/v0-21.html), then [Upgrading to v0.22](https://hexdocs.pm/backpex/v0-22.html)                                                                   | [From 0.2 to 0.3](#from-0-2-to-0-3), then [Backpex 0.22](#backpex-0-22) |
+| 0.3.x      | [Upgrading to v0.22](https://hexdocs.pm/backpex/v0-22.html)                                                                                                                                     | [Backpex 0.22](#backpex-0-22)                                           |
 
 Install the latest 0.3 release.
 
@@ -37,8 +38,9 @@ def deps do
 end
 ```
 
-AshBackpex declares its own dependency on Backpex `~> 0.21.0`. If your
-application also lists `:backpex`, change that constraint to match.
+AshBackpex declares its own dependency on Backpex `~> 0.22.0`. If your
+application also lists `:backpex`, change that constraint to match, and see
+[Backpex 0.22](#backpex-0-22).
 
 ```bash
 mix deps.update ash_backpex backpex
@@ -94,7 +96,7 @@ There is no project-wide default for `persist`; each LiveResource opts in.
 
 ## From 0.2 to 0.3
 
-AshBackpex 0.3 requires Backpex 0.21, which enforces `can?/3` in
+AshBackpex 0.3.0 moved to Backpex 0.21, which enforces `can?/3` in
 `Backpex.Resource` instead of leaving it to each caller.
 [Upgrading to v0.21](https://hexdocs.pm/backpex/v0-21.html) covers the new
 `Backpex.Resource` signatures, strict item actions, `authorize?: false`,
@@ -178,3 +180,20 @@ decide whether the row can be selected. You may run into errors with:
 - Readonly text inputs nested inside InlineCRUD and embedded fields render with
   `readonly` instead of `disabled`, so their values are submitted with the form.
   Top-level readonly fields are still dropped before they reach the Ash action.
+
+## Backpex 0.22
+
+The latest AshBackpex requires Backpex 0.22.
+[Upgrading to v0.22](https://hexdocs.pm/backpex/v0-22.html) covers what Backpex
+changed. What follows is specific to AshBackpex.
+
+- Inline edits on the index page are saved by Backpex's index LiveView instead
+  of the field component. Backpex saves an edit only when the field module
+  implements `c:Backpex.Field.index_editable_change/3`. If you wrote a custom
+  field that renders an index form for `index_editable`, implement that
+  callback. AshBackpex's own fields need no change: `belongs_to` fields,
+  including ones with `typeahead true`, are inline-editable again.
+- Backpex's new `context_assigns` option is a `backpex` DSL option. It defaults
+  to `:all`, so nothing changes unless you set it. A list of keys always gets
+  `:current_user` and `:actor` added, so the generated `can?/3` and
+  relationship option queries keep their Ash actor.

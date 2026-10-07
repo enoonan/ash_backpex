@@ -222,6 +222,9 @@ defmodule AshBackpex.Fields.BelongsTo do
   defdelegate index_assigns(field, items, assigns), to: Backpex.Fields.BelongsTo
 
   @impl Backpex.Field
+  defdelegate index_editable_change(field, value, assigns), to: Backpex.Fields.BelongsTo
+
+  @impl Backpex.Field
   defdelegate display_field(field), to: Backpex.Fields.BelongsTo
 
   @impl Backpex.Field
@@ -252,10 +255,6 @@ defmodule AshBackpex.Fields.BelongsTo do
     |> assign(:selected, nil)
     |> reset_search()
     |> noreply()
-  end
-
-  def handle_event("update-field", %{"index_form" => %{"value" => value}}, socket) do
-    Backpex.Field.handle_index_editable(socket, value, %{socket.assigns.owner_key => value})
   end
 
   defp options(assigns, search_input) do

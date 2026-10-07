@@ -7,6 +7,33 @@
 > change. Follow the [upgrade guide](guides/upgrading-to-0.3.md) before you bump
 > the dependency.
 
+## Unreleased
+
+### Features
+
+- The `backpex` DSL section has a `context_assigns` option that is passed to
+  Backpex 0.22's `Backpex.LiveResource`. It accepts `:all` (the default) or a
+  list of assign keys; AshBackpex appends `:current_user` and `:actor` to a
+  list so the generated `can?/3` and relationship option queries keep their
+  Ash actor. `AshBackpex.LiveResource.Info.backpex_context_assigns/1` reads it.
+
+### Fixes
+
+- Inline edits of `index_editable` `belongs_to` fields, with or without
+  `typeahead`, are saved again. Backpex 0.22 saves index edits in its index
+  LiveView only for fields that implement `c:Backpex.Field.index_editable_change/3`;
+  `AshBackpex.Fields.BelongsTo` now delegates it to `Backpex.Fields.BelongsTo`,
+  which accepts only values from the field's options, and the edit is saved only
+  when the user may update the record.
+
+### Updates
+
+- AshBackpex requires Backpex `~> 0.22.0`. Authors of custom fields that render
+  an index form must implement `c:Backpex.Field.index_editable_change/3`; see the
+  [upgrade guide](guides/upgrading-to-0.3.md).
+- Demo: requires `phoenix_live_view ~> 1.1`, and the Articles index edits the
+  typeahead author field inline.
+
 ## [v0.3.3]
 
 > **Admin records now carry every attribute Ash selects by default.** Before

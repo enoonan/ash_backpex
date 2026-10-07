@@ -517,3 +517,53 @@ defmodule AshBackpex.TestDomain.ManyToManyPostCategory do
     defaults [:read]
   end
 end
+
+defmodule AshBackpex.TestDomain.Assignment do
+  @moduledoc """
+  A resource whose primary update action accepts two `belongs_to` foreign keys,
+  for saving inline index edits.
+
+  `owner` only relates active users, so AshBackpex derives an `options_query`
+  that excludes inactive users. Only an active actor may update an assignment.
+  """
+  use Ash.Resource,
+    domain: AshBackpex.TestDomain,
+    data_layer: AshSqlite.DataLayer,
+    authorizers: [Ash.Policy.Authorizer]
+
+  sqlite do
+    table "assignments"
+    repo(AshBackpex.TestRepo)
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :title, :string do
+      allow_nil? false
+      public? true
+    end
+  end
+
+  relationships do
+    belongs_to :owner, AshBackpex.TestDomain.User do
+      filter expr(active == true)
+    end
+
+    belongs_to(:reviewer, AshBackpex.TestDomain.User)
+  end
+
+  policies do
+    policy action_type(:read) do
+      authorize_if always()
+    end
+
+    policy action_type(:update) do
+      authorize_if actor_attribute_equals(:active, true)
+    end
+  end
+
+  actions do
+    defaults [:read, create: [:title, :owner_id, :reviewer_id], update: [:owner_id, :reviewer_id]]
+  end
+end

@@ -19,10 +19,13 @@ AshBackpex tests run against deterministic in-memory SQLite tables. Start at the
 
 ## Fixture map
 
-- `test/support/data_case.ex` owns the SQLite sandbox and table schema. Add a table only for behavior that truly needs persistence.
-- `test/support/test_resources.ex` contains representative Ash resources: attributes and policies, aggregates, read-only actions, non-default primary keys, and many-to-many relationships.
+- `test/support/data_case.ex` owns the SQLite sandbox and table schema, including the `assignments` table for inline index edits. Add a table only for behavior that truly needs persistence.
+- `test/support/test_resources.ex` contains representative Ash resources: attributes and policies, aggregates, read-only actions, non-default primary keys, and many-to-many relationships. `AshBackpex.TestDomain.Assignment` has two `belongs_to` users, one filtered to active users, for inline index edits.
 - `test/support/test_domain.ex` registers those resources with the test domain.
 - `test/support/test_live.ex` contains small DSL consumers for transformer, adapter, authorization, typeahead, InlineCRUD, and filter tests.
+- `test/support/index_edit_live.ex` contains `TestIndexEditLayout`, which renders the inner block that `TestLayout.admin/1` does not, and `TestAssignmentIndexEditLive` for inline index edits.
+- `test/support/context_assigns_live.ex` contains LiveResources for the `context_assigns` option.
+- `test/support/test_router.ex` defines `AshBackpex.TestRouter` with `backpex_routes/0` and a `live_session` whose `AshBackpex.TestRouter.CurrentUser` hook assigns `:current_user` from the session's `"current_user_id"`. It is plugged into the shared `AshBackpex.TestEndpoint`, so every test that starts the endpoint also serves these routes.
 - `test/support/test_translator.ex` is the Backpex `translator_function` and `error_translator_function` configured in `config/test.exs`. It interpolates placeholders like Backpex's fallback without the fallback's warning on every call.
 - `test/support/test_generators.ex` seeds reusable records. Pass explicit values when a test asserts ordering, filtering, or normalization; do not depend on generated prose.
 
@@ -35,6 +38,7 @@ Prefer extending the smallest existing fixture over creating a new domain. Name 
 - Custom field: test Backpex callbacks and rendered behavior in `test/ash_backpex/fields/`; add transformer coverage if module or options are derived.
 - Phoenix form behavior: build an Ash changeset and exercise `Phoenix.HTML.FormData` through the public form API. Cover loaded defaults, submitted params, errors, and hidden IDs at each supported nesting level.
 - Filter: test the filter module's Ash expression, transformer derivation, and adapter application separately.
+- Index LiveView behavior: route the LiveResource in `AshBackpex.TestRouter`, start `AshBackpex.TestPubSub` and `AshBackpex.TestEndpoint`, and mount it with `Phoenix.LiveViewTest.live/2` using a session that carries `current_user_id`. Assert through the rendered index form and the stored record, as `test/ash_backpex/fields/belongs_to_index_edit_test.exs` does.
 
 ## Common failures
 

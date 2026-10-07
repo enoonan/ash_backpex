@@ -11,4 +11,6 @@ defmodule AshBackpex.TestEndpoint do
     key: "_ash_backpex_test_key",
     signing_salt: "ash-backpex-test"
   )
+
+  plug(AshBackpex.TestRouter)
 end

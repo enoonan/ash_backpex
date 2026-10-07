@@ -22,7 +22,7 @@ end
 
 Run `mix deps.get` to install the dependency.
 
-AshBackpex targets Backpex `~> 0.21.0` and declares that dependency itself. If
+AshBackpex targets Backpex `~> 0.22.0` and declares that dependency itself. If
 your application pins Backpex directly, update its constraint to match.
 
 > #### Upgrading an existing admin? {: .warning}

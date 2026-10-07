@@ -917,7 +917,12 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
               save_and_continue_button?:
                 Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :save_and_continue_button?),
               on_mount: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :on_mount),
-              persist: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :persist)
+              persist: Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :persist),
+              context_assigns:
+                case Spark.Dsl.Extension.get_opt(__MODULE__, [:backpex], :context_assigns) do
+                  keys when is_list(keys) -> Enum.uniq(keys ++ [:current_user, :actor])
+                  all -> all
+                end
             ]
             |> Keyword.reject(&(&1 |> elem(1) |> is_nil))
 
