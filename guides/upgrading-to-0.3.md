@@ -37,8 +37,9 @@ def deps do
 end
 ```
 
-AshBackpex declares its own dependency on Backpex `~> 0.21.0`. If your
-application also lists `:backpex`, change that constraint to match.
+AshBackpex declares its own dependency on Backpex `~> 0.22.0`. If your
+application also lists `:backpex`, change that constraint to match, and see
+[Backpex 0.22](#backpex-0-22).
 
 ```bash
 mix deps.update ash_backpex backpex
@@ -178,3 +179,20 @@ decide whether the row can be selected. You may run into errors with:
 - Readonly text inputs nested inside InlineCRUD and embedded fields render with
   `readonly` instead of `disabled`, so their values are submitted with the form.
   Top-level readonly fields are still dropped before they reach the Ash action.
+
+## Backpex 0.22
+
+The latest AshBackpex requires Backpex 0.22.
+[Upgrading to v0.22](https://hexdocs.pm/backpex/v0-22.html) covers what Backpex
+changed. What follows is specific to AshBackpex.
+
+- Inline edits on the index page are saved by Backpex's index LiveView instead
+  of the field component. Backpex saves an edit only when the field module
+  implements `c:Backpex.Field.index_editable_change/3`. If you wrote a custom
+  field that renders an index form for `index_editable`, implement that
+  callback. AshBackpex's own fields need no change: `belongs_to` fields,
+  including ones with `typeahead true`, are inline-editable again.
+- Backpex's new `context_assigns` option is a `backpex` DSL option. It defaults
+  to `:all`, so nothing changes unless you set it. A list of keys always gets
+  `:current_user` and `:actor` added, so the generated `can?/3` and
+  relationship option queries keep their Ash actor.

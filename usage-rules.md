@@ -107,6 +107,10 @@ relationship query, then replaces them with matching results as the user types.
 Relationship filters, sorts, read action, context, actor, tenant, and
 authorization continue to flow through the field's derived `options_query`.
 
+`index_editable true` works for `belongs_to` fields, with or without
+`typeahead`. Backpex's index view saves the inline edit only when the chosen
+value is one of the field's options and the user may update the record.
+
 ### Repeating and Embedded Child Fields
 
 `has_many` relationships continue to use the selection-oriented
@@ -409,6 +413,23 @@ AshBackpex automatically integrates with Ash authorization:
 - Hides buttons/actions the user can't perform
 
 Ensure your Ash resources have policies defined and `current_user` is set in assigns.
+
+Backpex's `context_assigns` option limits the assigns that render-time
+callbacks, such as `can?/3` and field and filter functions, receive on the index
+and show views. It defaults to `:all`. A list of keys is added to the assigns
+Backpex always passes, and AshBackpex appends `:current_user` and `:actor` so
+the generated `can?/3` and relationship option queries keep their Ash actor:
+
+```elixir
+backpex do
+  resource MyApp.Blog.Post
+  layout {MyAppWeb.Layouts, :admin}
+  context_assigns [:tenant]
+end
+```
+
+Field and filter callbacks then receive only the reduced assigns, so list every
+other assign they read.
 
 Backpex enforces the generated `can?/3` before every mutation and item action:
 - Item actions receive records re-read through the adapter as the current actor

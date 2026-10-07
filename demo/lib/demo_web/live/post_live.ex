@@ -66,6 +66,7 @@ defmodule DemoWeb.PostLive do
         typeahead(true)
         typeahead_limit(10)
         debounce(300)
+        index_editable(true)
         prompt("Choose an author...")
       end
 
