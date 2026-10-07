@@ -41,6 +41,8 @@ defmodule AshBackpex.LiveResource.Dsl do
   - `save_and_continue_button?` - Show "Save & Continue" button (default: `false`)
   - `on_mount` - LiveView on_mount hooks to attach
   - `persist` - Index state to persist through Backpex preferences (default: `[]`)
+  - `context_assigns` - Assigns that render-time callbacks receive, `:all` or a list of keys
+    (default: `:all`). AshBackpex always adds `:current_user` and `:actor` to a list.
 
   ## fields Section
 
@@ -778,6 +780,16 @@ defmodule AshBackpex.LiveResource.Dsl do
           "Index-view state to persist through Backpex preferences. Accepts any subset of `[:order, :filters, :columns, :metrics]`.",
         type: {:list, {:in, [:order, :filters, :columns, :metrics]}},
         default: []
+      ],
+      context_assigns: [
+        doc: """
+        The assigns that Backpex passes to callbacks while the index and show views are rendered, such as
+        `can?/3` and the functions of fields. `:all` passes every assign. A list of keys is added to the assigns
+        Backpex always passes. AshBackpex always adds `:current_user` and `:actor` to a list, so the generated
+        `can?/3` and relationship option queries keep their Ash actor.
+        """,
+        type: {:or, [{:in, [:all]}, {:list, :atom}]},
+        default: :all
       ]
     ],
     sections: [@fields, @filters, @item_actions]
