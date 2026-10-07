@@ -8,10 +8,11 @@ Work through them first, in order, then come back here. This guide covers only
 what is different or additional in an AshBackpex application, and does not
 repeat what Backpex's guides already say.
 
-| You are on | Backpex guides to follow                                                                                                      | Then in this guide                  |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| 0.1.x      | [Upgrading to v0.20](https://hexdocs.pm/backpex/v0-20.html), then [Upgrading to v0.21](https://hexdocs.pm/backpex/v0-21.html) | Everything                          |
-| 0.2.x      | [Upgrading to v0.21](https://hexdocs.pm/backpex/v0-21.html)                                                                   | [From 0.2 to 0.3](#from-0-2-to-0-3) |
+| You are on | Backpex guides to follow                                                                                                                                                                        | Then in this guide                                                      |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| 0.1.x      | [Upgrading to v0.20](https://hexdocs.pm/backpex/v0-20.html), then [Upgrading to v0.21](https://hexdocs.pm/backpex/v0-21.html), then [Upgrading to v0.22](https://hexdocs.pm/backpex/v0-22.html) | Everything, including [Backpex 0.22](#backpex-0-22)                     |
+| 0.2.x      | [Upgrading to v0.21](https://hexdocs.pm/backpex/v0-21.html), then [Upgrading to v0.22](https://hexdocs.pm/backpex/v0-22.html)                                                                   | [From 0.2 to 0.3](#from-0-2-to-0-3), then [Backpex 0.22](#backpex-0-22) |
+| 0.3.x      | [Upgrading to v0.22](https://hexdocs.pm/backpex/v0-22.html)                                                                                                                                     | [Backpex 0.22](#backpex-0-22)                                           |
 
 Install the latest 0.3 release.
 
@@ -95,7 +96,7 @@ There is no project-wide default for `persist`; each LiveResource opts in.
 
 ## From 0.2 to 0.3
 
-AshBackpex 0.3 requires Backpex 0.21, which enforces `can?/3` in
+AshBackpex 0.3.0 moved to Backpex 0.21, which enforces `can?/3` in
 `Backpex.Resource` instead of leaving it to each caller.
 [Upgrading to v0.21](https://hexdocs.pm/backpex/v0-21.html) covers the new
 `Backpex.Resource` signatures, strict item actions, `authorize?: false`,

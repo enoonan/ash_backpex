@@ -428,8 +428,10 @@ backpex do
 end
 ```
 
-Field and filter callbacks then receive only the reduced assigns, so list every
-other assign they read.
+The functions and callbacks of fields and the `render/1` and `render_form/1`
+callbacks of filters then receive only the reduced assigns, so list every other
+assign they read. `filters/1` and a filter's `can?/1` always receive all
+assigns.
 
 Backpex enforces the generated `can?/3` before every mutation and item action:
 - Item actions receive records re-read through the adapter as the current actor
