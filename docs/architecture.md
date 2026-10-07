@@ -9,7 +9,7 @@ AshBackpex has two main phases: a Spark DSL is compiled into a Backpex LiveResou
 3. `lib/ash_backpex/live_resource/transformers/generate_backpex.ex` reads the persisted DSL, derives field/filter configuration, validates resource metadata, and injects Backpex callbacks.
 4. `lib/ash_backpex/live_resource/info.ex` exposes generated accessors for stored DSL values.
 
-Compile-time behavior belongs in the transformer and must be covered by `test/ash_backpex/live_resource/transformer_test.exs` or `error_cases_test.exs`. Tests define small LiveResource modules in `test/support/test_live.ex`; use those patterns instead of booting the demo.
+Compile-time behavior belongs in the transformer and must be covered by `test/ash_backpex/live_resource/transformer_test.exs` or `error_cases_test.exs`. Tests define small LiveResource modules in `test/support/test_live.ex`, `test/support/index_edit_live.ex`, and `test/support/context_assigns_live.ex`; use those patterns instead of booting the demo.
 
 Keep the boundary sharp: DSL modules describe configuration, the transformer derives code, and runtime adapter modules execute work. A new DSL option normally requires a schema/entity change, transformer or generated-callback handling, focused compile-time tests, module documentation, and `usage-rules.md` updates.
 
@@ -40,7 +40,7 @@ Use `TestInlineCrudLive` plus the Post/Comment fixtures in `test/support/` for c
 
 ## Fields, filters, and relationships
 
-Custom field integrations live in `lib/ash_backpex/fields/` and should remain thin Backpex field implementations. Field derivation itself belongs in the transformer. The typeahead belongs-to implementation is exercised by `test/ash_backpex/fields/belongs_to_test.exs` with representative relationship and authorization fixtures.
+Custom field integrations live in `lib/ash_backpex/fields/` and should remain thin Backpex field implementations. Field derivation itself belongs in the transformer. The typeahead belongs-to implementation is exercised by `test/ash_backpex/fields/belongs_to_test.exs` with representative relationship and authorization fixtures, and its inline index edits by `test/ash_backpex/fields/belongs_to_index_edit_test.exs`.
 
 Ash-native filters live in `lib/ash_backpex/filters/`. They reuse Backpex UI behavior but return Ash expressions through the `AshBackpex.Filters.Filter` contract. Filter expression tests live beside each module; transformer tests own type derivation, and adapter tests own configuration and request-value plumbing.
 
