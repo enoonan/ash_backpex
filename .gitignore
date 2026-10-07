@@ -39,10 +39,3 @@ ash_backpex-*.tar
 .aider*
 .DS_Store
 .vscode
-
-# eno_harness orchestration files: local tooling, not part of the library.
-# Review reports stay committable because the harness commits them on review
-# branches with `git add -A`; they are deleted before any branch merges to main.
-/.harness/*
-!/.harness/reviews/
-/docs/plans/
