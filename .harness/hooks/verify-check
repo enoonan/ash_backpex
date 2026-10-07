@@ -1,0 +1,24 @@
+#!/bin/sh
+set -eu
+
+# Named checks mirror the stages of `mix ci`, which runs in MIX_ENV=test.
+export MIX_ENV=test
+
+case "${1:-}" in
+  compile)
+    exec mix compile --warnings-as-errors
+    ;;
+  unit)
+    exec mix test
+    ;;
+  format)
+    exec mix format --check-formatted
+    ;;
+  credo)
+    exec mix credo --strict
+    ;;
+  *)
+    echo "verify-check: unknown check id: ${1:-missing}" >&2
+    exit 64
+    ;;
+esac

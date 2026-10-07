@@ -1,0 +1,7 @@
+# Build-only configuration for the ash_backpex project runner. Never deploy this
+# configuration as an application; it publishes into eno-harness's registry.
+app = "eno-harness"
+primary_region = "ord"
+
+[build]
+  dockerfile = "Dockerfile"
