@@ -426,6 +426,52 @@ defmodule AshBackpex.AdapterTest do
       refute Enum.any?(posts, &(&1.view_count < 1))
     end
 
+    test "filter with a Range filter keeps rows from the whole end date on a datetime field" do
+      morning =
+        Ash.Seed.seed!(%AshBackpex.TestDomain.Item{
+          name: "Morning",
+          created_at: ~U[2024-06-15 09:00:00Z]
+        })
+
+      evening =
+        Ash.Seed.seed!(%AshBackpex.TestDomain.Item{
+          name: "Evening",
+          created_at: ~U[2024-06-15 18:30:00Z]
+        })
+
+      _next_day =
+        Ash.Seed.seed!(%AshBackpex.TestDomain.Item{
+          name: "Next day",
+          created_at: ~U[2024-06-16 00:00:00Z]
+        })
+
+      assigns = %{current_user: nil}
+      value = %{"start" => "2024-06-15", "end" => "2024-06-15"}
+      filter = %{field: :created_at, value: value, module: AshBackpex.Filters.Range}
+
+      {:ok, items} = Adapter.list([filters: [filter]], [], assigns, TestItemLive)
+      assert items |> Enum.map(& &1.id) |> Enum.sort() == Enum.sort([morning.id, evening.id])
+    end
+
+    test "filter with a Range filter keeps the end date itself on a date field" do
+      last_day =
+        Ash.Seed.seed!(%AshBackpex.TestDomain.Item{name: "Last day", birth_date: ~D[2024-12-31]})
+
+      _next_year =
+        Ash.Seed.seed!(%AshBackpex.TestDomain.Item{name: "Next year", birth_date: ~D[2025-01-01]})
+
+      assigns = %{current_user: nil}
+
+      filter = %{
+        field: :birth_date,
+        value: %{"start" => "", "end" => "2024-12-31"},
+        module: AshBackpex.Filters.Range
+      }
+
+      {:ok, items} = Adapter.list([filters: [filter]], [], assigns, TestItemLive)
+      assert Enum.map(items, & &1.id) == [last_day.id]
+    end
+
     test "filter with module-based Boolean filter applies to_ash_expr/3" do
       user = user()
       published_post = post(actor: user, published: true)
