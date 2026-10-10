@@ -8,6 +8,8 @@ defmodule AshBackpex.Filters.SelectTest do
   """
   use ExUnit.Case, async: true
 
+  import Phoenix.LiveViewTest
+
   # The module under test - will be implemented in lib/ash_backpex/filters/select.ex
   alias AshBackpex.Filters.Select
 
@@ -30,6 +32,20 @@ defmodule AshBackpex.Filters.SelectTest do
 
       assert Backpex.FilterValidation.valid_values(valid) == %{status: "draft"}
       assert Backpex.FilterValidation.valid_values(invalid) == %{}
+    end
+  end
+
+  describe "filter badge" do
+    test "shows the label of the selected option" do
+      assert badge_text(TestFilterOptionsFunctionLive, %{status: "published"}) == ["Published"]
+    end
+
+    test "shows the label of a derived one_of option" do
+      [{label, _value}] =
+        TestDerivedFiltersLive.filters()[:status].options
+        |> Enum.filter(fn {_label, value} -> to_string(value) == "archived" end)
+
+      assert badge_text(TestDerivedFiltersLive, %{status: "archived"}) == [label]
     end
   end
 
@@ -107,5 +123,22 @@ defmodule AshBackpex.Filters.SelectTest do
       # The expression should be equivalent to: status == :draft
       assert Ash.Expr.expr?(expr)
     end
+  end
+
+  # Backpex renders a filter badge with its context assigns and the value only,
+  # without the filter's field (`Backpex.HTML.Resource.filter/1`).
+  defp badge_text(live_resource, filter_values) do
+    html =
+      render_component(&Backpex.HTML.Resource.filter/1,
+        live_resource: live_resource,
+        filters: live_resource.filters(),
+        filter_values: filter_values,
+        filter_options: %{},
+        backpex_context: %{live_resource: live_resource, __changed__: nil}
+      )
+
+    ~r{pointer-events-none border-l-transparent">(.*?)</div>}s
+    |> Regex.scan(html)
+    |> Enum.map(fn [_, text] -> String.trim(text) end)
   end
 end

@@ -7,6 +7,15 @@
 > change. Follow the [upgrade guide](guides/upgrading-to-0.3.md) before you bump
 > the dependency.
 
+## Unreleased
+
+### Fixes
+
+- The filter badges of `AshBackpex.Filters.Select` and
+  `AshBackpex.Filters.MultiSelect` show the selected option labels again.
+  Backpex renders a badge without the filter's field, so the label lookup found
+  no options and the badge was empty.
+
 ## [v0.3.4]
 
 ### Features
