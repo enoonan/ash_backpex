@@ -76,6 +76,13 @@ defmodule AshBackpex.Filters.MultiSelect do
   end
 
   @impl Backpex.Filter
+  def render(assigns) do
+    assigns
+    |> Phoenix.Component.assign(:options, badge_options(assigns))
+    |> Backpex.Filters.MultiSelect.render()
+  end
+
+  @impl Backpex.Filter
   def render_form(assigns) do
     field = Map.get(assigns, :field)
 
@@ -230,6 +237,17 @@ defmodule AshBackpex.Filters.MultiSelect do
   end
 
   defp options_for(_assigns, _field), do: []
+
+  # Backpex renders the filter badge with the context assigns and the value only,
+  # without the filter's field, so the badge looks the label up in the options of
+  # every filter on the LiveResource. When two filters list the same value, the
+  # first filter's label wins.
+  defp badge_options(%{live_resource: live_resource} = assigns) do
+    live_resource.filters(assigns)
+    |> Enum.flat_map(fn {field, _filter} -> options_for(assigns, field) end)
+  end
+
+  defp badge_options(_assigns), do: []
 
   defp resolve_options(options, assigns) when is_function(options, 1), do: options.(assigns)
   defp resolve_options(options, _assigns), do: options
