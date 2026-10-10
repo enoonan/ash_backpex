@@ -7,6 +7,14 @@
 > change. Follow the [upgrade guide](guides/upgrading-to-0.3.md) before you bump
 > the dependency.
 
+## Unreleased
+
+### Fixes
+
+- `AshBackpex.Filters.Range` keeps every row from the end date when the end
+  value is a date. On a datetime attribute it compared `field <= date`, which
+  Ash reads as midnight, so the rest of the end day was dropped.
+
 ## [v0.3.4]
 
 ### Features

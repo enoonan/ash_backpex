@@ -38,7 +38,9 @@ defmodule AshBackpex.Filters.Range do
   - `:datetime` - For datetime attributes
 
   Note: Date and datetime filtering uses the same Ash expressions but with
-  date/datetime values instead of numbers.
+  date/datetime values instead of numbers. An end value given as a date includes
+  that whole day, also on a datetime attribute: the filter compares with
+  `field < end + 1 day` instead of `field <= end`.
 
   ## Options
 
@@ -193,6 +195,20 @@ defmodule AshBackpex.Filters.Range do
   defp build_expr(field, start_val, nil) when not is_nil(start_val) do
     require Ash.Expr
     Ash.Expr.expr(^Ash.Expr.ref(field) >= ^start_val)
+  end
+
+  # An end date includes that whole day: compare with "before the next day", which
+  # gives the same rows as `<=` on a date field and keeps the day's later rows on a
+  # datetime field, where a bare date means midnight.
+  defp build_expr(field, start_val, %Date{} = end_date) do
+    require Ash.Expr
+    before_next_day = Ash.Expr.expr(^Ash.Expr.ref(field) < ^Date.add(end_date, 1))
+
+    if is_nil(start_val) do
+      before_next_day
+    else
+      Ash.Expr.expr(^Ash.Expr.ref(field) >= ^start_val and ^before_next_day)
+    end
   end
 
   # Only end value - less than or equal
