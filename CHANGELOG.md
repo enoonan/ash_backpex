@@ -18,6 +18,9 @@
 - `AshBackpex.Filters.Range` keeps every row from the end date when the end
   value is a date. On a datetime attribute it compared `field <= date`, which
   Ash reads as midnight, so the rest of the end day was dropped.
+- Filters keep the order they are declared in the `filters` section. The
+  generated `filters/0` listed them in reverse, so the filter dropdown showed
+  the last declared filter first.
 
 ## [v0.3.4]
 

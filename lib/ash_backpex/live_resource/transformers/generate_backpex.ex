@@ -797,6 +797,7 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                 end)
 
         @filters Spark.Dsl.Extension.get_entities(__MODULE__, [:backpex, :filters])
+                 |> Enum.reverse()
                  |> Enum.reduce([], fn filter, acc ->
                    derived_module = filter.attribute |> derive_filter_module.()
                    module = filter.module || derived_module
