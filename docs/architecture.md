@@ -9,7 +9,7 @@ AshBackpex has two main phases: a Spark DSL is compiled into a Backpex LiveResou
 3. `lib/ash_backpex/live_resource/transformers/generate_backpex.ex` reads the persisted DSL, derives field/filter configuration, validates resource metadata, and injects Backpex callbacks.
 4. `lib/ash_backpex/live_resource/info.ex` exposes generated accessors for stored DSL values.
 
-Compile-time behavior belongs in the transformer and must be covered by `test/ash_backpex/live_resource/transformer_test.exs` or `error_cases_test.exs`. Tests define small LiveResource modules in `test/support/test_live.ex`, `test/support/index_edit_live.ex`, and `test/support/context_assigns_live.ex`; use those patterns instead of booting the demo.
+Compile-time behavior belongs in the transformer and must be covered by `test/ash_backpex/live_resource/transformer_test.exs` or `error_cases_test.exs`. Tests define small LiveResource modules in `test/support/test_live.ex`, `test/support/index_edit_live.ex`, `test/support/context_assigns_live.ex`, and `test/support/filter_badge_live.ex`; use those patterns instead of booting the demo.
 
 Keep the boundary sharp: DSL modules describe configuration, the transformer derives code, and runtime adapter modules execute work. A new DSL option normally requires a schema/entity change, transformer or generated-callback handling, focused compile-time tests, module documentation, and `usage-rules.md` updates.
 

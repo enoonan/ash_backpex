@@ -18,6 +18,10 @@ defmodule AshBackpex.TestRouter do
     live_session :backpex_admin,
       on_mount: [AshBackpex.TestRouter.CurrentUser, Backpex.InitAssigns] do
       live_resources("/assignments", TestAssignmentIndexEditLive)
+      live_resources("/filter-badges", TestFilterBadgeLive)
+      live_resources("/filter-badges-context-keys", TestFilterBadgeContextKeysLive)
+      live_resources("/filter-badges-derived", TestFilterBadgeDerivedLive)
+      live_resources("/filter-badges-shared-value", TestFilterBadgeSharedValueLive)
     end
   end
 end
