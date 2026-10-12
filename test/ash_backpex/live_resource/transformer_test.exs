@@ -322,6 +322,11 @@ defmodule AshBackpex.LiveResource.TransformerTest do
       assert Keyword.get(filters, :status).label == "Status"
     end
 
+    test "keep filters in the order they are declared" do
+      assert Keyword.keys(TestDerivedFiltersLive.filters()) == [:published, :status]
+      assert Keyword.keys(TestFilterOptionsFunctionLive.filters()) == [:status, :tags]
+    end
+
     test "allow explicit module override for filters" do
       filters = TestExplicitFilterModuleLive.filters()
 
