@@ -20,7 +20,14 @@
   Ash reads as midnight, so the rest of the end day was dropped.
 - Filters keep the order they are declared in the `filters` section. The
   generated `filters/0` listed them in reverse, so the filter dropdown showed
-  the last declared filter first.
+  the last declared filter first. When two Select or MultiSelect filters list
+  the same value, its badge now shows the label of the first declared filter.
+
+### Updates
+
+- Demo: the Articles index filters `status` with
+  `AshBackpex.Filters.MultiSelect`, its options derived from the `one_of`
+  constraint, so the MultiSelect form and badge can be tried in the running app.
 
 ## [v0.3.4]
 
