@@ -8,6 +8,8 @@ defmodule AshBackpex.Filters.MultiSelectTest do
   """
   use ExUnit.Case, async: true
 
+  import Phoenix.LiveViewTest
+
   alias AshBackpex.Filters.MultiSelect
 
   test "implements Backpex label callback" do
@@ -29,6 +31,14 @@ defmodule AshBackpex.Filters.MultiSelectTest do
 
       assert Backpex.FilterValidation.valid_values(valid) == %{tags: ["food"]}
       assert Backpex.FilterValidation.valid_values(invalid) == %{}
+    end
+  end
+
+  describe "filter badge" do
+    test "shows the labels of the selected options" do
+      assert badge_text(TestFilterOptionsFunctionLive, %{tags: ["food", "politics"]}) == [
+               "Food, Politics"
+             ]
     end
   end
 
@@ -110,5 +120,22 @@ defmodule AshBackpex.Filters.MultiSelectTest do
       # The expression should be equivalent to: status in ["draft"]
       assert Ash.Expr.expr?(expr)
     end
+  end
+
+  # Backpex renders a filter badge with its context assigns and the value only,
+  # without the filter's field (`Backpex.HTML.Resource.filter/1`).
+  defp badge_text(live_resource, filter_values) do
+    html =
+      render_component(&Backpex.HTML.Resource.filter/1,
+        live_resource: live_resource,
+        filters: live_resource.filters(),
+        filter_values: filter_values,
+        filter_options: %{},
+        backpex_context: %{live_resource: live_resource, __changed__: nil}
+      )
+
+    ~r{pointer-events-none border-l-transparent">(.*?)</div>}s
+    |> Regex.scan(html)
+    |> Enum.map(fn [_, text] -> String.trim(text) end)
   end
 end

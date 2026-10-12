@@ -11,6 +11,10 @@
 
 ### Fixes
 
+- The filter badges of `AshBackpex.Filters.Select` and
+  `AshBackpex.Filters.MultiSelect` show the selected option labels again.
+  Backpex renders a badge without the filter's field, so the label lookup found
+  no options and the badge was empty.
 - `AshBackpex.Filters.Range` keeps every row from the end date when the end
   value is a date. On a datetime attribute it compared `field <= date`, which
   Ash reads as midnight, so the rest of the end day was dropped.
