@@ -29,8 +29,9 @@ defmodule DemoWeb.PostLive do
       # Boolean filter - auto-derived from :boolean attribute
       filter :published
 
-      # Select filter - auto-derived from :atom one_of constraints
+      # MultiSelect filter - explicit module, options derived from :atom one_of constraints
       filter :status do
+        module(AshBackpex.Filters.MultiSelect)
         prompt("Any status")
       end
 
