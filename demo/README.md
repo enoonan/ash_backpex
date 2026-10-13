@@ -37,6 +37,10 @@ A minimal demo application showcasing the integration between Ash Framework and 
 - Author avatars uploaded with `Backpex.Fields.Upload`. Files are stored on
   local disk in `priv/uploads` and served at `/uploads`, so they do not survive
   a redeploy
+- An Articles image gallery: an [AshStorage](https://github.com/ash-project/ash_storage)
+  `has_many_attached` edited with `Backpex.Fields.Upload`. AshStorage stores the
+  files on local disk in `priv/storage` and they are served at `/storage`, so
+  they do not survive a redeploy either
 - Article content sections demonstrating recursive embedded forms: repeated
   sections, repeated columns, and one singular target per column
 - Selected attributes: `Post.content` has `select_by_default? false`, yet the

@@ -30,6 +30,9 @@ defmodule Demo.MixProject do
       {:ash_backpex, path: "../"},
       {:ash, "~> 3.0"},
       {:ash_sqlite, "~> 0.2"},
+      # Not on Hex yet; pinned to a commit.
+      {:ash_storage,
+       github: "ash-project/ash_storage", ref: "28b895410cb9a4b90b49242ce8617682a7b8fc77"},
       {:phoenix, "~> 1.7"},
       {:phoenix_ecto, "~> 4.4"},
       {:ecto_sql, "~> 3.10"},

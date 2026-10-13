@@ -22,6 +22,9 @@
 
 - Demo: authors have an avatar uploaded with `Backpex.Fields.Upload`, stored on
   local disk in `demo/priv/uploads` and served at `/uploads`.
+- Demo: articles have an image gallery, an AshStorage `has_many_attached`
+  uploaded with `Backpex.Fields.Upload`. The usage rules show how to wire the
+  upload callbacks to AshStorage.
 
 ## [v0.3.5]
 

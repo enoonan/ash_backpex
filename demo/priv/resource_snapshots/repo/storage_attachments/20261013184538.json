@@ -1,0 +1,88 @@
+{
+  "attributes": [
+    {
+      "default": "nil",
+      "size": null,
+      "type": "uuid",
+      "source": "id",
+      "references": null,
+      "primary_key?": true,
+      "allow_nil?": false,
+      "generated?": false
+    },
+    {
+      "default": "nil",
+      "size": null,
+      "type": "text",
+      "source": "name",
+      "references": null,
+      "primary_key?": false,
+      "allow_nil?": false,
+      "generated?": false
+    },
+    {
+      "default": "nil",
+      "size": null,
+      "type": "uuid",
+      "source": "blob_id",
+      "references": {
+        "name": "storage_attachments_blob_id_fkey",
+        "table": "storage_blobs",
+        "on_delete": null,
+        "on_update": null,
+        "deferrable": false,
+        "primary_key?": true,
+        "destination_attribute": "id",
+        "multitenancy": {
+          "global": null,
+          "attribute": null,
+          "strategy": null
+        },
+        "destination_attribute_default": null,
+        "destination_attribute_generated": null
+      },
+      "primary_key?": false,
+      "allow_nil?": false,
+      "generated?": false
+    },
+    {
+      "default": "nil",
+      "size": null,
+      "type": "uuid",
+      "source": "post_id",
+      "references": {
+        "name": "storage_attachments_post_id_fkey",
+        "table": "posts",
+        "on_delete": "nilify",
+        "on_update": null,
+        "deferrable": false,
+        "primary_key?": true,
+        "destination_attribute": "id",
+        "multitenancy": {
+          "global": null,
+          "attribute": null,
+          "strategy": null
+        },
+        "destination_attribute_default": null,
+        "destination_attribute_generated": null
+      },
+      "primary_key?": false,
+      "allow_nil?": true,
+      "generated?": false
+    }
+  ],
+  "table": "storage_attachments",
+  "hash": "866B6BEEEF1AC32DC6724E168DB83379D889BA6EB528774FC999824931FE93CB",
+  "repo": "Elixir.Demo.Repo",
+  "strict?": false,
+  "multitenancy": {
+    "global": null,
+    "attribute": null,
+    "strategy": null
+  },
+  "base_filter": null,
+  "custom_indexes": [],
+  "custom_statements": [],
+  "identities": [],
+  "has_create_action": true
+}

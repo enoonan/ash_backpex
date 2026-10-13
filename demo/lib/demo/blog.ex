@@ -6,6 +6,8 @@ defmodule Demo.Blog do
     resource Demo.Blog.Comment
     resource Demo.Blog.Post
     resource Demo.Blog.PostTag
+    resource Demo.Blog.StorageAttachment
+    resource Demo.Blog.StorageBlob
     resource Demo.Blog.Tag
   end
 end

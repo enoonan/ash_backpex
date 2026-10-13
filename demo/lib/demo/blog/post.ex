@@ -1,11 +1,22 @@
 defmodule Demo.Blog.Post do
   use Ash.Resource,
     domain: Demo.Blog,
-    data_layer: AshSqlite.DataLayer
+    data_layer: AshSqlite.DataLayer,
+    extensions: [AshStorage]
 
   sqlite do
     table "posts"
     repo(Demo.Repo)
+  end
+
+  # Gallery images are stored on local disk by AshStorage and served at /storage
+  # by AshStorage.Plug.DiskServe. They do not survive a redeploy.
+  storage do
+    service({AshStorage.Service.Disk, root: "priv/storage", base_url: "/storage"})
+    blob_resource(Demo.Blog.StorageBlob)
+    attachment_resource(Demo.Blog.StorageAttachment)
+
+    has_many_attached(:gallery)
   end
 
   attributes do

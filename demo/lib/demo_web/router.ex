@@ -15,6 +15,9 @@ defmodule DemoWeb.Router do
     assign(conn, :current_user, %{"name" => "John Doe"})
   end
 
+  # Post gallery images stored by AshStorage.Service.Disk.
+  forward("/storage", AshStorage.Plug.DiskServe, root: "priv/storage")
+
   scope "/", DemoWeb do
     pipe_through([:browser, :assign_user])
 
