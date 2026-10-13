@@ -24,6 +24,38 @@ defmodule AshBackpex.AdapterTest do
     end
   end
 
+  describe "AshBackpex.Adapter loads :: it" do
+    setup do
+      user = user()
+      post = post(actor: user)
+
+      AshBackpex.TestDomain.Comment
+      |> Ash.Changeset.for_create(:create, %{body: "Hi", post_id: post.id, author_id: user.id})
+      |> Ash.create!()
+
+      %{user: user, post: post}
+    end
+
+    test "keeps a nested load when the relationship is also a field in get/4", %{
+      user: user,
+      post: post
+    } do
+      fields = TestNestedLoadLive.fields()
+
+      assert {:ok, item} = Adapter.get(post.id, fields, %{current_user: user}, TestNestedLoadLive)
+      assert [%{author: %AshBackpex.TestDomain.User{id: author_id}}] = item.comments
+      assert author_id == user.id
+    end
+
+    test "keeps a nested load when the relationship is also a field in list/4", %{user: user} do
+      fields = TestNestedLoadLive.fields()
+
+      assert {:ok, [item]} = Adapter.list([], fields, %{current_user: user}, TestNestedLoadLive)
+      assert [%{author: %AshBackpex.TestDomain.User{id: author_id}}] = item.comments
+      assert author_id == user.id
+    end
+  end
+
   describe "AshBackpex.Adapter delete_all :: it can" do
     test "delete_all/2 uses the LiveResource's configured destroy action" do
       item = Ash.Seed.seed!(%AshBackpex.TestDomain.Item{name: "Keep me"})

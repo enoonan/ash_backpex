@@ -723,3 +723,24 @@ defmodule TestRichTextEntryNotesLive do
     end
   end
 end
+
+defmodule TestNestedLoadLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  # `comments` is both a field and a nested `load`, as an AshStorage attachment
+  # field is with `load gallery: [:url, :blob]`.
+  backpex do
+    resource(AshBackpex.TestDomain.Post)
+    layout({TestLayout, :admin})
+    load(comments: [:author])
+
+    fields do
+      field(:title)
+
+      field :comments do
+        display_field(:body)
+      end
+    end
+  end
+end
