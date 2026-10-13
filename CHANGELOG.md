@@ -18,6 +18,11 @@
   for upload fields, which Ash rejected as an unknown input, so upload fields
   save.
 
+### Updates
+
+- Demo: authors have an avatar uploaded with `Backpex.Fields.Upload`, stored on
+  local disk in `demo/priv/uploads` and served at `/uploads`.
+
 ## [v0.3.5]
 
 ### Fixes

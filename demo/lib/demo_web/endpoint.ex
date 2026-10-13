@@ -17,6 +17,9 @@ defmodule DemoWeb.Endpoint do
     only: DemoWeb.static_paths()
   )
 
+  # Author avatars uploaded in the admin. Local disk only; they do not survive a redeploy.
+  plug(Plug.Static, at: "/uploads", from: {:demo, "priv/uploads"}, gzip: false)
+
   if Code.ensure_loaded?(Tidewave) do
     plug(Tidewave)
   end

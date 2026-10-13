@@ -3059,6 +3059,9 @@
   .rounded-field {
     border-radius: var(--radius-field);
   }
+  .rounded-full {
+    border-radius: calc(infinity * 1px);
+  }
   .rounded-selector {
     border-radius: var(--radius-selector);
   }
@@ -3186,6 +3189,9 @@
   }
   .bg-white {
     background-color: var(--color-white);
+  }
+  .object-cover {
+    object-fit: cover;
   }
   .checkbox-sm {
     padding: 0.1875rem;

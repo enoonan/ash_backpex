@@ -42,6 +42,11 @@ defmodule Demo.Blog.Author do
       public? true
     end
 
+    # The name of the uploaded avatar file in priv/uploads.
+    attribute :avatar, :string do
+      public? true
+    end
+
     create_timestamp :inserted_at
     update_timestamp :updated_at
   end
@@ -56,12 +61,12 @@ defmodule Demo.Blog.Author do
 
     create :create do
       primary? true
-      accept [:name, :email, :role, :active, :bio, :joined_on]
+      accept [:name, :email, :role, :active, :bio, :joined_on, :avatar]
     end
 
     update :update do
       primary? true
-      accept [:name, :email, :role, :active, :bio, :joined_on]
+      accept [:name, :email, :role, :active, :bio, :joined_on, :avatar]
     end
   end
 end
