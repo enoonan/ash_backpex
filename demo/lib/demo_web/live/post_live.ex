@@ -1,6 +1,8 @@
 defmodule DemoWeb.PostLive do
   use AshBackpex.LiveResource
 
+  import Phoenix.Component, only: [sigil_H: 2]
+
   backpex do
     resource(Demo.Blog.Post)
     layout(&DemoWeb.Layouts.admin/1)
@@ -15,7 +17,16 @@ defmodule DemoWeb.PostLive do
     update_action(:admin_update)
     create_changeset(&DemoWeb.PostLive.admin_create_changeset/3)
     update_changeset(&DemoWeb.PostLive.admin_update_changeset/3)
-    load([:author, :comments, :topic_tags, :audience_tags, :word_count, :comment_count])
+
+    load([
+      :author,
+      :comments,
+      :topic_tags,
+      :audience_tags,
+      :word_count,
+      :comment_count,
+      gallery: [:url, :blob]
+    ])
 
     panels(
       content: "Content",
@@ -100,6 +111,21 @@ defmodule DemoWeb.PostLive do
         except([:index])
         panel(:content)
         rows(3)
+      end
+
+      # An AshStorage has_many_attached. Backpex consumes the uploads after the
+      # post is saved; the callbacks below attach and purge them with AshStorage.
+      field :gallery, Backpex.Fields.Upload do
+        panel(:content)
+        accept(~w(.jpg .jpeg .png .gif .webp))
+        max_entries(6)
+        max_file_size(5_000_000)
+        render(&__MODULE__.render_gallery/1)
+        list_existing_files(&__MODULE__.list_gallery_files/1)
+        file_label(&__MODULE__.gallery_file_label/1)
+        put_upload_change(&__MODULE__.put_gallery_change/6)
+        consume_upload(&__MODULE__.consume_gallery_upload/4)
+        remove_uploads(&__MODULE__.remove_gallery_uploads/3)
       end
 
       field :status do
@@ -231,6 +257,50 @@ defmodule DemoWeb.PostLive do
     params
     |> maybe_put_slug()
     |> maybe_sync_published_fields()
+  end
+
+  def render_gallery(assigns) do
+    ~H"""
+    <div class="flex flex-wrap gap-2">
+      <img
+        :for={image <- List.wrap(@value)}
+        src={image.url}
+        alt={image.blob.filename}
+        class="h-12 w-12 rounded object-cover"
+      />
+      <span :if={List.wrap(@value) == []}>—</span>
+    </div>
+    """
+  end
+
+  # Backpex identifies files by a string. "<blob id>/<filename>" carries the blob
+  # id for AshStorage and the filename for the form's label.
+  def list_gallery_files(%{gallery: images}) when is_list(images),
+    do: Enum.map(images, &"#{&1.blob_id}/#{&1.blob.filename}")
+
+  def list_gallery_files(_item), do: []
+
+  def gallery_file_label(file), do: file |> String.split("/", parts: 2) |> List.last()
+
+  # Attachments are not inputs of the Ash action, so the params stay as they are.
+  def put_gallery_change(_socket, params, _item, _uploaded, _removed, _action), do: params
+
+  def consume_gallery_upload(_socket, post, %{path: path}, entry) do
+    # Pass a file struct: AshStorage stores a binary argument as the file's bytes.
+    {:ok, _result} =
+      AshStorage.Operations.attach(post, :gallery, Ash.Type.File.from_path(path),
+        filename: entry.client_name,
+        content_type: entry.client_type
+      )
+
+    {:ok, entry.client_name}
+  end
+
+  def remove_gallery_uploads(_socket, post, removed_files) do
+    for file <- removed_files do
+      [blob_id | _filename] = String.split(file, "/", parts: 2)
+      {:ok, _purged} = AshStorage.Operations.purge(post, :gallery, blob_id: blob_id)
+    end
   end
 
   defp maybe_put_slug(%{"slug" => slug} = params) when slug not in [nil, ""], do: params

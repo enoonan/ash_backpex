@@ -20,5 +20,6 @@ config :ash_backpex, AshBackpex.TestEndpoint,
   adapter: Phoenix.Endpoint.Cowboy2Adapter,
   secret_key_base: String.duplicate("ash-backpex-test-secret-", 4),
   live_view: [signing_salt: "ash-backpex-live"],
+  pubsub_server: AshBackpex.TestPubSub,
   server: false,
   url: [host: "localhost"]

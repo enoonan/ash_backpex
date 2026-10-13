@@ -207,6 +207,85 @@ an ordered list of maps; singular embedded values remain maps. Keep `default:
 and persistent row identity. Typed embedded trees can coexist with relationship
 InlineCRUD; union or variant-specific conditional forms are not supported.
 
+### Upload Fields
+
+Use `Backpex.Fields.Upload` for an attribute that stores file names, such as a
+`:string` for one file or `{:array, :string}` for several. Backpex requires the
+`list_existing_files`, `put_upload_change`, `consume_upload` and
+`remove_uploads` functions; see `Backpex.Fields.Upload` for their arguments.
+
+```elixir
+field :avatar, Backpex.Fields.Upload do
+  accept ~w(.jpg .jpeg .png)
+  max_entries 1
+  list_existing_files &__MODULE__.list_existing_files/1
+  put_upload_change &__MODULE__.put_upload_change/6
+  consume_upload &__MODULE__.consume_upload/4
+  remove_uploads &__MODULE__.remove_uploads/3
+end
+```
+
+`put_upload_change` puts the file names into the params under the field name,
+so the create and update actions must accept the attribute. Backpex consumes
+uploads after the Ash action has saved the item, outside its transaction.
+AshBackpex removes the `"<field>_used_input"` param Backpex adds, so the Ash
+action does not reject it. A field module that implements Backpex's upload
+callbacks, such as `consume_upload/5` of `Backpex.Field`, can be used instead of
+the function options.
+
+#### Upload fields backed by AshStorage
+
+An [AshStorage](https://github.com/ash-project/ash_storage) attachment works
+with the same callbacks. Backpex consumes the uploads after the Ash action has
+saved the record, so attach them with `AshStorage.Operations` instead of an
+action argument. Load the attachments and their blobs with the `load` option:
+
+```elixir
+load gallery: [:url, :blob]
+
+field :gallery, Backpex.Fields.Upload do
+  max_entries 6
+  list_existing_files &__MODULE__.list_gallery_files/1
+  file_label &__MODULE__.gallery_file_label/1
+  put_upload_change &__MODULE__.put_gallery_change/6
+  consume_upload &__MODULE__.consume_gallery_upload/4
+  remove_uploads &__MODULE__.remove_gallery_uploads/3
+end
+
+# "<blob id>/<filename>" identifies a file and carries its label.
+def list_gallery_files(%{gallery: images}) when is_list(images),
+  do: Enum.map(images, &"#{&1.blob_id}/#{&1.blob.filename}")
+
+def list_gallery_files(_item), do: []
+
+def gallery_file_label(file), do: file |> String.split("/", parts: 2) |> List.last()
+
+# Attachments are not inputs of the Ash action.
+def put_gallery_change(_socket, params, _item, _uploaded, _removed, _action), do: params
+
+def consume_gallery_upload(_socket, post, %{path: path}, entry) do
+  {:ok, _result} =
+    AshStorage.Operations.attach(post, :gallery, Ash.Type.File.from_path(path),
+      filename: entry.client_name,
+      content_type: entry.client_type
+    )
+
+  {:ok, entry.client_name}
+end
+
+def remove_gallery_uploads(_socket, post, removed_files) do
+  for file <- removed_files do
+    [blob_id | _filename] = String.split(file, "/", parts: 2)
+    {:ok, _purged} = AshStorage.Operations.purge(post, :gallery, blob_id: blob_id)
+  end
+end
+```
+
+Pass the uploaded file as `Ash.Type.File.from_path/1`; AshStorage stores a
+binary argument as the file's contents, not as a path. Give the attachment's
+foreign key `on_delete: :nilify`, so AshStorage can purge the attachments of a
+destroyed record. The demo's Articles gallery is a complete example.
+
 ### Searchable Fields
 
 Enable search on string fields:

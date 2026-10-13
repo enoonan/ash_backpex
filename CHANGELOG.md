@@ -7,6 +7,25 @@
 > change. Follow the [upgrade guide](guides/upgrading-to-0.3.md) before you bump
 > the dependency.
 
+## Unreleased
+
+### Features
+
+- Fields accept the options of `Backpex.Fields.Upload`: `upload_key`,
+  `accept`, `max_entries`, `max_file_size`, `list_existing_files`,
+  `file_label`, `put_upload_change`, `consume_upload`, `remove_uploads` and
+  `external`. The adapter removes the `"<field>_used_input"` param Backpex adds
+  for upload fields, which Ash rejected as an unknown input, so upload fields
+  save.
+
+### Updates
+
+- Demo: authors have an avatar uploaded with `Backpex.Fields.Upload`, stored on
+  local disk in `demo/priv/uploads` and served at `/uploads`.
+- Demo: articles have an image gallery, an AshStorage `has_many_attached`
+  uploaded with `Backpex.Fields.Upload`. The usage rules show how to wire the
+  upload callbacks to AshStorage.
+
 ## [v0.3.5]
 
 ### Fixes

@@ -488,9 +488,19 @@ defmodule AshBackpex.Adapter do
       {field, %{child_fields: child_fields}}, attrs when is_list(child_fields) ->
         normalize_embedded_params(attrs, field, child_fields)
 
-      _field, attrs ->
-        attrs
+      field, attrs ->
+        drop_upload_used_input(attrs, field)
     end)
+  end
+
+  # Backpex marks whether an upload field was used with a `"<field>_used_input"`
+  # param, which is not an input of the Ash action.
+  defp drop_upload_used_input(attrs, {name, _options} = field) do
+    if Backpex.Field.upload_key(field) do
+      Map.delete(attrs, "#{name}_used_input")
+    else
+      attrs
+    end
   end
 
   defp normalize_list_field_param(attrs, field) do
