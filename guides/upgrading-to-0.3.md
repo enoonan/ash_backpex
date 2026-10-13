@@ -33,7 +33,7 @@ Install the latest 0.3 release.
 ```elixir
 def deps do
   [
-    {:ash_backpex, "~> 0.3.5"}
+    {:ash_backpex, "~> 0.3.6"}
   ]
 end
 ```
