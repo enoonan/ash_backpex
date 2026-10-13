@@ -129,6 +129,34 @@ defmodule AshBackpex.AdapterTest do
                       }}
     end
 
+    test "removes the used-input marker Backpex adds for upload fields" do
+      user = user()
+      post = post(actor: user)
+
+      fields = [
+        title: %{module: Backpex.Fields.Upload},
+        body: %{module: Backpex.Fields.Text, upload_key: :body_upload},
+        keywords: %{module: Backpex.Fields.Text}
+      ]
+
+      Adapter.change(
+        post,
+        %{
+          "title" => "notes.txt",
+          "title_used_input" => "true",
+          "body_used_input" => "false",
+          "keywords_used_input" => "kept"
+        },
+        fields,
+        %{current_user: user, live_resource: TestParamCaptureLive, test_pid: self()},
+        TestParamCaptureLive,
+        action: :update
+      )
+
+      assert_receive {:captured_params, params}
+      assert params == %{"title" => "notes.txt", "keywords_used_input" => "kept"}
+    end
+
     test "normalizes InlineCRUD add, delete, and order params for manage_relationship" do
       user = user()
       post = post(actor: user)

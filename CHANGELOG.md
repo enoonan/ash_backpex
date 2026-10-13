@@ -7,6 +7,17 @@
 > change. Follow the [upgrade guide](guides/upgrading-to-0.3.md) before you bump
 > the dependency.
 
+## Unreleased
+
+### Features
+
+- Fields accept the options of `Backpex.Fields.Upload`: `upload_key`,
+  `accept`, `max_entries`, `max_file_size`, `list_existing_files`,
+  `file_label`, `put_upload_change`, `consume_upload`, `remove_uploads` and
+  `external`. The adapter removes the `"<field>_used_input"` param Backpex adds
+  for upload fields, which Ash rejected as an unknown input, so upload fields
+  save.
+
 ## [v0.3.5]
 
 ### Fixes

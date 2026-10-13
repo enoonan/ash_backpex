@@ -567,3 +567,45 @@ defmodule AshBackpex.TestDomain.Assignment do
     defaults [:read, create: [:title, :owner_id, :reviewer_id], update: [:owner_id, :reviewer_id]]
   end
 end
+
+defmodule AshBackpex.TestDomain.Document do
+  @moduledoc """
+  A resource that stores the names of uploaded files, for `Backpex.Fields.Upload`
+  fields: one file in `file` and a list of files in `attachments`.
+  """
+  use Ash.Resource,
+    domain: AshBackpex.TestDomain,
+    data_layer: AshSqlite.DataLayer
+
+  sqlite do
+    table "documents"
+    repo(AshBackpex.TestRepo)
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :title, :string do
+      allow_nil? false
+      public? true
+    end
+
+    attribute :file, :string do
+      public? true
+    end
+
+    attribute :attachments, {:array, :string} do
+      default []
+      public? true
+    end
+  end
+
+  actions do
+    defaults [
+      :read,
+      :destroy,
+      create: [:title, :file, :attachments],
+      update: [:title, :file, :attachments]
+    ]
+  end
+end

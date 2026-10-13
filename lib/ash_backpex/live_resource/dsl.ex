@@ -135,6 +135,19 @@ defmodule AshBackpex.LiveResource.Dsl do
     `one_of` constraints when omitted; set `module Backpex.Fields.Checkgroup` to
     render array options as checkboxes.
 
+  #### Upload Field Options
+
+  Set `module Backpex.Fields.Upload` and pass its options, which Backpex validates:
+
+  - `upload_key`, `accept`, `max_entries`, `max_file_size` - Forwarded to
+    `Phoenix.LiveView.allow_upload/3`
+  - `list_existing_files` - Returns the item's files (required)
+  - `put_upload_change` - Puts the file names into the params of the Ash action (required)
+  - `consume_upload` - Stores an uploaded file after the item is saved (required)
+  - `remove_uploads` - Deletes files removed during an edit (required)
+  - `file_label` - Label of a file
+  - `external` - Presigns external uploads
+
   ## filters Section
 
   Add filters to the index view. Filter modules are auto-derived from Ash attribute types,
@@ -368,6 +381,16 @@ defmodule AshBackpex.LiveResource.Dsl do
       :format,
       :rows,
       :child_fields,
+      :upload_key,
+      :accept,
+      :max_entries,
+      :max_file_size,
+      :list_existing_files,
+      :file_label,
+      :consume_upload,
+      :put_upload_change,
+      :remove_uploads,
+      :external,
       __spark_metadata__: nil
     ]
   end
@@ -501,6 +524,14 @@ defmodule AshBackpex.LiveResource.Dsl do
                     doc: "Number of visible text lines for the control.",
                     type: :non_neg_integer
                   ]
+                )
+                # UPLOAD FIELDS
+                # Every field shares this schema, so Backpex.Fields.Upload's required options and
+                # defaults are left to Backpex, which validates them for upload fields only.
+                |> Keyword.merge(
+                  Enum.map(Backpex.Fields.Upload.config_schema(), fn {key, opts} ->
+                    {key, Keyword.drop(opts, [:required, :default])}
+                  end)
                 )
                 |> Keyword.drop([:select])
 

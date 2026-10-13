@@ -117,5 +117,14 @@ defmodule AshBackpex.DataCase do
       reviewer_id TEXT REFERENCES users(id)
     )
     """)
+
+    Ecto.Adapters.SQL.query!(AshBackpex.TestRepo, """
+    CREATE TABLE IF NOT EXISTS documents (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      file TEXT,
+      attachments TEXT
+    )
+    """)
   end
 end

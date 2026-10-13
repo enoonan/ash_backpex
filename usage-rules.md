@@ -207,6 +207,32 @@ an ordered list of maps; singular embedded values remain maps. Keep `default:
 and persistent row identity. Typed embedded trees can coexist with relationship
 InlineCRUD; union or variant-specific conditional forms are not supported.
 
+### Upload Fields
+
+Use `Backpex.Fields.Upload` for an attribute that stores file names, such as a
+`:string` for one file or `{:array, :string}` for several. Backpex requires the
+`list_existing_files`, `put_upload_change`, `consume_upload` and
+`remove_uploads` functions; see `Backpex.Fields.Upload` for their arguments.
+
+```elixir
+field :avatar, Backpex.Fields.Upload do
+  accept ~w(.jpg .jpeg .png)
+  max_entries 1
+  list_existing_files &__MODULE__.list_existing_files/1
+  put_upload_change &__MODULE__.put_upload_change/6
+  consume_upload &__MODULE__.consume_upload/4
+  remove_uploads &__MODULE__.remove_uploads/3
+end
+```
+
+`put_upload_change` puts the file names into the params under the field name,
+so the create and update actions must accept the attribute. Backpex consumes
+uploads after the Ash action has saved the item, outside its transaction.
+AshBackpex removes the `"<field>_used_input"` param Backpex adds, so the Ash
+action does not reject it. A field module that implements Backpex's upload
+callbacks, such as `consume_upload/5` of `Backpex.Field`, can be used instead of
+the function options.
+
 ### Searchable Fields
 
 Enable search on string fields:
