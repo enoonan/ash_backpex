@@ -121,6 +121,8 @@ defmodule AshBackpex.LiveResource.Dsl do
   - `type` - InlineCRUD storage type (`:assoc` or `:embed`). Defaults to `:assoc`
     for an Ash `has_many` relationship and `:embed` for an array of typed embedded
     Ash resources.
+  - `entry_label` - Singular name of one InlineCRUD entry, used in its Add, Delete
+    and Move control text (e.g., `"link"` for a `Links` field). Defaults to `label`.
   - `child_fields` - Field definitions for the immediate relationship or typed embedded
     resource. The block may be nested recursively. Use `Backpex.Fields.InlineCRUD` for
     repeated children and `AshBackpex.Fields.Embedded` for a singular embedded child.
@@ -378,6 +380,7 @@ defmodule AshBackpex.LiveResource.Dsl do
       :typeahead,
       :typeahead_limit,
       :type,
+      :entry_label,
       :format,
       :rows,
       :child_fields,
@@ -503,6 +506,11 @@ defmodule AshBackpex.LiveResource.Dsl do
                     doc:
                       "The InlineCRUD field type. Defaults to `:assoc` for Ash `has_many` relationships and `:embed` for arrays of typed embedded resources.",
                     type: {:in, [:assoc, :embed]}
+                  ],
+                  entry_label: [
+                    doc:
+                      "The singular name of one InlineCRUD entry, used in its Add, Delete and Move control text. Defaults to the field's `label`.",
+                    type: :string
                   ],
                   # TIME FIELDS (e.g. Date, Time, DateTime)
                   format: [

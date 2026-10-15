@@ -7,6 +7,22 @@
 > change. Follow the [upgrade guide](guides/upgrading-to-0.3.md) before you bump
 > the dependency.
 
+## [v0.3.7]
+
+### Features
+
+- InlineCRUD fields accept `entry_label`, the singular name of one entry, which
+  words the Add, Delete and Move controls. A `Links` field with
+  `entry_label "link"` renders "Add link" and "Delete link" instead of
+  "Add Links" and "Delete Links". It defaults to the field's `label`, and
+  setting it on any other field fails to compile.
+
+### Updates
+
+- InlineCRUD move-up and move-down buttons show only their arrow icon. The
+  "Move … up" and "Move … down" text remains for screen readers and as a
+  tooltip.
+
 ## [v0.3.6]
 
 ### Features

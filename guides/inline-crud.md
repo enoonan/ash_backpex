@@ -1,9 +1,9 @@
 # Repeating Child Forms with InlineCRUD
 
 `Backpex.Fields.InlineCRUD` renders repeated child forms. AshBackpex adds
-move-up and move-down controls alongside Backpex's add and delete controls,
-and supports the field as an opt-in for `has_many` relationships. The default
-`Backpex.Fields.HasMany` selection UI remains unchanged.
+icon-only move-up and move-down controls alongside Backpex's add and delete
+controls, and supports the field as an opt-in for `has_many` relationships.
+The default `Backpex.Fields.HasMany` selection UI remains unchanged.
 
 The demo uses InlineCRUD to edit an article's comments directly in the article
 form. Each comment has a body, author, sentiment, and approval status. The
@@ -143,6 +143,7 @@ defmodule DemoWeb.PostLive do
     fields do
       field :comments do
         module Backpex.Fields.InlineCRUD
+        entry_label "comment"
         except [:index]
         live_resource DemoWeb.CommentLive
         panel :relationships
@@ -186,6 +187,13 @@ on the parent post. Explicit modules still override derivation, as shown by the
 textarea. `live_resource DemoWeb.CommentLive` also lets Backpex link comments
 to their show pages in the read-only view. InlineCRUD uses its shared responsive
 row layout, so no demo-specific CSS is required to give the body its own row.
+
+The field's `label` is usually plural, so set `entry_label` to the singular
+name of one entry. `entry_label "comment"` words the controls "Add comment",
+"Delete comment", and, for screen readers and the tooltip of the icon-only move
+buttons, "Move comment up" and "Move comment down". Without it the controls use
+`label`. `entry_label` applies only to InlineCRUD fields; setting it on any
+other field fails to compile.
 
 For an Ash `has_many` relationship, AshBackpex supplies InlineCRUD's required
 `type: :assoc` option automatically. You can also set `type :assoc`
@@ -336,7 +344,8 @@ A singular embedded node stays a map. An empty repeated node is normalized to
 `[]`, so `default: []` on embedded array attributes is important and an empty
 section or an empty root list remains editable after a validation rerender.
 
-Each repeated node renders its own add, delete, move-up, and move-down controls.
+Each repeated node renders its own add, delete, move-up, and move-down controls,
+worded with that node's `entry_label` when set.
 Control names are derived from the current nested form, so validation events
 operate on only that node while preserving persistent row identities and the
 submitted order. Singular embedded nodes render a fieldset and pass their

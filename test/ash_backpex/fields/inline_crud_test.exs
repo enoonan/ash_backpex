@@ -80,9 +80,55 @@ defmodule AshBackpex.Fields.InlineCRUDTest do
     assert html =~ "inline-crud-entry-actions"
     assert length(Regex.scan(~r/style="gap: 0.375rem"/, html)) >= 4
     assert html =~ ~s(aria-label="Add Sections")
-    assert html =~ ~s(aria-label="Add Page columns")
     assert html =~ ~s(aria-label="Move Sections up")
-    assert html =~ ~s(aria-label="Delete Page columns")
+    assert html =~ ~s(aria-label="Delete Sections")
+  end
+
+  test "names entry controls with entry_label and falls back to label" do
+    html =
+      render_recursive_form(%{
+        "sections" => [
+          %{
+            "_persistent_id" => "section-a",
+            "title" => "Section",
+            "columns" => [
+              %{
+                "_persistent_id" => "column-a",
+                "heading" => "Column",
+                "target" => %{"kind" => "internal"}
+              }
+            ]
+          }
+        ]
+      })
+
+    assert html =~ ~s(aria-label="Add column")
+    assert html =~ ~s(aria-label="Delete column")
+    assert html =~ ~s(aria-label="Move column up")
+    assert html =~ ~s(aria-label="Move column down")
+    assert html =~ ~s(<legend class="sr-only">column</legend>)
+    refute html =~ "Add Page columns"
+
+    assert html =~ ~s(aria-label="Add Sections")
+    assert html =~ ~s(<legend class="sr-only">Sections</legend>)
+  end
+
+  test "renders icon-only move buttons with accessible names" do
+    html =
+      render_recursive_form(%{
+        "sections" => [
+          section_params("section-a", "First"),
+          section_params("section-b", "Second")
+        ]
+      })
+
+    for label <- ["Move Sections up", "Move Sections down", "Move column up"] do
+      assert html =~ ~s(title="#{label}")
+      assert html =~ ~s(<span class="sr-only">#{label}</span>)
+      refute html =~ ~s(<span>#{label}</span>)
+    end
+
+    assert html =~ "<span>Delete Sections</span>"
   end
 
   test "stacks singular embedded child labels above full-width controls" do

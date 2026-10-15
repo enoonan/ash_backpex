@@ -303,6 +303,7 @@ defmodule TestRecursiveEmbeddedLive do
           field :columns do
             module Backpex.Fields.InlineCRUD
             label("Page columns")
+            entry_label("column")
 
             child_fields do
               field :heading, Backpex.Fields.Textarea

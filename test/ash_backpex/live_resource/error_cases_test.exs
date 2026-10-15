@@ -113,6 +113,33 @@ defmodule AshBackpex.LiveResource.ErrorCasesTest do
                      end
                    end
     end
+
+    test "raises a field-path error when entry_label is set on a non-InlineCRUD field" do
+      assert_raise Spark.Error.DslError,
+                   ~r/InvalidEntryLabelLive.*field path: sections\.title.*`entry_label` is only supported on InlineCRUD fields.*Remove `entry_label`/s,
+                   fn ->
+                     defmodule InvalidEntryLabelLive do
+                       use AshBackpex.LiveResource
+
+                       backpex do
+                         resource(AshBackpex.TestDomain.EmbeddedPage)
+                         layout({TestLayout, :admin})
+
+                         fields do
+                           field :sections do
+                             module(Backpex.Fields.InlineCRUD)
+
+                             child_fields do
+                               field :title do
+                                 entry_label("title")
+                               end
+                             end
+                           end
+                         end
+                       end
+                     end
+                   end
+    end
   end
 
   describe "custom field type mapping validation :: it can" do

@@ -162,6 +162,7 @@ defmodule DemoWeb.PostLive do
 
       field :comments do
         module(Backpex.Fields.InlineCRUD)
+        entry_label("comment")
         except([:index])
         live_resource(DemoWeb.CommentLive)
         panel(:relationships)

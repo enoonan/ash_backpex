@@ -2,13 +2,24 @@ defmodule AshBackpex.Fields.InlineCRUD do
   @moduledoc """
   AshBackpex's form renderer for `Backpex.Fields.InlineCRUD`.
 
-  It adds move-up and move-down controls and repeats child labels for every
-  entry. Configure `Backpex.Fields.InlineCRUD` in the DSL; AshBackpex selects
-  this renderer automatically. It supports `has_many` relationships and arrays
+  It adds icon-only move-up and move-down controls and repeats child labels for
+  every entry. Set `entry_label` to the singular name of one entry, such as
+  `"link"` for a `Links` field, to word the Add, Delete and Move controls; it
+  defaults to the field's `label`. Configure `Backpex.Fields.InlineCRUD` in the
+  DSL; AshBackpex selects this renderer automatically. It supports `has_many` relationships and arrays
   of typed embedded Ash resources; nested arrays normalize independently.
   """
 
-  use Backpex.Field, config_schema: Backpex.Fields.InlineCRUD.config_schema()
+  @config_schema Backpex.Fields.InlineCRUD.config_schema() ++
+                   [
+                     entry_label: [
+                       doc:
+                         "The singular name of one entry, used in its Add, Delete and Move control text. Defaults to `label`.",
+                       type: :string
+                     ]
+                   ]
+
+  use Backpex.Field, config_schema: @config_schema
 
   require Backpex
 
@@ -35,7 +46,7 @@ defmodule AshBackpex.Fields.InlineCRUD do
 
   @impl Backpex.Field
   def render_form(assigns) do
-    entry_label = assigns.field_options[:label]
+    entry_label = assigns.field_options[:entry_label] || assigns.field_options[:label]
 
     assigns =
       assign(assigns,
@@ -203,8 +214,8 @@ defmodule AshBackpex.Fields.InlineCRUD do
         class="hidden"
       />
 
-      <div class={["btn btn-outline btn-sm", @disabled && "btn-disabled"]}>
-        <span>{@label}</span>
+      <div class={["btn btn-outline btn-sm", @disabled && "btn-disabled"]} title={@label}>
+        <span class="sr-only">{@label}</span>
         <Backpex.HTML.CoreComponents.icon
           :if={@direction == "up"}
           name="hero-arrow-up-solid"

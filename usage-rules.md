@@ -120,6 +120,7 @@ value is one of the field's options and the user may update the record.
 ```elixir
 field :rows do
   module Backpex.Fields.InlineCRUD
+  entry_label "row"
   except [:index]
 
   child_fields do
@@ -134,10 +135,14 @@ field :rows do
 end
 ```
 
+Set `entry_label` to the singular name of one entry; it words the Add, Delete,
+and Move controls and defaults to the field's plural `label`. It is valid only
+on InlineCRUD fields.
+
 AshBackpex derives each child field against the related child resource using
 the same module, option, and relationship-query derivation as top-level fields.
-It also derives `type: :assoc` for a `has_many`, adds move-up and move-down
-controls, normalizes InlineCRUD's order and delete parameters to an ordered
+It also derives `type: :assoc` for a `has_many`, adds icon-only move-up and
+move-down controls, normalizes InlineCRUD's order and delete parameters to an ordered
 list, and includes existing child primary keys in hidden inputs. The parent
 create/update action must accept an `{:array, :map}` argument and connect it to
 the relationship:

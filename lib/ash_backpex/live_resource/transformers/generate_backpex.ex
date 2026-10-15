@@ -648,6 +648,18 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
           inline_crud? =
             module in [AshBackpex.Fields.InlineCRUD, Backpex.Fields.InlineCRUD]
 
+          if Map.get(field, :entry_label) && not inline_crud? do
+            raise Spark.Error.DslError,
+              module: __MODULE__,
+              message: """
+              LiveResource: #{inspect(__MODULE__)}
+              field path: #{formatted_path}
+
+              `entry_label` is only supported on InlineCRUD fields. Remove `entry_label` or set
+              `module Backpex.Fields.InlineCRUD` on this field.
+              """
+          end
+
           {relationship, attribute, nested_resource} = field_resource.(resource, field)
 
           inferred_inline_type =
