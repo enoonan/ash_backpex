@@ -7,6 +7,15 @@
 > change. Follow the [upgrade guide](guides/upgrading-to-0.3.md) before you bump
 > the dependency.
 
+## Unreleased
+
+### Bug Fixes
+
+- Searching a `HasMany` field no longer crashes when its Ash relationship has a
+  `filter`, `sort` or `default_sort`. The derived `options_query` dropped the
+  root alias Backpex gives the options query, so Backpex's search raised
+  `unknown bind name`.
+
 ## [v0.3.7]
 
 ### Features

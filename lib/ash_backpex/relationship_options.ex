@@ -30,11 +30,15 @@ defmodule AshBackpex.RelationshipOptions do
        when type in @relationship_types do
     ash_query = relationship_query(relationship, assigns)
 
+    root_alias = root_alias(query)
+
     with {:ok, query} <-
            Ash.Query.data_layer_query(ash_query, initial_query: remove_root_alias(query)),
          {:ok, query} <- finalize_query(query, relationship.destination),
          {:ok, query} <- restrict_to_authorized_records(query, ash_query) do
-      Map.delete(query, :__ash_bindings__)
+      query
+      |> Map.delete(:__ash_bindings__)
+      |> restore_root_alias(root_alias)
     else
       {:error, error} -> raise ArgumentError, Exception.message(Ash.Error.to_error_class(error))
     end
@@ -84,6 +88,9 @@ defmodule AshBackpex.RelationshipOptions do
   defp assign(assigns, key) when is_map(assigns), do: Map.get(assigns, key)
   defp assign(_, _), do: nil
 
+  defp root_alias(%Ecto.Query{from: %{as: alias}}), do: alias
+  defp root_alias(_query), do: nil
+
   defp remove_root_alias(%Ecto.Query{from: %{as: nil}} = query), do: query
 
   defp remove_root_alias(%Ecto.Query{from: %{as: alias}} = query) do
@@ -93,6 +100,17 @@ defmodule AshBackpex.RelationshipOptions do
         from: %{query.from | as: nil}
     }
   end
+
+  # AshSql data layers rename the root binding to `0`, which Ash filters
+  # reference, so the caller's alias is mapped back to the root alongside it.
+  # Backpex filters option searches through that alias.
+  defp restore_root_alias(query, nil), do: query
+
+  defp restore_root_alias(%Ecto.Query{} = query, alias) do
+    %{query | aliases: Map.put(query.aliases, alias, 0)}
+  end
+
+  defp restore_root_alias(query, _alias), do: query
 
   defp finalize_query(%{__ash_bindings__: _} = query, destination) do
     case Ash.DataLayer.return_query(query, destination) do

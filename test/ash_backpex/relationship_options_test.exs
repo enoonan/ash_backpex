@@ -36,6 +36,24 @@ defmodule AshBackpex.RelationshipOptionsTest do
     assert Enum.map(categories, & &1.id) == ["assignable-beta"]
   end
 
+  # Backpex's HasMany search filters the options query through the alias it gave the root.
+  test "derived relationship options_query keeps the Backpex alias for searching" do
+    insert_category!("assignable-beta", "Beta", "assignable")
+    insert_category!("assignable-gamma", "Gamma", "assignable")
+    insert_category!("internal-beta", "Beta", "internal")
+
+    options_query = TestManyToManyLive.fields()[:categories].options_query
+
+    categories =
+      ManyToManyCategory
+      |> from(as: :tag)
+      |> options_query.(%{})
+      |> where([tag: tag], like(tag.name, ^"%Bet%"))
+      |> TestRepo.all()
+
+    assert Enum.map(categories, & &1.id) == ["assignable-beta"]
+  end
+
   test "derived relationship options_query enforces Ash read policies" do
     actor = user()
     other_user = user()
