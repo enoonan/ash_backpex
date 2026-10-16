@@ -56,6 +56,12 @@ defmodule DemoWeb.Layouts do
             <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate="/posts">
               <Backpex.HTML.CoreComponents.icon name="hero-document-text" class="size-5" /> Posts
             </Backpex.HTML.Layout.sidebar_item>
+            <Backpex.HTML.Layout.sidebar_item
+              current_url={@current_url}
+              navigate="/published-posts"
+            >
+              <Backpex.HTML.CoreComponents.icon name="hero-check-badge" class="size-5" /> Published
+            </Backpex.HTML.Layout.sidebar_item>
             <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate="/tags">
               <Backpex.HTML.CoreComponents.icon name="hero-tag" class="size-5" /> Tags
             </Backpex.HTML.Layout.sidebar_item>

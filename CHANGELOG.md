@@ -3,7 +3,19 @@
 <!-- changelog -->
 
 > **Upgrading to 0.4?** Derived `has_many` and `many_to_many` fields use a new
-> field module. Read [Upgrading to 0.4](guides/upgrading-to-0.4.md).
+> field module, and from 0.4.1 a configured `read_action` is applied. Read
+> [Upgrading to 0.4](guides/upgrading-to-0.4.md).
+
+## Unreleased
+
+### Bug Fixes
+
+- `read_action` is now used to read records. The index, show page and record
+  count started from the resource's primary read action, so the configured
+  action's filters and preparations were ignored. A read action without offset
+  pagination is paged with a plain limit and offset. If you set `read_action`,
+  see [Upgrading to 0.4](guides/upgrading-to-0.4.md).
+  ([#20](https://github.com/enoonan/ash_backpex/issues/20))
 
 ## [v0.4.0]
 

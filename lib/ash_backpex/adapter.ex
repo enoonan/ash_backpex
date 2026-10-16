@@ -168,7 +168,10 @@ defmodule AshBackpex.Adapter do
   end
   ```
 
-  If not specified, the primary action for each type is used.
+  If not specified, the primary action for each type is used. `get/4`,
+  `list/4` and `count/4` all start from the read action, so its filters and
+  preparations apply before Backpex's search, filters and sort. A read action
+  without offset pagination is paged with a plain limit and offset.
 
   ### Custom Changesets
 
@@ -284,7 +287,8 @@ defmodule AshBackpex.Adapter do
 
     {load, select} = LoadSelectResolver.resolve(config[:resource], fields)
 
-    config[:resource]
+    live_resource
+    |> read_query(assigns)
     |> Ash.Query.filter(^Ash.Expr.ref(primary_key) == ^primary_value)
     |> Ash.Query.ensure_selected(select)
     |> Ash.Query.load(default_loads ++ load)
@@ -316,18 +320,40 @@ defmodule AshBackpex.Adapter do
     %{size: page_size, page: page_num} = Keyword.get(criteria, :pagination, %{size: 15, page: 1})
 
     query =
-      config[:resource]
-      |> Ash.Query.new()
+      live_resource
+      |> read_query(assigns)
       |> apply_criteria_filters(criteria, put_live_resource(assigns, live_resource))
       |> BasicSearch.apply(search_params(criteria, assigns), live_resource)
       |> Ash.Query.sort(resolve_sort(criteria, assigns, live_resource.config(:init_order)))
-      |> Ash.Query.page(limit: page_size, offset: (page_num - 1) * page_size)
+      |> paginate(page_size, (page_num - 1) * page_size)
       |> Ash.Query.ensure_selected(select)
       |> Ash.Query.load(default_loads ++ load)
 
-    with {:ok, %{results: results}} <- query |> Ash.read(actor: assigns.current_user) do
-      {:ok, results}
+    case Ash.read(query, actor: assigns.current_user) do
+      {:ok, %{results: results}} -> {:ok, results}
+      {:ok, results} when is_list(results) -> {:ok, results}
+      err -> err
     end
+  end
+
+  # Starts every read from the LiveResource's read action (the configured
+  # `read_action` or the resource's primary read), so its filters and
+  # preparations apply to the index, show and count queries.
+  defp read_query(live_resource, assigns) do
+    live_resource.config(:adapter_config)[:resource]
+    |> Ash.Query.for_read(primary_action(live_resource, :read), %{}, actor: assigns.current_user)
+  end
+
+  # Read actions without offset pagination still need a page of results, so
+  # they get a plain limit and offset instead of an `Ash.Page.Offset`.
+  defp paginate(%Ash.Query{action: %{pagination: %{offset?: true}}} = query, limit, offset) do
+    Ash.Query.page(query, limit: limit, offset: offset)
+  end
+
+  defp paginate(query, limit, offset) do
+    query
+    |> Ash.Query.limit(limit)
+    |> Ash.Query.offset(offset)
   end
 
   @doc """
@@ -336,10 +362,8 @@ defmodule AshBackpex.Adapter do
   @impl Backpex.Adapter
   @spec count(keyword(), keyword(), map(), module()) :: {:ok, list(map())} | {:error, term()}
   def count(criteria, _fields, assigns, live_resource) do
-    config = live_resource.config(:adapter_config)
-
-    config[:resource]
-    |> Ash.Query.new()
+    live_resource
+    |> read_query(assigns)
     |> apply_criteria_filters(criteria, put_live_resource(assigns, live_resource))
     |> BasicSearch.apply(search_params(criteria, assigns), live_resource)
     |> Ash.count(actor: assigns.current_user)
@@ -782,6 +806,7 @@ defmodule AshBackpex.Adapter do
     config_val =
       case action_type do
         :create -> :create_action
+        :read -> :read_action
         :update -> :update_action
         :destroy -> :destroy_action
       end

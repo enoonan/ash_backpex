@@ -24,6 +24,51 @@ defmodule AshBackpex.AdapterTest do
     end
   end
 
+  describe "AshBackpex.Adapter read_action :: it" do
+    setup do
+      user = user()
+      published = post(actor: user, published: true)
+      unpublished = post(actor: user, published: false)
+      %{assigns: %{current_user: user}, published: published, unpublished: unpublished}
+    end
+
+    test "list/4 reads with the configured read action", ctx do
+      assert {:ok, [post]} = Adapter.list([], [], ctx.assigns, TestPublishedPostLive)
+      assert post.id == ctx.published.id
+    end
+
+    test "list/4 paginates a read action without a pagination block", ctx do
+      second = post(actor: ctx.assigns.current_user, published: true, view_count: 1)
+      order = %{by: :view_count, direction: :asc}
+      page = fn n -> [order: order, pagination: %{size: 1, page: n}] end
+
+      assert {:ok, [first_page]} = Adapter.list(page.(1), [], ctx.assigns, TestPublishedPostLive)
+      assert {:ok, [second_page]} = Adapter.list(page.(2), [], ctx.assigns, TestPublishedPostLive)
+      assert {:ok, []} = Adapter.list(page.(3), [], ctx.assigns, TestPublishedPostLive)
+
+      assert first_page.id == ctx.published.id
+      assert second_page.id == second.id
+    end
+
+    test "count/4 counts with the configured read action", ctx do
+      assert {:ok, 1} == Adapter.count([], [], ctx.assigns, TestPublishedPostLive)
+    end
+
+    test "get/4 reads with the configured read action", ctx do
+      assert {:ok, %Post{}} =
+               Adapter.get(ctx.published.id, [], ctx.assigns, TestPublishedPostLive)
+
+      assert {:ok, nil} = Adapter.get(ctx.unpublished.id, [], ctx.assigns, TestPublishedPostLive)
+    end
+
+    test "search applies on top of the configured read action", ctx do
+      criteria = [search: {ctx.unpublished.title, [:title]}]
+
+      assert {:ok, []} = Adapter.list(criteria, [], ctx.assigns, TestPublishedPostLive)
+      assert {:ok, 0} == Adapter.count(criteria, [], ctx.assigns, TestPublishedPostLive)
+    end
+  end
+
   describe "AshBackpex.Adapter loads :: it" do
     setup do
       user = user()

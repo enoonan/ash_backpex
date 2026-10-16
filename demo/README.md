@@ -34,6 +34,8 @@ A minimal demo application showcasing the integration between Ash Framework and 
 - Backpex admin interface for managing posts
 - A dashboard LiveView that is not a LiveResource but renders the admin layout
 - Basic CRUD operations through the admin panel
+- A Published page that lists posts through `read_action :published_only`, a
+  filtered read action without pagination
 - Author avatars uploaded with `Backpex.Fields.Upload`. Files are stored on
   local disk in `priv/uploads` and served at `/uploads`, so they do not survive
   a redeploy
