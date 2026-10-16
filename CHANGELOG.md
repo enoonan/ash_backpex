@@ -6,7 +6,7 @@
 > field module, and from 0.4.1 a configured `read_action` is applied. Read
 > [Upgrading to 0.4](guides/upgrading-to-0.4.md).
 
-## Unreleased
+## [v0.4.1]
 
 ### Bug Fixes
 

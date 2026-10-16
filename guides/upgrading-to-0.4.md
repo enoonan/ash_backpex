@@ -11,7 +11,7 @@ Coming from 0.2 or 0.1, follow [Upgrading to 0.3](upgrading-to-0.3.md) first.
 ```elixir
 def deps do
   [
-    {:ash_backpex, "~> 0.4.0"}
+    {:ash_backpex, "~> 0.4.1"}
   ]
 end
 ```
