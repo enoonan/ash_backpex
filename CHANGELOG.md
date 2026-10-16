@@ -5,7 +5,7 @@
 > **Upgrading to 0.4?** Derived `has_many` and `many_to_many` fields use a new
 > field module. Read [Upgrading to 0.4](guides/upgrading-to-0.4.md).
 
-## Unreleased
+## [v0.4.0]
 
 ### Breaking Changes
 
