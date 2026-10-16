@@ -56,8 +56,8 @@ AshBackpex automatically maps Ash types to Backpex fields:
 - `Ash.Type.Date` → `Backpex.Fields.Date`
 - `Ash.Type.DateTime` / `UtcDatetime` → `Backpex.Fields.DateTime`
 - `:belongs_to` → `Backpex.Fields.BelongsTo`
-- `:has_many` → `Backpex.Fields.HasMany`
-- `:many_to_many` → `Backpex.Fields.HasMany`
+- `:has_many` → `AshBackpex.Fields.HasMany`
+- `:many_to_many` → `AshBackpex.Fields.HasMany`
 - Atom with `one_of` constraint → `Backpex.Fields.Select`
 - Array with `one_of` constraint → `Backpex.Fields.MultiSelect`
 
@@ -114,7 +114,10 @@ value is one of the field's options and the user may update the record.
 ### Repeating and Embedded Child Fields
 
 `has_many` relationships continue to use the selection-oriented
-`Backpex.Fields.HasMany` by default. Opt into repeated child forms with
+`AshBackpex.Fields.HasMany` by default. It renders and saves like
+`Backpex.Fields.HasMany`, but its option search uses `lower(...) LIKE` instead
+of `ILIKE`, so it works on SQLite and MySQL as well as Postgres. Set
+`module Backpex.Fields.HasMany` only to keep Backpex's Postgres-only search. Opt into repeated child forms with
 `Backpex.Fields.InlineCRUD` and configure its child fields:
 
 ```elixir

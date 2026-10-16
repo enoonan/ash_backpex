@@ -49,8 +49,8 @@ defmodule AshBackpex.LiveResource do
   | `Ash.Type.DateTime` | `Backpex.Fields.DateTime` |
   | `Ash.Type.UtcDatetime` | `Backpex.Fields.DateTime` |
   | `:belongs_to` relationship | `Backpex.Fields.BelongsTo` |
-  | `:has_many` relationship | `Backpex.Fields.HasMany` |
-  | `:many_to_many` relationship | `Backpex.Fields.HasMany` |
+  | `:has_many` relationship | `AshBackpex.Fields.HasMany` |
+  | `:many_to_many` relationship | `AshBackpex.Fields.HasMany` |
   | `{:array, _}` with `one_of` | `Backpex.Fields.MultiSelect` |
   | Atom with `one_of` constraint | `Backpex.Fields.Select` |
 

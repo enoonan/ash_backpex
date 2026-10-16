@@ -55,8 +55,8 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
   | `Ash.Type.Time` | `Backpex.Fields.Time` |
   | `Ash.Type.DateTime` | `Backpex.Fields.DateTime` |
   | `:belongs_to` | `Backpex.Fields.BelongsTo` |
-  | `:has_many` | `Backpex.Fields.HasMany` |
-  | `:many_to_many` | `Backpex.Fields.HasMany` |
+  | `:has_many` | `AshBackpex.Fields.HasMany` |
+  | `:many_to_many` | `AshBackpex.Fields.HasMany` |
   | `{:array, EmbeddedResource}` with InlineCRUD | `AshBackpex.Fields.InlineCRUD` (`type: :embed`) |
   | singular `EmbeddedResource` | `AshBackpex.Fields.Embedded` (explicit) |
   | `{:array, _}` | `Backpex.Fields.MultiSelect` |
@@ -389,10 +389,10 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
                   Backpex.Fields.BelongsTo
 
                 :has_many ->
-                  Backpex.Fields.HasMany
+                  AshBackpex.Fields.HasMany
 
                 :many_to_many ->
-                  Backpex.Fields.HasMany
+                  AshBackpex.Fields.HasMany
 
                 :count ->
                   Backpex.Fields.Number
@@ -464,6 +464,7 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
             when relationship_module in [
                    AshBackpex.Fields.BelongsTo,
                    Backpex.Fields.BelongsTo,
+                   AshBackpex.Fields.HasMany,
                    Backpex.Fields.HasMany
                  ] ->
               if AshBackpex.RelationshipOptions.options_query?(resource, attribute_name) do
@@ -773,10 +774,12 @@ defmodule AshBackpex.LiveResource.Transformers.GenerateBackpex do
 
           link_assocs =
             case {module, Map.get(field, :link_assocs)} do
-              {Backpex.Fields.HasMany, nil} -> true
-              {Backpex.Fields.HasMany, true} -> true
-              {Backpex.Fields.HasMany, false} -> false
-              _ -> nil
+              {has_many, link_assocs}
+              when has_many in [AshBackpex.Fields.HasMany, Backpex.Fields.HasMany] ->
+                link_assocs != false
+
+              _ ->
+                nil
             end
 
           config =

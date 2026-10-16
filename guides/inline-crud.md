@@ -3,7 +3,7 @@
 `Backpex.Fields.InlineCRUD` renders repeated child forms. AshBackpex adds
 icon-only move-up and move-down controls alongside Backpex's add and delete
 controls, and supports the field as an opt-in for `has_many` relationships.
-The default `Backpex.Fields.HasMany` selection UI remains unchanged.
+The default `AshBackpex.Fields.HasMany` selection UI remains unchanged.
 
 The demo uses InlineCRUD to edit an article's comments directly in the article
 form. Each comment has a body, author, sentiment, and approval status. The

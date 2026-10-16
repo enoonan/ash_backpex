@@ -236,6 +236,64 @@ defmodule TestManyToManyLive do
   end
 end
 
+defmodule TestManyToManySearchLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource AshBackpex.TestDomain.ManyToManyPost
+    layout({TestIndexEditLayout, :admin})
+    pubsub(server: AshBackpex.TestPubSub)
+
+    fields do
+      field :title
+
+      field :categories do
+        display_field(:name)
+        live_resource(TestManyToManyCategoryLive)
+      end
+
+      field :all_categories do
+        display_field(:name)
+        live_resource(TestManyToManyCategoryLive)
+      end
+    end
+  end
+end
+
+defmodule TestManyToManyCategoryLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource AshBackpex.TestDomain.ManyToManyCategory
+    layout({TestIndexEditLayout, :admin})
+    pubsub(server: AshBackpex.TestPubSub)
+
+    fields do
+      field :name
+    end
+  end
+end
+
+defmodule TestExplicitBackpexHasManyLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource AshBackpex.TestDomain.ManyToManyPost
+    layout({TestLayout, :admin})
+
+    fields do
+      field :title
+
+      field :all_categories, Backpex.Fields.HasMany do
+        display_field(:name)
+      end
+    end
+  end
+end
+
 defmodule TestAuthorizedRelationshipLive do
   @moduledoc false
   use AshBackpex.LiveResource
