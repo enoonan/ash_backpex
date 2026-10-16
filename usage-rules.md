@@ -389,6 +389,10 @@ backpex do
 end
 ```
 
+The index, show page and record count all read through `read_action`, so its
+filters and preparations apply. Backpex's search, filters, sort and pagination
+are applied on top of it.
+
 ## Custom Changesets
 
 Provide custom changeset functions for advanced control:

@@ -28,6 +28,7 @@ defmodule DemoWeb.Router do
       live("/", DashboardLive)
       live_resources("/authors", AuthorLive)
       live_resources("/posts", PostLive)
+      live_resources("/published-posts", PublishedPostLive)
       live_resources("/tags", TagLive)
       live_resources("/comments", CommentLive)
     end

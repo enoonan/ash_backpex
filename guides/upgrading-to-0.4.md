@@ -2,6 +2,8 @@
 
 AshBackpex 0.4 changes one default: derived `has_many` and `many_to_many`
 fields use `AshBackpex.Fields.HasMany` instead of `Backpex.Fields.HasMany`.
+0.4.1 also starts applying a LiveResource's `read_action`, which earlier
+versions ignored. See the last section of this guide.
 Coming from 0.2 or 0.1, follow [Upgrading to 0.3](upgrading-to-0.3.md) first.
 
 ## Update the dependency
@@ -56,3 +58,27 @@ The new field copies Backpex's search handlers and depends on the assigns
 Backpex's `HasMany` uses internally. If your own field wraps or matches on
 `Backpex.Fields.HasMany`, check that it also handles
 `AshBackpex.Fields.HasMany`, or set the module explicitly as shown above.
+
+## `read_action` is applied
+
+Before 0.4.1, the adapter ignored a LiveResource's `read_action`. The index,
+show page and record count always read through the resource's primary read
+action, while `can?/3` already checked the configured action. From 0.4.1 they
+all start from `read_action`, so its filters and preparations apply, and
+Backpex's search, filters, sort and pagination are added on top.
+
+If you set `read_action`, check that the action returns the records the admin
+should show:
+
+- **Rows can disappear.** A filtered read action now hides the records it
+  filters out from the index, and their show and edit pages return 404.
+- **Rows can appear.** If the primary read action has a filter that the
+  configured action lacks, those records now show up.
+- **Pagination.** An action with offset pagination is paged as before. An action
+  without a `pagination` block is paged with a plain limit and offset, so it
+  needs no change.
+- **Required arguments.** The adapter calls the action with no arguments, so an
+  action with a required argument fails. Use an action without one.
+
+LiveResources that do not set `read_action` use the primary read action, as
+before.

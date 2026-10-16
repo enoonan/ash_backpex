@@ -167,6 +167,12 @@ defmodule Demo.Blog.Post do
 
     defaults [:read, :destroy]
 
+    # Used by DemoWeb.PublishedPostLive through `read_action`. It has no
+    # pagination block, so the admin pages it with a plain limit and offset.
+    read :published_only do
+      filter expr(published == true)
+    end
+
     create :create do
       primary? true
 

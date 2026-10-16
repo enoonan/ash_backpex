@@ -40,6 +40,26 @@ defmodule TestPostLive do
   end
 end
 
+defmodule TestPublishedPostLive do
+  @moduledoc false
+
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource(AshBackpex.TestDomain.Post)
+    layout({TestLayout, :admin})
+    read_action(:published_posts)
+
+    fields do
+      field :title do
+        searchable(true)
+      end
+
+      field(:published)
+    end
+  end
+end
+
 defmodule TestItemLive do
   @moduledoc false
   use AshBackpex.LiveResource

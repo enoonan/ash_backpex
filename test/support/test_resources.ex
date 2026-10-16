@@ -125,6 +125,12 @@ defmodule AshBackpex.TestDomain.Post do
   actions do
     defaults([:read, :update, :destroy])
 
+    # Non-primary read action with a filter and no pagination, for LiveResources
+    # that set `read_action`.
+    read :published_posts do
+      filter expr(published == true)
+    end
+
     create :create do
       primary? true
 
