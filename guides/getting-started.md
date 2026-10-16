@@ -29,6 +29,8 @@ your application pins Backpex directly, update its constraint to match.
 >
 > AshBackpex 0.2 and 0.3 each follow a Backpex release with breaking changes.
 > Read [Upgrading to 0.3](upgrading-to-0.3.md) before you bump the dependency.
+> 0.4 changes the default `has_many` and `many_to_many` field; see
+> [Upgrading to 0.4](upgrading-to-0.4.md).
 
 ## Creating Your First Admin LiveResource
 

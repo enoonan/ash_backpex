@@ -24,6 +24,7 @@ AshBackpex tests run against deterministic in-memory SQLite tables. Start at the
 - `test/support/test_domain.ex` registers those resources with the test domain.
 - `test/support/test_live.ex` contains small DSL consumers for transformer, adapter, authorization, typeahead, InlineCRUD, and filter tests.
 - `test/support/index_edit_live.ex` contains `TestIndexEditLayout`, which renders the inner block that `TestLayout.admin/1` does not, and `TestAssignmentIndexEditLive` for inline index edits.
+- `TestManyToManySearchLive` in `test/support/test_live.ex` is routed at `/many-to-many-posts` and edits `AshBackpex.TestDomain.ManyToManyPost`'s filtered `categories` and unfiltered `all_categories` with `AshBackpex.Fields.HasMany`; `test/ash_backpex/fields/has_many_test.exs` drives its option search on SQLite.
 - `test/support/upload_live.ex` contains routed `Backpex.Fields.Upload` fields on `AshBackpex.TestDomain.Document` that copy uploads into a temporary directory: `TestDocumentUploadLive` for one file in a string attribute and `TestDocumentAttachmentsLive` for a list of files in an `{:array, :string}` attribute.
 - `test/support/context_assigns_live.ex` contains LiveResources for the `context_assigns` option.
 - `test/support/filter_badge_live.ex` contains routed LiveResources for filter badges: explicit and derived Select and MultiSelect options, a list of `context_assigns`, and two filters that share a value.

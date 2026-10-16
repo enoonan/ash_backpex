@@ -475,6 +475,7 @@ defmodule AshBackpex.Adapter do
     Enum.reduce(fields, attrs, fn
       {field, %{module: module}}, attrs
       when module in [
+             AshBackpex.Fields.HasMany,
              Backpex.Fields.HasMany,
              Backpex.Fields.MultiSelect,
              Backpex.Fields.Checkgroup

@@ -2,6 +2,21 @@
 
 <!-- changelog -->
 
+> **Upgrading to 0.4?** Derived `has_many` and `many_to_many` fields use a new
+> field module. Read [Upgrading to 0.4](guides/upgrading-to-0.4.md).
+
+## Unreleased
+
+### Breaking Changes
+
+- Derived `has_many` and `many_to_many` fields use the new
+  `AshBackpex.Fields.HasMany` instead of `Backpex.Fields.HasMany`. Searching
+  their options no longer crashes on SQLite and MySQL with
+  `ilike is not supported`. The search matches with `lower(...) LIKE` instead
+  of `ILIKE`, which can match a little differently on Postgres. Fields that set
+  `module Backpex.Fields.HasMany` keep Backpex's field. See the
+  [upgrade guide](guides/upgrading-to-0.4.md).
+
 > **Upgrading to 0.3.x from 0.2 or 0.1?** These releases break more than usual:
 > the application may stop compiling, and from 0.1 the admin layout has to
 > change. Follow the [upgrade guide](guides/upgrading-to-0.3.md) before you bump

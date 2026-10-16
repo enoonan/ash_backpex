@@ -24,6 +24,7 @@ defmodule AshBackpex.TestRouter do
       live_resources("/filter-badges-context-keys", TestFilterBadgeContextKeysLive)
       live_resources("/filter-badges-derived", TestFilterBadgeDerivedLive)
       live_resources("/filter-badges-shared-value", TestFilterBadgeSharedValueLive)
+      live_resources("/many-to-many-posts", TestManyToManySearchLive)
     end
   end
 end

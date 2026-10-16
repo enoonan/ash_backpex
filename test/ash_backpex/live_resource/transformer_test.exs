@@ -108,7 +108,7 @@ defmodule AshBackpex.LiveResource.TransformerTest do
     test "derive many_to_many relationships as HasMany fields" do
       fields = TestManyToManyLive.fields()
 
-      assert Keyword.get(fields, :categories).module == Backpex.Fields.HasMany
+      assert Keyword.get(fields, :categories).module == AshBackpex.Fields.HasMany
       assert Keyword.get(fields, :categories).display_field == :name
       assert Keyword.get(fields, :categories).link_assocs == true
       assert is_function(Keyword.get(fields, :categories).options_query, 2)

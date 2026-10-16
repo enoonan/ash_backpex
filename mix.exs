@@ -30,6 +30,7 @@ defmodule AshBackpex.MixProject do
       extras: [
         "README.md",
         "guides/getting-started.md",
+        "guides/upgrading-to-0.4.md",
         "guides/upgrading-to-0.3.md",
         "guides/inline-crud.md"
       ],
@@ -52,6 +53,7 @@ defmodule AshBackpex.MixProject do
           AshBackpex.BasicSearch,
           AshBackpex.Fields.BelongsTo,
           AshBackpex.Fields.Embedded,
+          AshBackpex.Fields.HasMany,
           AshBackpex.Fields.InlineCRUD,
           AshBackpex.LoadSelectResolver,
           AshBackpex.LiveResource.Transformers.GenerateBackpex

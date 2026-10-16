@@ -452,10 +452,36 @@ defmodule AshBackpex.TestDomain.ManyToManyPost do
       filter expr(type == :assignable)
       sort name: :asc
     end
+
+    many_to_many :all_categories, AshBackpex.TestDomain.ManyToManyCategory do
+      through AshBackpex.TestDomain.ManyToManyPostCategory
+      source_attribute_on_join_resource :post_id
+      destination_attribute_on_join_resource :category_id
+      join_relationship :all_category_joins
+    end
   end
 
   actions do
     defaults [:read]
+
+    create :create do
+      primary? true
+      accept [:title]
+      argument :categories, {:array, :uuid}, allow_nil?: true
+      argument :all_categories, {:array, :uuid}, allow_nil?: true
+      change manage_relationship(:categories, type: :append_and_remove)
+      change manage_relationship(:all_categories, type: :append_and_remove)
+    end
+
+    update :update do
+      primary? true
+      require_atomic? false
+      accept [:title]
+      argument :categories, {:array, :uuid}, allow_nil?: true
+      argument :all_categories, {:array, :uuid}, allow_nil?: true
+      change manage_relationship(:categories, type: :append_and_remove)
+      change manage_relationship(:all_categories, type: :append_and_remove)
+    end
   end
 end
 
@@ -514,7 +540,7 @@ defmodule AshBackpex.TestDomain.ManyToManyPostCategory do
   end
 
   actions do
-    defaults [:read]
+    defaults [:read, :destroy, create: :*]
   end
 end
 

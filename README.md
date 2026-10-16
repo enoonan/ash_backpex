@@ -4,7 +4,10 @@ You got your [Ash](https://ash-hq.org/) in my [Backpex](https://backpex.live/). 
 
 An integration library that brings together Ash Framework's powerful resource system with Backpex's admin interface capabilities. This library provides a clean DSL for creating admin interfaces directly from your Ash resources.
 
-> ## Upgrading to 0.3? Read this first {: .warning}
+> ## Upgrading? Read this first {: .warning}
+>
+> 0.4 changes the default field for `has_many` and `many_to_many`
+> relationships. See [Upgrading to 0.4](guides/upgrading-to-0.4.md).
 >
 > 0.2 and 0.3 break more than earlier releases did. Your application may stop
 > compiling, and the admin layout has to change if you are coming from 0.1. Follow
