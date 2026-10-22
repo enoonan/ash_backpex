@@ -6,6 +6,9 @@ An integration library that brings together Ash Framework's powerful resource sy
 
 > ## Upgrading? Read this first {: .warning}
 >
+> 0.5 requires a `tenant` assign for relationship options on multitenant
+> resources. See [Upgrading to 0.5](guides/upgrading-to-0.5.md).
+>
 > 0.4 changes the default field for `has_many` and `many_to_many`
 > relationships. See [Upgrading to 0.4](guides/upgrading-to-0.4.md).
 >

@@ -20,5 +20,9 @@ defmodule AshBackpex.TestDomain do
     resource AshBackpex.TestDomain.EmbeddedPage
     resource AshBackpex.TestDomain.Assignment
     resource AshBackpex.TestDomain.Document
+    resource AshBackpex.TestDomain.Board
+    resource AshBackpex.TestDomain.TenantLabel
+    resource AshBackpex.TestDomain.TenantNote
+    resource AshBackpex.TestDomain.RuntimeCheckedBadge
   end
 end
