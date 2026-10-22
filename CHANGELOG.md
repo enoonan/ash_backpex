@@ -10,6 +10,16 @@
 > field module, and from 0.4.1 a configured `read_action` is applied. Read
 > [Upgrading to 0.4](guides/upgrading-to-0.4.md).
 
+## [Unreleased]
+
+### Bug Fixes
+
+- Basic search now ignores case on every data layer. Searchable fields are
+  matched with `lower(field) LIKE '%term%'`, so a search for "smith" finds
+  "Smith" on Postgres as well as SQLite and MySQL. Before, `contains` compiled
+  to a case-sensitive `LIKE` on Postgres and only `citext` columns matched
+  regardless of case, despite the module docs claiming otherwise.
+
 ## [v0.5.0]
 
 ### Breaking Changes

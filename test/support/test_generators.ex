@@ -14,7 +14,7 @@ defmodule TestGenerators do
     actor = Keyword.get(opts, :actor)
 
     Ash.Seed.seed!(%Post{
-      title: Faker.Lorem.sentence(),
+      title: Keyword.get(opts, :title, Faker.Lorem.sentence()),
       content: Faker.Lorem.paragraphs(1..3) |> Enum.join(" "),
       view_count: Keyword.get(opts, :view_count, 0),
       published: Keyword.get(opts, :published, false),

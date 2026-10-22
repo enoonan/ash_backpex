@@ -304,6 +304,10 @@ field :title do
 end
 ```
 
+The search term is matched against every searchable field with
+`lower(field) LIKE '%term%'`, so search ignores case on Postgres, SQLite and
+MySQL alike.
+
 ### Field Visibility
 
 Control where fields appear:

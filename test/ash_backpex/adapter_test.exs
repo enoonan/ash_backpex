@@ -67,6 +67,15 @@ defmodule AshBackpex.AdapterTest do
       assert {:ok, []} = Adapter.list(criteria, [], ctx.assigns, TestPublishedPostLive)
       assert {:ok, 0} == Adapter.count(criteria, [], ctx.assigns, TestPublishedPostLive)
     end
+
+    test "search ignores case", ctx do
+      post(actor: ctx.assigns.current_user, published: true, title: "Mixed Case Title")
+      criteria = [search: {"mIXED cASE", [:title]}]
+
+      assert {:ok, [found]} = Adapter.list(criteria, [], ctx.assigns, TestPublishedPostLive)
+      assert found.title == "Mixed Case Title"
+      assert {:ok, 1} == Adapter.count(criteria, [], ctx.assigns, TestPublishedPostLive)
+    end
   end
 
   describe "AshBackpex.Adapter loads :: it" do

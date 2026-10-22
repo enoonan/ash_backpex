@@ -269,7 +269,8 @@ Link to the page from the layout's `<:sidebar>` slot with another
 
 ### Searchable Fields
 
-Make fields searchable to enable the search box:
+Make fields searchable to enable the search box. The search term is matched
+against each searchable field ignoring case, on every data layer:
 
 ```elixir
 fields do

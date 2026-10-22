@@ -2,8 +2,8 @@ defmodule AshBackpex.BasicSearch do
   @moduledoc """
   Provides basic text search functionality for AshBackpex LiveResources.
 
-  This module implements search by applying `contains` filters on fields marked
-  as `searchable: true` in the field configuration. When multiple fields are
+  This module implements search by applying case-insensitive `contains`
+  filters on fields marked as `searchable: true` in the field configuration. When multiple fields are
   searchable, they are combined with OR logic so a search term matches if it
   appears in any searchable field.
 
@@ -33,15 +33,17 @@ defmodule AshBackpex.BasicSearch do
   ```
 
   With this configuration, searching for "hello" will find posts where
-  either the title OR content contains "hello" (case-insensitive).
+  either the title OR content contains "hello", ignoring case on every data
+  layer (`lower(title) LIKE '%hello%'` in SQL).
 
   ## How It Works
 
   1. The Backpex UI sends search terms via the `search` query parameter
   2. The adapter passes params to `BasicSearch.apply/3`
   3. This module finds all searchable fields from the LiveResource
-  4. It builds an Ash filter with `contains` expressions joined by OR
-  5. The filter is applied to the query via `Ash.Query.filter_input/2`
+  4. It builds an Ash filter of `contains(string_downcase(field), term)`
+     expressions, with the term downcased, joined by OR
+  5. The filter is applied to the query via `Ash.Query.filter/2`
 
   ## Direct Usage
 
@@ -55,6 +57,9 @@ defmodule AshBackpex.BasicSearch do
   filtered_query = AshBackpex.BasicSearch.apply(query, params, MyAppWeb.Admin.PostLive)
   ```
   """
+  import Ash.Expr
+  require Ash.Query
+
   @type query :: Ash.Query.t()
   @type params :: map()
   @type live_resource :: module()
@@ -90,23 +95,23 @@ defmodule AshBackpex.BasicSearch do
       [] ->
         query
 
-      [{field_name, _}] ->
-        filter = Keyword.put([], field_name, contains: search)
-        query |> Ash.Query.filter_input(filter)
-
-      fields when is_list(fields) ->
-        filter = fields |> build_filter(search)
-        query |> Ash.Query.filter_input(filter)
+      fields ->
+        Ash.Query.filter(query, ^build_filter(fields, search))
     end
   end
 
   def apply(query, _, _), do: query
 
+  # Searches `lower(field)` for the downcased term. A plain `contains` compiles
+  # to a case-sensitive `LIKE` on Postgres, and an `Ash.CiString` needle only
+  # becomes `ILIKE` there, so both sides are lowered to match on every data layer.
   defp build_filter(fields, search) do
+    term = String.downcase(search)
+
     fields
-    |> Enum.reduce(%{"or" => []}, fn {field_name, _}, acc ->
-      new_or = Keyword.put([], field_name, contains: search)
-      Map.update(acc, "or", [], fn ors -> [new_or | ors] end)
+    |> Enum.map(fn {field_name, _} ->
+      expr(contains(string_downcase(^ref(field_name)), ^term))
     end)
+    |> Enum.reduce(fn predicate, acc -> expr(^acc or ^predicate) end)
   end
 end
