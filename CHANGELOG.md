@@ -2,11 +2,26 @@
 
 <!-- changelog -->
 
+> **Upgrading to 0.5?** Relationship and typeahead options for multitenant
+> resources now require a `tenant` assign. Read
+> [Upgrading to 0.5](guides/upgrading-to-0.5.md).
+
 > **Upgrading to 0.4?** Derived `has_many` and `many_to_many` fields use a new
 > field module, and from 0.4.1 a configured `read_action` is applied. Read
 > [Upgrading to 0.4](guides/upgrading-to-0.4.md).
 
 ## Unreleased
+
+### Breaking Changes
+
+- Relationship and typeahead options for a multitenant related resource without
+  an authorizer now use the `tenant` assign the way `Ash.read/2` does. With
+  attribute multitenancy only that tenant's records are listed, and without a
+  `tenant` assign the field raises a tenant-required error unless the resource
+  or its read action allows global reads. Before, these options ignored the
+  tenant and listed every tenant's records, or read the default schema with
+  context multitenancy. Related resources with an authorizer already behaved
+  this way. See [Upgrading to 0.5](guides/upgrading-to-0.5.md).
 
 ### Bug Fixes
 

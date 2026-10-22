@@ -32,7 +32,8 @@ defmodule AshBackpex.RelationshipOptions do
 
     root_alias = root_alias(query)
 
-    with {:ok, authorized_query, restrict?} <- authorize(ash_query, assigns),
+    with {:ok, ash_query} <- scope_to_tenant(ash_query),
+         {:ok, authorized_query, restrict?} <- authorize(ash_query, assigns),
          {:ok, query} <-
            Ash.Query.data_layer_query(authorized_query, initial_query: remove_root_alias(query)),
          {:ok, query} <- finalize_query(query, relationship.destination),
@@ -62,31 +63,73 @@ defmodule AshBackpex.RelationshipOptions do
     |> Ash.Query.default_sort(relationship.default_sort)
   end
 
+  # `Ash.Query.data_layer_query/2` only applies `:context` multitenancy, so attribute tenants
+  # are filtered and required here the way `Ash.read/2` does.
+  defp scope_to_tenant(%{resource: resource} = ash_query) do
+    action_multitenancy = Map.get(ash_query.action, :multitenancy, :enforce)
+
+    cond do
+      is_nil(Ash.Resource.Info.multitenancy_strategy(resource)) ||
+          action_multitenancy in [:bypass, :bypass_all] ->
+        {:ok, ash_query}
+
+      ash_query.tenant ->
+        {:ok, filter_by_tenant_attribute(ash_query)}
+
+      action_multitenancy == :allow_global || Ash.Resource.Info.multitenancy_global?(resource) ->
+        {:ok, ash_query}
+
+      true ->
+        {:error, Ash.Error.Invalid.TenantRequired.exception(resource: resource)}
+    end
+  end
+
+  defp filter_by_tenant_attribute(%{resource: resource} = ash_query) do
+    with :attribute <- Ash.Resource.Info.multitenancy_strategy(resource),
+         attribute when not is_nil(attribute) <-
+           Ash.Resource.Info.multitenancy_attribute(resource) do
+      {m, f, a} = Ash.Resource.Info.multitenancy_parse_attribute(resource)
+      Ash.Query.do_filter(ash_query, [{attribute, apply(m, f, [ash_query.to_tenant | a])}])
+    else
+      _ -> ash_query
+    end
+  end
+
   # Policies that resolve to filters are added to the query, so the options read stays one
   # bounded query however large the destination table is. Policies that must check the results
-  # at runtime add `authorize_results` hooks a raw data layer query would skip, so those fall
-  # back to reading the authorized records and restricting the options to their ids.
+  # at runtime add `authorize_results` hooks a raw data layer query would skip, so those also
+  # restrict the options to the ids of an authorized read.
   defp authorize(ash_query, assigns) do
     if Ash.Resource.Info.authorizers(ash_query.resource) == [] do
       {:ok, ash_query, false}
     else
-      case Ash.can(ash_query, actor(assigns),
-             tenant: tenant(assigns),
-             alter_source?: true,
-             run_queries?: false,
-             return_forbidden_error?: true
-           ) do
-        {:ok, true, %{authorize_results: []} = authorized_query} ->
+      ash_query
+      |> Ash.can(actor(assigns),
+        tenant: tenant(assigns),
+        alter_source?: true,
+        run_queries?: false,
+        pre_flight?: false,
+        maybe_is: false,
+        return_forbidden_error?: true
+      )
+      |> case do
+        {:ok, true, %Ash.Query{authorize_results: []} = authorized_query} ->
           {:ok, authorized_query, false}
 
-        {:ok, true, _query_with_runtime_checks} ->
-          {:ok, ash_query, true}
+        {:ok, true, %Ash.Query{} = authorized_query} ->
+          {:ok, authorized_query, true}
 
         {:ok, false, error} ->
           {:error, error}
 
         {:error, error} ->
           {:error, error}
+
+        other ->
+          {:error,
+           ArgumentError.exception(
+             "Could not authorize options for #{inspect(ash_query.resource)}, got: #{inspect(other)}"
+           )}
       end
     end
   end

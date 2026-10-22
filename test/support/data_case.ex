@@ -126,5 +126,38 @@ defmodule AshBackpex.DataCase do
       attachments TEXT
     )
     """)
+
+    Ecto.Adapters.SQL.query!(AshBackpex.TestRepo, """
+    CREATE TABLE IF NOT EXISTS boards (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL
+    )
+    """)
+
+    Ecto.Adapters.SQL.query!(AshBackpex.TestRepo, """
+    CREATE TABLE IF NOT EXISTS tenant_labels (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      org TEXT NOT NULL,
+      board_id TEXT REFERENCES boards(id)
+    )
+    """)
+
+    Ecto.Adapters.SQL.query!(AshBackpex.TestRepo, """
+    CREATE TABLE IF NOT EXISTS tenant_notes (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      org TEXT NOT NULL,
+      board_id TEXT REFERENCES boards(id)
+    )
+    """)
+
+    Ecto.Adapters.SQL.query!(AshBackpex.TestRepo, """
+    CREATE TABLE IF NOT EXISTS runtime_checked_badges (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      board_id TEXT REFERENCES boards(id)
+    )
+    """)
   end
 end

@@ -30,6 +30,7 @@ defmodule AshBackpex.MixProject do
       extras: [
         "README.md",
         "guides/getting-started.md",
+        "guides/upgrading-to-0.5.md",
         "guides/upgrading-to-0.4.md",
         "guides/upgrading-to-0.3.md",
         "guides/inline-crud.md"

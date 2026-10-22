@@ -823,3 +823,29 @@ defmodule TestNestedLoadLive do
     end
   end
 end
+
+defmodule TestBoardLive do
+  @moduledoc false
+  use AshBackpex.LiveResource
+
+  backpex do
+    resource AshBackpex.TestDomain.Board
+    layout({TestLayout, :admin})
+
+    fields do
+      field :title
+
+      field :labels do
+        display_field(:name)
+      end
+
+      field :badges do
+        display_field(:name)
+      end
+
+      field :notes do
+        display_field(:name)
+      end
+    end
+  end
+end

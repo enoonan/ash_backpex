@@ -641,3 +641,196 @@ defmodule AshBackpex.TestDomain.Document do
     ]
   end
 end
+
+defmodule AshBackpex.TestDomain.Board do
+  @moduledoc """
+  A resource whose sorted `has_many` relationships give AshBackpex derived
+  options queries for multitenant destinations, with and without policies, and
+  for a destination authorized at runtime.
+  """
+  use Ash.Resource,
+    domain: AshBackpex.TestDomain,
+    data_layer: AshSqlite.DataLayer
+
+  sqlite do
+    table "boards"
+    repo(AshBackpex.TestRepo)
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :title, :string do
+      allow_nil? false
+      public? true
+    end
+  end
+
+  relationships do
+    has_many :labels, AshBackpex.TestDomain.TenantLabel do
+      sort name: :asc
+    end
+
+    has_many :badges, AshBackpex.TestDomain.RuntimeCheckedBadge do
+      sort name: :asc
+    end
+
+    has_many :notes, AshBackpex.TestDomain.TenantNote do
+      sort name: :asc
+    end
+  end
+
+  actions do
+    defaults [:read, create: [:title]]
+  end
+end
+
+defmodule AshBackpex.TestDomain.TenantLabel do
+  @moduledoc """
+  A resource with attribute multitenancy that any actor may read, so only the
+  tenant scopes which labels are offered as options.
+  """
+  use Ash.Resource,
+    domain: AshBackpex.TestDomain,
+    data_layer: AshSqlite.DataLayer,
+    authorizers: [Ash.Policy.Authorizer]
+
+  sqlite do
+    table "tenant_labels"
+    repo(AshBackpex.TestRepo)
+  end
+
+  multitenancy do
+    strategy :attribute
+    attribute :org
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :name, :string do
+      allow_nil? false
+      public? true
+    end
+
+    attribute :org, :string do
+      allow_nil? false
+      public? true
+    end
+  end
+
+  relationships do
+    belongs_to :board, AshBackpex.TestDomain.Board
+  end
+
+  policies do
+    policy action_type(:read) do
+      authorize_if always()
+    end
+  end
+
+  actions do
+    defaults [:read]
+  end
+end
+
+defmodule AshBackpex.TestDomain.TenantNote do
+  @moduledoc """
+  A resource with attribute multitenancy and no authorizer, so its options are
+  never read through `Ash.read/2`.
+  """
+  use Ash.Resource,
+    domain: AshBackpex.TestDomain,
+    data_layer: AshSqlite.DataLayer
+
+  sqlite do
+    table "tenant_notes"
+    repo(AshBackpex.TestRepo)
+  end
+
+  multitenancy do
+    strategy :attribute
+    attribute :org
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :name, :string do
+      allow_nil? false
+      public? true
+    end
+
+    attribute :org, :string do
+      allow_nil? false
+      public? true
+    end
+  end
+
+  relationships do
+    belongs_to :board, AshBackpex.TestDomain.Board
+  end
+
+  actions do
+    defaults [:read]
+  end
+end
+
+defmodule AshBackpex.TestDomain.NameStartsWithA do
+  @moduledoc """
+  A policy check that can only be decided by looking at the records, so reads
+  authorized by it carry `authorize_results` hooks.
+  """
+  use Ash.Policy.Check
+
+  @impl true
+  def describe(_opts), do: "name starts with A"
+
+  @impl true
+  def strict_check(_actor, _authorizer, _opts), do: {:ok, :unknown}
+
+  @impl true
+  def check(_actor, records, _map, _opts) do
+    Enum.filter(records, &String.starts_with?(&1.name, "A"))
+  end
+end
+
+defmodule AshBackpex.TestDomain.RuntimeCheckedBadge do
+  @moduledoc """
+  A resource whose read policy is checked against the records at runtime, so
+  its options query cannot be authorized by a filter alone.
+  """
+  use Ash.Resource,
+    domain: AshBackpex.TestDomain,
+    data_layer: AshSqlite.DataLayer,
+    authorizers: [Ash.Policy.Authorizer]
+
+  sqlite do
+    table "runtime_checked_badges"
+    repo(AshBackpex.TestRepo)
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :name, :string do
+      allow_nil? false
+      public? true
+    end
+  end
+
+  relationships do
+    belongs_to :board, AshBackpex.TestDomain.Board
+  end
+
+  policies do
+    policy action_type(:read) do
+      access_type :runtime
+      authorize_if AshBackpex.TestDomain.NameStartsWithA
+    end
+  end
+
+  actions do
+    defaults [:read]
+  end
+end
