@@ -32,10 +32,11 @@ defmodule AshBackpex.RelationshipOptions do
 
     root_alias = root_alias(query)
 
-    with {:ok, query} <-
-           Ash.Query.data_layer_query(ash_query, initial_query: remove_root_alias(query)),
+    with {:ok, authorized_query, restrict?} <- authorize(ash_query, assigns),
+         {:ok, query} <-
+           Ash.Query.data_layer_query(authorized_query, initial_query: remove_root_alias(query)),
          {:ok, query} <- finalize_query(query, relationship.destination),
-         {:ok, query} <- restrict_to_authorized_records(query, ash_query) do
+         {:ok, query} <- maybe_restrict_to_authorized_records(query, ash_query, restrict?) do
       query
       |> Map.delete(:__ash_bindings__)
       |> restore_root_alias(root_alias)
@@ -61,22 +62,49 @@ defmodule AshBackpex.RelationshipOptions do
     |> Ash.Query.default_sort(relationship.default_sort)
   end
 
-  defp restrict_to_authorized_records(query, ash_query) do
+  # Policies that resolve to filters are added to the query, so the options read stays one
+  # bounded query however large the destination table is. Policies that must check the results
+  # at runtime add `authorize_results` hooks a raw data layer query would skip, so those fall
+  # back to reading the authorized records and restricting the options to their ids.
+  defp authorize(ash_query, assigns) do
     if Ash.Resource.Info.authorizers(ash_query.resource) == [] do
-      {:ok, query}
+      {:ok, ash_query, false}
     else
-      with {:ok, records} <- Ash.read(ash_query, page: false) do
-        case Ash.Resource.Info.primary_key(ash_query.resource) do
-          [primary_key] ->
-            ids = Enum.map(records, &Map.fetch!(&1, primary_key))
-            {:ok, where(query, [record], field(record, ^primary_key) in ^ids)}
+      case Ash.can(ash_query, actor(assigns),
+             tenant: tenant(assigns),
+             alter_source?: true,
+             run_queries?: false,
+             return_forbidden_error?: true
+           ) do
+        {:ok, true, %{authorize_results: []} = authorized_query} ->
+          {:ok, authorized_query, false}
 
-          primary_key ->
-            {:error,
-             ArgumentError.exception(
-               "Backpex relationship fields require a single primary key, got: #{inspect(primary_key)}"
-             )}
-        end
+        {:ok, true, _query_with_runtime_checks} ->
+          {:ok, ash_query, true}
+
+        {:ok, false, error} ->
+          {:error, error}
+
+        {:error, error} ->
+          {:error, error}
+      end
+    end
+  end
+
+  defp maybe_restrict_to_authorized_records(query, _ash_query, false), do: {:ok, query}
+
+  defp maybe_restrict_to_authorized_records(query, ash_query, true) do
+    with {:ok, records} <- Ash.read(ash_query, page: false) do
+      case Ash.Resource.Info.primary_key(ash_query.resource) do
+        [primary_key] ->
+          ids = Enum.map(records, &Map.fetch!(&1, primary_key))
+          {:ok, where(query, [record], field(record, ^primary_key) in ^ids)}
+
+        primary_key ->
+          {:error,
+           ArgumentError.exception(
+             "Backpex relationship fields require a single primary key, got: #{inspect(primary_key)}"
+           )}
       end
     end
   end

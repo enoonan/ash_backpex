@@ -6,6 +6,16 @@
 > field module, and from 0.4.1 a configured `read_action` is applied. Read
 > [Upgrading to 0.4](guides/upgrading-to-0.4.md).
 
+## Unreleased
+
+### Bug Fixes
+
+- Relationship and typeahead options no longer read the whole related table.
+  When the related resource had an authorizer, every record the actor could
+  read was loaded to restrict the options by id, which timed out forms on large
+  tables. Policies that resolve to filters are now applied to the options query;
+  only policies that need runtime checks still read the authorized records.
+
 ## [v0.4.1]
 
 ### Bug Fixes
